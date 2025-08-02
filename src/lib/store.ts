@@ -1,27 +1,34 @@
 import { create } from 'zustand'
 import { Song, Playlist, Bookmark, PlayerState } from '@/types/music'
-import { mockSongs, mockPlaylists } from './mock-data'
+import { songsApi, playlistsApi, bookmarksApi } from './api'
 
 interface MusicStore {
+  // Loading states
+  isLoading: boolean
+  setLoading: (loading: boolean) => void
+  
+  // Data initialization
+  initializeData: () => Promise<void>
+  
   // Songs
   songs: Song[]
-  addSong: (song: Song) => void
-  updateSong: (id: string, updates: Partial<Song>) => void
-  deleteSong: (id: string) => void
+  addSong: (song: Omit<Song, 'id' | 'uploadedAt'>) => Promise<void>
+  updateSong: (id: string, updates: Partial<Song>) => Promise<void>
+  deleteSong: (id: string) => Promise<void>
   getSong: (id: string) => Song | undefined
   
   // Playlists
   playlists: Playlist[]
-  addPlaylist: (playlist: Playlist) => void
-  updatePlaylist: (id: string, updates: Partial<Playlist>) => void
-  deletePlaylist: (id: string) => void
-  addSongToPlaylist: (playlistId: string, songId: string) => void
-  removeSongFromPlaylist: (playlistId: string, songId: string) => void
+  addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt' | 'updatedAt' | 'songs'>) => Promise<void>
+  updatePlaylist: (id: string, updates: Partial<Playlist>) => Promise<void>
+  deletePlaylist: (id: string) => Promise<void>
+  addSongToPlaylist: (playlistId: string, songId: string) => Promise<void>
+  removeSongFromPlaylist: (playlistId: string, songId: string) => Promise<void>
   
   // Bookmarks
   bookmarks: Bookmark[]
-  addBookmark: (songId: string) => void
-  removeBookmark: (songId: string) => void
+  addBookmark: (songId: string) => Promise<void>
+  removeBookmark: (songId: string) => Promise<void>
   isBookmarked: (songId: string) => boolean
   
   // Player State
@@ -43,52 +50,170 @@ interface MusicStore {
 }
 
 export const useMusicStore = create<MusicStore>((set, get) => ({
+  // Loading states
+  isLoading: false,
+  setLoading: (loading) => set({ isLoading: loading }),
+  
+  // Data initialization
+  initializeData: async () => {
+    try {
+      set({ isLoading: true })
+      
+      // Load all data in parallel
+      const [songs, playlists, bookmarks] = await Promise.all([
+        songsApi.getAll(),
+        playlistsApi.getAll(),
+        bookmarksApi.getAll()
+      ])
+      
+      set({ 
+        songs, 
+        playlists, 
+        bookmarks,
+        isLoading: false 
+      })
+    } catch (error) {
+      console.error('Failed to initialize data:', error)
+      set({ isLoading: false })
+    }
+  },
+  
   // Songs
-  songs: mockSongs,
-  addSong: (song) => set((state) => ({ songs: [...state.songs, song] })),
-  updateSong: (id, updates) => set((state) => ({
-    songs: state.songs.map((song) => song.id === id ? { ...song, ...updates } : song)
-  })),
-  deleteSong: (id) => set((state) => ({
-    songs: state.songs.filter((song) => song.id !== id),
-    bookmarks: state.bookmarks.filter((bookmark) => bookmark.songId !== id)
-  })),
+  songs: [],
+  addSong: async (songData) => {
+    try {
+      set({ isLoading: true })
+      const newSong = await songsApi.create(songData)
+      set((state) => ({ 
+        songs: [...state.songs, newSong],
+        isLoading: false 
+      }))
+    } catch (error) {
+      console.error('Failed to add song:', error)
+      set({ isLoading: false })
+      throw error
+    }
+  },
+  updateSong: async (id, updates) => {
+    try {
+      const updatedSong = await songsApi.update(id, updates)
+      set((state) => ({
+        songs: state.songs.map((song) => song.id === id ? updatedSong : song)
+      }))
+    } catch (error) {
+      console.error('Failed to update song:', error)
+      throw error
+    }
+  },
+  deleteSong: async (id) => {
+    try {
+      await songsApi.delete(id)
+      set((state) => ({
+        songs: state.songs.filter((song) => song.id !== id),
+        bookmarks: state.bookmarks.filter((bookmark) => bookmark.songId !== id)
+      }))
+    } catch (error) {
+      console.error('Failed to delete song:', error)
+      throw error
+    }
+  },
   getSong: (id) => get().songs.find((song) => song.id === id),
   
   // Playlists
-  playlists: mockPlaylists,
-  addPlaylist: (playlist) => set((state) => ({ playlists: [...state.playlists, playlist] })),
-  updatePlaylist: (id, updates) => set((state) => ({
-    playlists: state.playlists.map((playlist) => 
-      playlist.id === id ? { ...playlist, ...updates, updatedAt: new Date() } : playlist
-    )
-  })),
-  deletePlaylist: (id) => set((state) => ({
-    playlists: state.playlists.filter((playlist) => playlist.id !== id)
-  })),
-  addSongToPlaylist: (playlistId, songId) => set((state) => ({
-    playlists: state.playlists.map((playlist) =>
-      playlist.id === playlistId
-        ? { ...playlist, songs: [...playlist.songs, songId], updatedAt: new Date() }
-        : playlist
-    )
-  })),
-  removeSongFromPlaylist: (playlistId, songId) => set((state) => ({
-    playlists: state.playlists.map((playlist) =>
-      playlist.id === playlistId
-        ? { ...playlist, songs: playlist.songs.filter((id) => id !== songId), updatedAt: new Date() }
-        : playlist
-    )
-  })),
+  playlists: [],
+  addPlaylist: async (playlistData) => {
+    try {
+      set({ isLoading: true })
+      const newPlaylist = await playlistsApi.create(playlistData)
+      set((state) => ({ 
+        playlists: [...state.playlists, newPlaylist],
+        isLoading: false 
+      }))
+    } catch (error) {
+      console.error('Failed to add playlist:', error)
+      set({ isLoading: false })
+      throw error
+    }
+  },
+  updatePlaylist: async (id, updates) => {
+    try {
+      const updatedPlaylist = await playlistsApi.update(id, updates)
+      set((state) => ({
+        playlists: state.playlists.map((playlist) => 
+          playlist.id === id ? updatedPlaylist : playlist
+        )
+      }))
+    } catch (error) {
+      console.error('Failed to update playlist:', error)
+      throw error
+    }
+  },
+  deletePlaylist: async (id) => {
+    try {
+      await playlistsApi.delete(id)
+      set((state) => ({
+        playlists: state.playlists.filter((playlist) => playlist.id !== id)
+      }))
+    } catch (error) {
+      console.error('Failed to delete playlist:', error)
+      throw error
+    }
+  },
+  addSongToPlaylist: async (playlistId, songId) => {
+    try {
+      await playlistsApi.addSong(playlistId, songId)
+      // Refresh playlist data
+      const updatedPlaylist = await playlistsApi.getById(playlistId)
+      set((state) => ({
+        playlists: state.playlists.map((playlist) =>
+          playlist.id === playlistId ? updatedPlaylist : playlist
+        )
+      }))
+    } catch (error) {
+      console.error('Failed to add song to playlist:', error)
+      throw error
+    }
+  },
+  removeSongFromPlaylist: async (playlistId, songId) => {
+    try {
+      await playlistsApi.removeSong(playlistId, songId)
+      // Refresh playlist data
+      const updatedPlaylist = await playlistsApi.getById(playlistId)
+      set((state) => ({
+        playlists: state.playlists.map((playlist) =>
+          playlist.id === playlistId ? updatedPlaylist : playlist
+        )
+      }))
+    } catch (error) {
+      console.error('Failed to remove song from playlist:', error)
+      throw error
+    }
+  },
   
   // Bookmarks
   bookmarks: [],
-  addBookmark: (songId) => set((state) => ({
-    bookmarks: [...state.bookmarks, { id: Date.now().toString(), songId, createdAt: new Date() }]
-  })),
-  removeBookmark: (songId) => set((state) => ({
-    bookmarks: state.bookmarks.filter((bookmark) => bookmark.songId !== songId)
-  })),
+  addBookmark: async (songId) => {
+    try {
+      const newBookmark = await bookmarksApi.create(songId)
+      set((state) => ({
+        bookmarks: [...state.bookmarks, newBookmark]
+      }))
+    } catch (error) {
+      console.error('Failed to add bookmark:', error)
+      throw error
+    }
+  },
+  removeBookmark: async (songId) => {
+    try {
+      await bookmarksApi.delete(songId)
+      set((state) => ({
+        bookmarks: state.bookmarks.filter((bookmark) => bookmark.songId !== songId)
+      }))
+    } catch (error) {
+      console.error('Failed to remove bookmark:', error)
+      throw error
+    }
+  },
   isBookmarked: (songId) => get().bookmarks.some((bookmark) => bookmark.songId === songId),
   
   // Player State
