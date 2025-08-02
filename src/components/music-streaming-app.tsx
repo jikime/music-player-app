@@ -190,7 +190,7 @@ export default function Component() {
                       alt={song.title}
                       width={40}
                       height={40}
-                      className="w-10 h-10 rounded object-cover"
+                      className="w-10 aspect-square rounded object-cover"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white truncate">{song.title}</p>
@@ -237,11 +237,11 @@ export default function Component() {
               {recentSongs.map((song) => (
                 <div
                   key={song.id}
-                  className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col"
+                  className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col w-48 flex-shrink-0"
                   onClick={() => handlePlaySong(song)}
                 >
                   <div className="p-0">
-                    <div className="w-48 h-48 bg-gray-800 rounded-t overflow-hidden">
+                    <div className="w-full aspect-square bg-gray-800 rounded-t overflow-hidden">
                       <Image
                         src={song.thumbnail || "/placeholder.svg?height=192&width=192"}
                         alt={song.title}
@@ -251,8 +251,8 @@ export default function Component() {
                       />
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-white mb-1">{song.title}</h3>
-                      <p className="text-sm text-gray-400">{song.artist}</p>
+                      <h3 className="font-semibold text-white mb-1 truncate" title={song.title}>{song.title}</h3>
+                      <p className="text-sm text-gray-400 truncate" title={song.artist}>{song.artist}</p>
                       {song.duration > 0 && (
                         <p className="text-xs text-gray-500 mt-1">{formatDuration(song.duration)}</p>
                       )}
@@ -292,7 +292,7 @@ export default function Component() {
                     alt={song.title}
                     width={50}
                     height={50}
-                    className="w-12 h-12 rounded object-cover"
+                    className="w-12 aspect-square rounded object-cover"
                   />
                   <div className="flex-1">
                     <h3 className="font-medium text-white">{song.title}</h3>
