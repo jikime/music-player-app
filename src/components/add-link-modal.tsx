@@ -91,20 +91,36 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
         return
       }
 
-      const newSong: Song = {
-        id: Date.now().toString(),
+      const songData = {
         title,
         artist,
-        album,
-        duration: 0, // Will be updated when playing
+        album: album || null,
+        duration: 0,
         url,
         thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-        uploadedAt: new Date(),
+        lyrics: null,
         plays: 0,
         liked: false
       }
 
-      addSong(newSong)
+      // API 호출을 통해 노래 추가
+      const response = await fetch('/api/songs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(songData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to add song')
+      }
+
+      const { song } = await response.json()
+      
+      // 로컬 스토어에도 추가
+      addSong(song)
       
       // Reset form
       setUrl("")
@@ -114,7 +130,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
       onOpenChange(false)
     } catch (error) {
       console.error("Error adding song:", error)
-      alert("Failed to add song. Please try again.")
+      alert(`Failed to add song: ${error instanceof Error ? error.message : 'Please try again.'}`)
     } finally {
       setIsLoading(false)
     }
@@ -122,7 +138,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] bg-gray-900 border-gray-700 text-white">
+      <DialogContent className="sm:max-w-[350px] bg-gray-900 border-gray-700 text-white">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-red-600 rounded-lg">

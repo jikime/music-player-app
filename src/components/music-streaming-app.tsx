@@ -1,10 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Home,
@@ -29,16 +28,22 @@ export default function Component() {
     songs,
     playlists,
     bookmarks,
+    recentlyPlayed,
     setCurrentSong,
     setIsPlaying,
     isBookmarked,
-    getSong
+    getSong,
+    initializeData,
+    isLoading
   } = useMusicStore()
 
-  // Get recently played songs (last 4)
-  const recentlyPlayed = songs
-    .sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime())
-    .slice(0, 4)
+  // Initialize data when component mounts
+  useEffect(() => {
+    initializeData()
+  }, [])
+
+  // Get recently played songs (last 4 from store)
+  const recentSongs = recentlyPlayed.slice(0, 4)
 
   // Get bookmarked songs
   const bookmarkedSongs = bookmarks
@@ -71,6 +76,17 @@ export default function Component() {
   const handlePlaySong = (song: Song) => {
     setCurrentSong(song)
     setIsPlaying(true)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 text-white items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>
+          <p className="mt-4 text-lg">Loading music library...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -177,13 +193,13 @@ export default function Component() {
           <div className="mb-8">
             <h2 className="text-sm text-gray-400 mb-4 uppercase tracking-wider">RECENTLY PLAYED</h2>
             <div className="flex gap-4 mb-4">
-              {recentlyPlayed.map((song) => (
-                <Card
+              {recentSongs.map((song) => (
+                <div
                   key={song.id}
-                  className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
+                  className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col"
                   onClick={() => handlePlaySong(song)}
                 >
-                  <CardContent className="p-0">
+                  <div className="p-0">
                     <div className="w-48 h-48 bg-gray-800 rounded-t overflow-hidden">
                       <Image
                         src={song.thumbnail || "/placeholder.svg?height=192&width=192"}
@@ -197,8 +213,8 @@ export default function Component() {
                       <h3 className="font-semibold text-white mb-1">{song.title}</h3>
                       <p className="text-sm text-gray-400">{song.artist}</p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
               <div className="flex items-center">
                 <Button variant="ghost" className="flex items-center gap-2 text-gray-400 hover:text-white">

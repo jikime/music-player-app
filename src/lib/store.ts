@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { Song, Playlist, Bookmark, PlayerState } from '@/types/music'
-import { songsApi, playlistsApi, bookmarksApi } from './api'
+import { songsApi, playlistsApi, bookmarksApi, recentlyPlayedApi } from './api'
 
 interface MusicStore {
   // Loading states
@@ -31,6 +31,11 @@ interface MusicStore {
   removeBookmark: (songId: string) => Promise<void>
   isBookmarked: (songId: string) => boolean
   
+  // Recently Played
+  recentlyPlayed: Song[]
+  getRecentlyPlayed: () => Promise<void>
+  updatePlayCount: (songId: string) => Promise<void>
+  
   // Player State
   playerState: PlayerState
   setCurrentSong: (song: Song | null) => void
@@ -60,16 +65,18 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ isLoading: true })
       
       // Load all data in parallel
-      const [songs, playlists, bookmarks] = await Promise.all([
+      const [songs, playlists, bookmarks, recentlyPlayed] = await Promise.all([
         songsApi.getAll(),
         playlistsApi.getAll(),
-        bookmarksApi.getAll()
+        bookmarksApi.getAll(),
+        recentlyPlayedApi.getRecentlyPlayed()
       ])
       
       set({ 
         songs, 
         playlists, 
         bookmarks,
+        recentlyPlayed,
         isLoading: false 
       })
     } catch (error) {
@@ -216,6 +223,36 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   isBookmarked: (songId) => get().bookmarks.some((bookmark) => bookmark.songId === songId),
   
+  // Recently Played
+  recentlyPlayed: [],
+  getRecentlyPlayed: async () => {
+    try {
+      const recentlyPlayed = await recentlyPlayedApi.getRecentlyPlayed()
+      set({ recentlyPlayed })
+    } catch (error) {
+      console.error('Failed to fetch recently played:', error)
+      throw error
+    }
+  },
+  updatePlayCount: async (songId) => {
+    try {
+      const updatedSong = await recentlyPlayedApi.updatePlayCount(songId)
+      // Update the song in the songs list
+      set((state) => ({
+        songs: state.songs.map((song) => song.id === songId ? updatedSong : song),
+        recentlyPlayed: state.recentlyPlayed.map((song) => song.id === songId ? updatedSong : song)
+      }))
+      // Refresh recently played list (optional, don't fail if this fails)
+      get().getRecentlyPlayed().catch((error) => {
+        console.warn('Failed to refresh recently played list:', error)
+      })
+    } catch (error) {
+      console.error('Failed to update play count:', error)
+      // Don't re-throw the error to prevent breaking the user experience
+      // Just log it and continue
+    }
+  },
+  
   // Player State
   playerState: {
     currentSong: null,
@@ -228,9 +265,17 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     queue: [],
     history: []
   },
-  setCurrentSong: (song) => set((state) => ({
-    playerState: { ...state.playerState, currentSong: song, currentTime: 0 }
-  })),
+  setCurrentSong: (song) => {
+    set((state) => ({
+      playerState: { ...state.playerState, currentSong: song, currentTime: 0 }
+    }))
+    // Update play count when a song starts playing (non-blocking)
+    if (song) {
+      get().updatePlayCount(song.id).catch((error) => {
+        console.warn('Failed to update play count, but continuing playback:', error)
+      })
+    }
+  },
   setIsPlaying: (isPlaying) => set((state) => ({
     playerState: { ...state.playerState, isPlaying }
   })),

@@ -188,6 +188,43 @@ export const playlistsApi = {
   }
 }
 
+// Recently Played API
+export const recentlyPlayedApi = {
+  // 최근 재생된 노래들 조회
+  getRecentlyPlayed: async (): Promise<Song[]> => {
+    const response = await fetch(`${API_BASE_URL}/recently-played`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch recently played songs')
+    }
+    const data: SongsResponse = await response.json()
+    return data.songs
+  },
+
+  // 재생 기록 업데이트 (plays 카운트 증가)
+  updatePlayCount: async (songId: string): Promise<Song> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/recently-played`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ songId }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(`Failed to update play count: ${response.status} ${response.statusText} - ${errorData.error || 'Unknown error'}`)
+      }
+      
+      const data: SongResponse = await response.json()
+      return data.song
+    } catch (error) {
+      console.error('Error in updatePlayCount:', error)
+      throw error
+    }
+  }
+}
+
 // Bookmarks API
 export const bookmarksApi = {
   // 모든 북마크 조회

@@ -257,15 +257,11 @@ export function MusicPlayer() {
           onPlay={handlePlay}
           onPause={handlePause}
           onRateChange={handleRateChange}
-          onSeeking={handleSeeking}
-          onSeeked={handleSeeked}
           onEnded={handleEnded}
           onError={(e) => console.log('onError', e)}
           onTimeUpdate={handleTimeUpdate}
           onProgress={handleProgress}
           onDurationChange={handleDurationChange}
-          onBuffer={handleBuffer}
-          onBufferEnd={handleBufferEnd}
         />
       )}
 
