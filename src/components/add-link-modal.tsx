@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { Song } from "@/types/music"
+import { extractVideoId, fetchYouTubeDuration, getYouTubeVideoInfo } from "@/lib/youtube"
 
 interface AddLinkModalProps {
   open: boolean
@@ -35,27 +36,31 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
   const [album, setAlbum] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [urlValid, setUrlValid] = useState<boolean | null>(null)
+  const [isFetchingInfo, setIsFetchingInfo] = useState(false)
 
   const { addSong } = useMusicStore()
 
-  const extractVideoId = (url: string): string | null => {
-    // More comprehensive YouTube URL regex
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=)([^&\n?#]+)/,
-      /(?:youtu\.be\/)([^&\n?#]+)/,
-      /(?:youtube\.com\/embed\/)([^&\n?#]+)/,
-      /(?:youtube\.com\/v\/)([^&\n?#]+)/,
-      /(?:youtube\.com\/shorts\/)([^&\n?#]+)/
-    ]
-    
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) return match[1]
+  // Auto-fill video information when URL is valid
+  const fetchVideoInfo = async (videoUrl: string) => {
+    const videoId = extractVideoId(videoUrl)
+    if (!videoId) return
+
+    setIsFetchingInfo(true)
+    try {
+      const videoInfo = await getYouTubeVideoInfo(videoId)
+      if (videoInfo) {
+        // Only auto-fill if fields are empty
+        if (!title.trim()) setTitle(videoInfo.title)
+        if (!artist.trim()) setArtist(videoInfo.author)
+      }
+    } catch (error) {
+      console.warn('Failed to fetch video info:', error)
+    } finally {
+      setIsFetchingInfo(false)
     }
-    return null
   }
 
-  // Validate URL
+  // Validate URL and fetch video info
   useEffect(() => {
     if (!url.trim()) {
       setUrlValid(null)
@@ -63,7 +68,13 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
     }
 
     const videoId = extractVideoId(url)
-    setUrlValid(videoId !== null)
+    const isValid = videoId !== null
+    setUrlValid(isValid)
+    
+    // Auto-fetch video info when URL becomes valid
+    if (isValid) {
+      fetchVideoInfo(url)
+    }
   }, [url])
 
   // Reset form when modal opens/closes
@@ -91,11 +102,21 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
         return
       }
 
+      // Fetch video duration
+      let duration = 0
+      try {
+        duration = await fetchYouTubeDuration(url)
+        console.log(`Fetched duration: ${duration} seconds`)
+      } catch (durationError) {
+        console.warn('Failed to fetch duration, using 0:', durationError)
+        // Continue with duration 0 - it's not critical for saving the song
+      }
+
       const songData = {
         title,
         artist,
         album: album || null,
-        duration: 0,
+        duration,
         url,
         thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
         lyrics: null,
@@ -158,6 +179,9 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
             <Label className="text-gray-300 flex items-center gap-2 text-sm">
               <Youtube className="w-4 h-4" />
               YouTube URL *
+              {isFetchingInfo && (
+                <span className="text-xs text-blue-400">(자동 정보 가져오는 중...)</span>
+              )}
             </Label>
             <div className="relative">
               <Input
@@ -235,13 +259,18 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !urlValid || !title.trim() || !artist.trim()}
+              disabled={isLoading || isFetchingInfo || !urlValid || !title.trim() || !artist.trim()}
               className="bg-purple-600 hover:bg-purple-700 min-w-[100px]"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Adding...
+                </>
+              ) : isFetchingInfo ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading...
                 </>
               ) : (
                 'Add Song'

@@ -15,6 +15,7 @@ import {
   Music,
   ChevronRight,
   Link,
+  Loader2,
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { MusicPlayer } from "./music-player"
@@ -23,6 +24,7 @@ import type { Song } from "@/types/music"
 
 export default function Component() {
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)
+  const [bookmarkingStates, setBookmarkingStates] = useState<Record<string, boolean>>({})
   
   const {
     songs,
@@ -34,7 +36,9 @@ export default function Component() {
     isBookmarked,
     getSong,
     initializeData,
-    isLoading
+    isLoading,
+    addBookmark,
+    removeBookmark
   } = useMusicStore()
 
   // Initialize data when component mounts
@@ -76,6 +80,38 @@ export default function Component() {
   const handlePlaySong = (song: Song) => {
     setCurrentSong(song)
     setIsPlaying(true)
+  }
+
+  const handleToggleBookmark = async (songId: string, event: React.MouseEvent) => {
+    event.stopPropagation() // 노래 재생을 방지
+    
+    // 중복 클릭 방지
+    if (bookmarkingStates[songId]) return
+    
+    setBookmarkingStates(prev => ({ ...prev, [songId]: true }))
+    
+    try {
+      if (isBookmarked(songId)) {
+        await removeBookmark(songId)
+        console.log('북마크에서 제거되었습니다.')
+      } else {
+        await addBookmark(songId)
+        console.log('북마크에 추가되었습니다.')
+      }
+    } catch (error) {
+      console.error('Failed to toggle bookmark:', error)
+      
+      // 에러 메시지를 더 구체적으로 표시
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      
+      if (errorMessage.includes('already bookmarked')) {
+        console.warn('이미 북마크된 노래입니다.')
+      } else {
+        console.warn(`북마크 처리 중 오류: ${errorMessage}`)
+      }
+    } finally {
+      setBookmarkingStates(prev => ({ ...prev, [songId]: false }))
+    }
   }
 
   if (isLoading) {
@@ -160,6 +196,11 @@ export default function Component() {
                       <p className="text-sm text-white truncate">{song.title}</p>
                       <p className="text-xs text-gray-400 truncate">{song.artist}</p>
                     </div>
+                    {song.duration > 0 && (
+                      <div className="text-xs text-gray-500">
+                        {formatDuration(song.duration)}
+                      </div>
+                    )}
                   </div>
                 ) : null)}
               </div>
@@ -212,6 +253,9 @@ export default function Component() {
                     <div className="p-4">
                       <h3 className="font-semibold text-white mb-1">{song.title}</h3>
                       <p className="text-sm text-gray-400">{song.artist}</p>
+                      {song.duration > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">{formatDuration(song.duration)}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -268,8 +312,14 @@ export default function Component() {
                       variant="ghost"
                       size="icon"
                       className={`w-8 h-8 ${isBookmarked(song.id) ? "text-pink-500" : "text-gray-400"} hover:text-pink-500`}
+                      onClick={(e) => handleToggleBookmark(song.id, e)}
+                      disabled={bookmarkingStates[song.id]}
                     >
-                      <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
+                      {bookmarkingStates[song.id] ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
+                      )}
                     </Button>
                     <Button
                       variant="ghost"
