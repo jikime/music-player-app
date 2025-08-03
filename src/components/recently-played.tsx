@@ -1,5 +1,5 @@
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { ChevronRight } from "lucide-react"
 import { formatDuration } from "@/lib/music-utils"
 import type { Song } from "@/types/music"
@@ -21,8 +21,8 @@ export function RecentlyPlayed({ songs, onPlaySong }: RecentlyPlayedProps) {
             onClick={() => onPlaySong(song)}
           >
             <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative">
-              <Image
-                src={song.thumbnail || "/placeholder.svg?height=224&width=224"}
+              <ImageWithFallback
+                src={song.thumbnail || "/placeholder.svg"}
                 alt={song.title}
                 width={224}
                 height={224}

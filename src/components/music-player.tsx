@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import Image from "next/image"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -270,8 +270,8 @@ export function MusicPlayer() {
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {currentSong ? (
             <>
-              <Image
-                src={currentSong.thumbnail || "/placeholder.svg?height=60&width=60"}
+              <ImageWithFallback
+                src={currentSong.thumbnail || "/placeholder.svg"}
                 alt={currentSong.title}
                 width={60}
                 height={60}

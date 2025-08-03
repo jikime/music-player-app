@@ -37,7 +37,7 @@ export default function Component() {
   }
 
   return (
-    <div className="mx-auto p-6">
+    <div className="mx-auto p-6 mb-24">
       <RecentlyPlayed 
           songs={recentSongs}
           onPlaySong={handlePlaySong}

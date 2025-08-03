@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { MoreHorizontal } from "lucide-react"
 
 import {
@@ -31,8 +31,8 @@ export function NavBookmarks({ bookmarkedSongs, onPlaySong }: NavBookmarksProps)
               onClick={() => onPlaySong(song)}
             >
               <div className="flex items-center gap-3 w-full">
-                <Image
-                  src={song.thumbnail || "/placeholder.svg?height=32&width=32"}
+                <ImageWithFallback
+                  src={song.thumbnail || "/placeholder.svg"}
                   alt={song.title}
                   width={32}
                   height={32}

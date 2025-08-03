@@ -1,5 +1,5 @@
 import { useState } from "react"
-import Image from "next/image"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { Button } from "@/components/ui/button"
 import {
   Heart,
@@ -74,8 +74,8 @@ export function AllSongs({ songs, onPlaySong }: AllSongsProps) {
             onClick={() => onPlaySong(song)}
           >
             <span className="text-muted-foreground w-8 text-sm">#{index + 1}</span>
-            <Image
-              src={song.thumbnail || "/placeholder.svg?height=50&width=50"}
+            <ImageWithFallback
+              src={song.thumbnail || "/placeholder.svg"}
               alt={song.title}
               width={50}
               height={50}

@@ -22,7 +22,7 @@ export default function DashboardLayout({
       <SidebarInset>
         <AppHeader />
         <main className="flex flex-1 w-full">
-          <ScrollArea className="h-[calc(100vh-4.5rem)] w-full flex-1">
+          <ScrollArea className="h-[calc(100vh-4.5rem)] w-full flex-1 ">
             {children}
           </ScrollArea>
         </main>
