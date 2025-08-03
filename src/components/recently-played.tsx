@@ -1,7 +1,8 @@
+import { useState, useMemo, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, ChevronLeft, MoreHorizontal } from "lucide-react"
 import { formatDuration } from "@/lib/music-utils"
 import type { Song } from "@/types/music"
 
@@ -12,9 +13,112 @@ interface RecentlyPlayedProps {
 }
 
 export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: RecentlyPlayedProps) {
+  const [currentPage, setCurrentPage] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+  const [itemsPerPage, setItemsPerPage] = useState(4)
+  const containerRef = useRef<HTMLDivElement>(null)
+  
+  // Calculate items per page based on actual container width
+  const calculateItemsPerPage = () => {
+    if (!containerRef.current) return 4
+    
+    const containerWidth = containerRef.current.offsetWidth
+    const cardWidth = 224 // w-56 = 224px
+    const gap = 16 // gap-4 = 16px
+    
+    // Calculate how many cards fit exactly
+    let itemsToShow = 1
+    let totalWidth = cardWidth
+    
+    while (totalWidth + gap + cardWidth <= containerWidth && itemsToShow < 6) {
+      totalWidth += gap + cardWidth
+      itemsToShow++
+    }
+    
+    return Math.max(1, Math.min(6, itemsToShow))
+  }
+  
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      const newItemsPerPage = calculateItemsPerPage()
+      if (newItemsPerPage !== itemsPerPage) {
+        setItemsPerPage(newItemsPerPage)
+        // Reset to first page when items per page changes
+        setCurrentPage(0)
+      }
+    }
+    
+    // Debounce resize events
+    let timeoutId: NodeJS.Timeout
+    const debouncedUpdateItemsPerPage = () => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(updateItemsPerPage, 150)
+    }
+    
+    // Set initial value after component mount
+    const initialTimeout = setTimeout(updateItemsPerPage, 100)
+    
+    // Add resize listener
+    window.addEventListener('resize', debouncedUpdateItemsPerPage)
+    
+    return () => {
+      window.removeEventListener('resize', debouncedUpdateItemsPerPage)
+      clearTimeout(timeoutId)
+      clearTimeout(initialTimeout)
+    }
+  }, [itemsPerPage])
+  
+  // Additional effect to recalculate when container ref is set
+  useEffect(() => {
+    if (containerRef.current && !isLoading) {
+      const newItemsPerPage = calculateItemsPerPage()
+      if (newItemsPerPage !== itemsPerPage) {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(0)
+      }
+    }
+  }, [isLoading, itemsPerPage])
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(songs.length / itemsPerPage)
+  const canGoPrev = currentPage > 0
+  const canGoNext = currentPage < totalPages - 1
+  
+  // Get current page songs
+  const currentSongs = useMemo(() => {
+    if (showAll) return songs
+    const start = currentPage * itemsPerPage
+    return songs.slice(start, start + itemsPerPage)
+  }, [songs, currentPage, showAll, itemsPerPage])
+  
+  const handlePageChange = async (newPage: number) => {
+    if (newPage === currentPage || isAnimating) return
+    
+    setIsAnimating(true)
+    await new Promise(resolve => setTimeout(resolve, 150))
+    setCurrentPage(newPage)
+    setIsAnimating(false)
+  }
+  
+  const handlePrevious = () => {
+    if (canGoPrev) {
+      handlePageChange(currentPage - 1)
+    }
+  }
+  
+  const handleNext = () => {
+    if (canGoNext) {
+      handlePageChange(currentPage + 1)
+    }
+  }
+  
+  const handleViewAll = () => {
+    setShowAll(!showAll)
+  }
   const skeletonCards = (
     <div className="flex gap-4 mb-4 items-stretch">
-      {Array.from({ length: 4 }).map((_, index) => (
+      {Array.from({ length: itemsPerPage }).map((_, index) => (
         <div key={index} className="bg-card/50 border-border rounded-xl border shadow-sm flex flex-col w-56 flex-shrink-0">
           <Skeleton className="w-full aspect-square rounded-t-xl" />
           <div className="p-4 flex flex-col flex-1 space-y-2">
@@ -36,18 +140,65 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
         isLoading={isLoading} 
         fallback={
           <div>
-            <Skeleton className="h-4 w-36 mb-4" />
+            <div className="flex items-center justify-between mb-4">
+              <Skeleton className="h-4 w-36" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded" />
+                <Skeleton className="h-8 w-8 rounded" />
+                <Skeleton className="h-8 w-16 rounded" />
+              </div>
+            </div>
             {skeletonCards}
           </div>
         }
       >
-        <h2 className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">RECENTLY PLAYED</h2>
-        <div className="flex gap-4 mb-4 items-stretch">
-          {songs.map((song) => (
-          <div
-            key={song.id}
-            className="bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col w-56 flex-shrink-0"
-            onClick={() => onPlaySong(song)}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm text-muted-foreground uppercase tracking-wider">RECENTLY PLAYED</h2>
+          {songs.length > itemsPerPage && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                onClick={handlePrevious}
+                disabled={!canGoPrev || isAnimating || showAll}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                onClick={handleNext}
+                disabled={!canGoNext || isAnimating || showAll}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-muted-foreground hover:text-foreground"
+                onClick={handleViewAll}
+              >
+                {showAll ? "Show Less" : "View All"}
+              </Button>
+            </div>
+          )}
+        </div>
+        <div 
+          ref={containerRef}
+          className={`transition-all duration-300 ease-in-out ${
+            isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+          }`}
+        >
+          <div className={`${showAll ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'flex gap-5 items-stretch justify-center'} mb-4`}>
+            {currentSongs.map((song) => (
+              <div
+                key={song.id}
+                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${
+                  showAll ? 'w-full' : 'w-56 flex-shrink-0'
+                }`}
+                onClick={() => onPlaySong(song)}
           >
             <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative">
               <ImageWithFallback
@@ -65,14 +216,26 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
                 {song.duration > 0 ? formatDuration(song.duration) : '0:00'}
               </p>
             </div>
+              </div>
+            ))}
           </div>
-        ))}
-        <div className="flex items-center">
-          <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
-            View all
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-          </div>
+          
+          {/* Page indicator */}
+          {!showAll && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              {Array.from({ length: totalPages }).map((_, index) => (
+                <button
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                    index === currentPage 
+                      ? 'bg-primary scale-125' 
+                      : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                  }`}
+                  onClick={() => handlePageChange(index)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </LoadingContent>
     </div>

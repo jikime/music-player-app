@@ -24,8 +24,8 @@ export default function Component() {
     initializeData()
   }, [])
 
-  // Get recently played songs (last 4 from store)
-  const recentSongs = recentlyPlayed.slice(0, 4)
+  // Get all recently played songs from store
+  const recentSongs = recentlyPlayed
 
   const handlePlaySong = (song: Song) => {
     setCurrentSong(song)
@@ -37,7 +37,7 @@ export default function Component() {
   }
 
   return (
-    <div className="mx-auto p-6" style={{ paddingBottom: 'var(--music-player-height)' }}>
+    <div className="max-w-7xl mx-auto p-6" style={{ paddingBottom: 'var(--music-player-height)' }}>
       <RecentlyPlayed 
         songs={recentSongs}
         onPlaySong={handlePlaySong}
