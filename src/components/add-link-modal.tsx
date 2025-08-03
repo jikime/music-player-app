@@ -29,6 +29,12 @@ interface AddLinkModalProps {
   onOpenChange: (open: boolean) => void
 }
 
+const handleModalClose = (isLoading: boolean, onOpenChange: (open: boolean) => void) => {
+  // 로딩 중이면 모달 닫기 방지
+  if (isLoading) return
+  onOpenChange(false)
+}
+
 export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
   const [url, setUrl] = useState("")
   const [title, setTitle] = useState("")
@@ -38,7 +44,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
   const [urlValid, setUrlValid] = useState<boolean | null>(null)
   const [isFetchingInfo, setIsFetchingInfo] = useState(false)
 
-  const { addSong } = useMusicStore()
+  const { initializeData } = useMusicStore()
 
   // Auto-fill video information when URL is valid
   const fetchVideoInfo = async (videoUrl: string) => {
@@ -92,6 +98,9 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!url || !title || !artist) return
+    
+    // 이미 로딩 중이면 중복 제출 방지
+    if (isLoading) return
 
     setIsLoading(true)
     
@@ -140,15 +149,15 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
 
       const { song } = await response.json()
       
-      // 로컬 스토어에도 추가
-      addSong(song)
-      
-      // Reset form
+      // Reset form and close modal
       setUrl("")
       setTitle("")
       setArtist("")
       setAlbum("")
       onOpenChange(false)
+      
+      // 스토어 데이터 새로고침 (중복 방지)
+      await initializeData()
     } catch (error) {
       console.error("Error adding song:", error)
       alert(`Failed to add song: ${error instanceof Error ? error.message : 'Please try again.'}`)
@@ -158,7 +167,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={() => handleModalClose(isLoading, onOpenChange)}>
       <DialogContent className="sm:max-w-[350px] bg-gray-900 border-gray-700 text-white">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
@@ -252,7 +261,8 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleModalClose(isLoading, onOpenChange)}
+              disabled={isLoading}
               className="border-gray-600 text-gray-300 hover:bg-gray-700"
             >
               Cancel

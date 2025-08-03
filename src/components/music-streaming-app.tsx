@@ -233,30 +233,28 @@ export default function Component() {
           {/* Recently Played */}
           <div className="mb-8">
             <h2 className="text-sm text-gray-400 mb-4 uppercase tracking-wider">RECENTLY PLAYED</h2>
-            <div className="flex gap-4 mb-4">
+            <div className="flex gap-4 mb-4 items-stretch">
               {recentSongs.map((song) => (
                 <div
                   key={song.id}
-                  className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col w-48 flex-shrink-0"
+                  className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col w-56 flex-shrink-0"
                   onClick={() => handlePlaySong(song)}
                 >
-                  <div className="p-0">
-                    <div className="w-full aspect-square bg-gray-800 rounded-t overflow-hidden">
-                      <Image
-                        src={song.thumbnail || "/placeholder.svg?height=192&width=192"}
-                        alt={song.title}
-                        width={192}
-                        height={192}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-white mb-1 truncate" title={song.title}>{song.title}</h3>
-                      <p className="text-sm text-gray-400 truncate" title={song.artist}>{song.artist}</p>
-                      {song.duration > 0 && (
-                        <p className="text-xs text-gray-500 mt-1">{formatDuration(song.duration)}</p>
-                      )}
-                    </div>
+                  <div className="w-full aspect-square bg-gray-800 rounded-t-xl overflow-hidden relative">
+                    <Image
+                      src={song.thumbnail || "/placeholder.svg?height=224&width=224"}
+                      alt={song.title}
+                      width={224}
+                      height={224}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-4 flex flex-col flex-1">
+                    <h3 className="font-semibold text-white mb-1 line-clamp-2 leading-tight min-h-[2.5rem]" title={song.title}>{song.title}</h3>
+                    <p className="text-sm text-gray-400 truncate mb-1" title={song.artist}>{song.artist}</p>
+                    <p className="text-xs text-gray-500 mt-auto">
+                      {song.duration > 0 ? formatDuration(song.duration) : '0:00'}
+                    </p>
                   </div>
                 </div>
               ))}
