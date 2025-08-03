@@ -19,6 +19,8 @@ export interface Playlist {
   createdAt: Date
   updatedAt: Date
   hasNotification?: boolean
+  description?: string
+  coverImage?: string
 }
 
 export interface Bookmark {

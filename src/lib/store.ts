@@ -19,7 +19,7 @@ interface MusicStore {
   
   // Playlists
   playlists: Playlist[]
-  addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt' | 'updatedAt' | 'songs'>) => Promise<void>
+  addPlaylist: (playlist: { name: string; description?: string; coverImage?: string }) => Promise<void>
   updatePlaylist: (id: string, updates: Partial<Playlist>) => Promise<void>
   deletePlaylist: (id: string) => Promise<void>
   addSongToPlaylist: (playlistId: string, songId: string) => Promise<void>
