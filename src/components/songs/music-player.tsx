@@ -263,7 +263,7 @@ export function MusicPlayer() {
   }
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-background backdrop-blur-md z-10">
+    <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background backdrop-blur-md z-50 safe-area-inset-bottom">
       {/* Hidden React Player */}
       {currentSong && (
         <ReactPlayer

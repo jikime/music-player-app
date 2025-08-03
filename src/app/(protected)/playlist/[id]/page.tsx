@@ -138,7 +138,7 @@ export default function PlaylistPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ paddingBottom: 'var(--music-player-height)' }}>
+    <div className="min-h-screen pb-32 md:pb-28">
       <div className="flex flex-col md:flex-row md:justify-center max-w-6xl w-full mx-auto">
         {/* Left Panel - Playlist Info */}
         <div className="w-full md:w-80 md:flex-shrink-0 p-2 md:p-8">

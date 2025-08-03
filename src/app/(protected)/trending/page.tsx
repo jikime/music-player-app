@@ -121,7 +121,7 @@ export default function TrendingPage() {
   }
 
   return (
-    <div className="min-h-screen px-4 md:px-6 pb-28">
+    <div className="min-h-screen px-4 md:px-6 pb-32 md:pb-28">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm -mx-4 md:-mx-6 mb-4 md:mb-6">
         <div className="px-4 md:px-6 py-4 md:py-6">
