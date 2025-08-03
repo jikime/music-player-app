@@ -193,12 +193,87 @@ export default function PlaylistPage() {
                 </div>
                 
                 {/* Artists */}
-                <div className="text-left mb-2 md:mb-0">
+                <div className="text-left mb-3 md:mb-0">
                   {playlistSongs.length > 0 && (
                     <p className="text-xs md:text-sm text-muted-foreground truncate">
                       {Array.from(new Set(playlistSongs.slice(0, 3).map(song => song.artist))).join(', ')}
                       {playlistSongs.length > 3 && ' 등'}
                     </p>
+                  )}
+                </div>
+
+                {/* Mobile Control Buttons - Right in horizontal layout */}
+                <div className="flex md:hidden items-center justify-start gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-7 h-7"
+                    onClick={() => setAddSongModalOpen(true)}
+                  >
+                    <Download className="w-3 h-3" />
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-7 h-7"
+                    onClick={() => setAddSongModalOpen(true)}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+
+                  {isEditing ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-7 h-7"
+                        onClick={() => setIsEditing(false)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-7 h-7"
+                        onClick={handleSaveEdit}
+                      >
+                        <Check className="w-3 h-3" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-7 h-7"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-7 h-7"
+                      >
+                        <Share2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-7 h-7"
+                        onClick={handleDelete}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-7 h-7"
+                      >
+                        <MoreHorizontal className="w-3 h-3" />
+                      </Button>
+                    </>
                   )}
                 </div>
                 
