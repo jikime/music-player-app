@@ -73,8 +73,8 @@ export function AddSongModal({ playlistId, open, onOpenChange, existingSongIds }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] h-[80vh] flex flex-col bg-card border-border">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col bg-card border-border">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold">Add Songs to Playlist</DialogTitle>
           <DialogDescription className="text-muted-foreground">
             Search and add songs to your playlist
@@ -82,7 +82,7 @@ export function AddSongModal({ playlistId, open, onOpenChange, existingSongIds }
         </DialogHeader>
 
         {/* Search Input */}
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search songs, artists, or albums..."
@@ -93,8 +93,8 @@ export function AddSongModal({ playlistId, open, onOpenChange, existingSongIds }
         </div>
 
         {/* Songs List */}
-        <ScrollArea className="flex-1">
-          <div className="space-y-2 pr-4">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-2 pr-4 pb-4">
             {availableSongs.length === 0 ? (
               <div className="text-center py-12">
                 <Music className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
@@ -154,7 +154,7 @@ export function AddSongModal({ playlistId, open, onOpenChange, existingSongIds }
         </ScrollArea>
 
         {/* Footer */}
-        <div className="flex justify-between items-center pt-4 border-t border-border">
+        <div className="flex justify-between items-center pt-4 border-t border-border flex-shrink-0">
           <p className="text-sm text-muted-foreground">
             {availableSongs.length} songs available
           </p>

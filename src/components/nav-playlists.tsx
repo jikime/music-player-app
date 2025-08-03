@@ -11,12 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { CreatePlaylistModal } from "@/components/create-playlist-modal"
-
-interface Playlist {
-  id: string
-  name: string
-  hasNotification?: boolean
-}
+import type { Playlist } from "@/types/music"
 
 export function NavPlaylists({ playlists }: { playlists: Playlist[] }) {
   const [createModalOpen, setCreateModalOpen] = useState(false)

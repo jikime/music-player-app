@@ -25,6 +25,8 @@ export interface DatabaseSong {
 export interface DatabasePlaylist {
   id: string
   name: string
+  description?: string
+  cover_image?: string
   created_at: string
   updated_at: string
   has_notification: boolean

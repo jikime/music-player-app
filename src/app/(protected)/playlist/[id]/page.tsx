@@ -2,20 +2,16 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { LoadingScreen } from "@/components/loading-screen"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
-import { AllSongs } from "@/components/all-songs"
 import { MusicPlayer } from "@/components/music-player"
 import { AddSongModal } from "@/components/add-song-modal"
 import {
   Play,
   Pause,
   Shuffle,
-  Heart,
   MoreHorizontal,
-  Clock,
   Music,
   Download,
   Share2,
@@ -37,11 +33,13 @@ export default function PlaylistPage() {
     playlists,
     songs,
     playerState,
-    setCurrentSong,
+    isLoading,
     setIsPlaying,
-    addSongToPlaylist,
     updatePlaylist,
-    deletePlaylist
+    deletePlaylist,
+    initializeData,
+    playPlaylist,
+    shufflePlaylist
   } = useMusicStore()
 
   const [isEditing, setIsEditing] = useState(false)
@@ -63,6 +61,13 @@ export default function PlaylistPage() {
     return playlistSongs.reduce((total, song) => total + (song.duration || 0), 0)
   }, [playlistSongs])
 
+  // Initialize data on mount if needed
+  useEffect(() => {
+    if (playlists.length === 0 && songs.length === 0 && !isLoading) {
+      initializeData()
+    }
+  }, [playlists.length, songs.length, isLoading, initializeData])
+
   useEffect(() => {
     if (playlist) {
       setPlaylistName(playlist.name)
@@ -70,11 +75,27 @@ export default function PlaylistPage() {
     }
   }, [playlist])
 
-  if (!playlist) {
+  // Show loading if data is being loaded or playlist not found yet
+  if (isLoading || (!playlist && playlists.length === 0)) {
     return <LoadingScreen message="Loading playlist..." />
   }
 
-  const isPlaying = playerState.isPlaying && playlistSongs.some(song => song.id === playerState.currentSong?.id)
+  // If data is loaded but playlist not found, show error
+  if (!playlist && playlists.length > 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Playlist not found</h2>
+          <p className="text-muted-foreground mb-6">The playlist you're looking for doesn't exist.</p>
+          <Button onClick={() => window.history.back()}>Go Back</Button>
+        </div>
+      </div>
+    )
+  }
+
+  const isPlaying = playerState.isPlaying && 
+    playerState.currentPlaylist === playlistId && 
+    playlistSongs.some(song => song.id === playerState.currentSong?.id)
 
   const handlePlayAll = () => {
     if (playlistSongs.length === 0) return
@@ -82,17 +103,14 @@ export default function PlaylistPage() {
     if (isPlaying) {
       setIsPlaying(false)
     } else {
-      setCurrentSong(playlistSongs[0])
-      setIsPlaying(true)
+      playPlaylist(playlistId)
     }
   }
 
   const handleShufflePlay = () => {
     if (playlistSongs.length === 0) return
     
-    const randomIndex = Math.floor(Math.random() * playlistSongs.length)
-    setCurrentSong(playlistSongs[randomIndex])
-    setIsPlaying(true)
+    shufflePlaylist(playlistId)
   }
 
   const handleSaveEdit = async () => {
@@ -119,142 +137,113 @@ export default function PlaylistPage() {
     }
   }
 
-  const formatTotalDuration = () => {
-    const hours = Math.floor(totalDuration / 3600)
-    const minutes = Math.floor((totalDuration % 3600) / 60)
-    
-    if (hours > 0) {
-      return `${hours} hr ${minutes} min`
-    }
-    return `${minutes} min`
-  }
-
   return (
-    <div className="max-w-7xl mx-auto p-6" style={{ paddingBottom: 'var(--music-player-height)' }}>
-      {/* Hero Section */}
-      <div className="relative">
-        {/* Background Gradient */}
-        <div className={`absolute inset-0 h-96 ${playlist.coverImage || 'bg-gradient-to-br from-purple-600 to-blue-600'} opacity-30 rounded-2xl`} />
-        
-        {/* Content */}
-        <div className="relative px-8 pt-20 pb-12">
-          <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-end">
+    <div className="min-h-screen flex justify-center" style={{ paddingBottom: 'var(--music-player-height)' }}>
+      <div className="flex max-w-6xl w-full">
+        {/* Left Panel - Playlist Info */}
+        <div className="w-80 flex-shrink-0 p-8">
+          <div className="sticky top-8">
             {/* Cover Image */}
-            <div className={`w-60 h-60 rounded-lg shadow-2xl overflow-hidden flex-shrink-0 ${
-              playlist.coverImage?.startsWith('bg-') ? playlist.coverImage : 'bg-muted'
-            }`}>
-              {playlist.coverImage && !playlist.coverImage.startsWith('bg-') ? (
-                <ImageWithFallback
-                  src={playlist.coverImage}
-                  alt={playlist.name}
-                  width={240}
-                  height={240}
-                  className="w-full h-full object-cover"
-                />
+            <div className="w-full aspect-square rounded-lg shadow-2xl overflow-hidden mb-6 relative">
+              {playlist!.coverImage ? (
+                playlist!.coverImage.startsWith('bg-') ? (
+                  // Gradient background
+                  <div className={`w-full h-full ${playlist!.coverImage} flex items-center justify-center`}>
+                    <Music className="w-16 h-16 text-white/80" />
+                  </div>
+                ) : (
+                  // Image background
+                  <ImageWithFallback
+                    src={playlist!.coverImage}
+                    alt={playlist!.name}
+                    width={320}
+                    height={320}
+                    className="w-full h-full object-cover"
+                  />
+                )
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Music className="w-20 h-20 text-white/80" />
+                // Default background
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <Music className="w-16 h-16 text-muted-foreground/50" />
                 </div>
               )}
             </div>
 
-            {/* Playlist Info */}
-            <div className="flex-1 space-y-6">
-              <div>
-                <p className="text-sm text-muted-foreground uppercase">Playlist</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={playlistName}
-                    onChange={(e) => setPlaylistName(e.target.value)}
-                    className="text-5xl sm:text-7xl font-bold bg-transparent border-b-2 border-primary outline-none"
-                  />
-                ) : (
-                  <h1 className="text-5xl sm:text-7xl font-bold">{playlist.name}</h1>
-                )}
-              </div>
+            {/* Playlist Title */}
+            {isEditing ? (
+              <input
+                type="text"
+                value={playlistName}
+                onChange={(e) => setPlaylistName(e.target.value)}
+                className="text-2xl font-bold bg-transparent border-b-2 border-primary outline-none w-full mb-4"
+              />
+            ) : (
+              <h1 className="text-2xl font-bold mb-4">{playlist!.name}</h1>
+            )}
+            
+            {/* Platform Label */}
+            <p className="text-sm text-muted-foreground mb-4">YouTube Music</p>
+            
+            {/* Artists */}
+            {playlistSongs.length > 0 && (
+              <p className="text-sm text-muted-foreground mb-2">
+                {Array.from(new Set(playlistSongs.slice(0, 3).map(song => song.artist))).join(', ')}
+                {playlistSongs.length > 3 && ' 등'}
+              </p>
+            )}
+            
+            {/* Description */}
+            {isEditing ? (
+              <textarea
+                value={playlistDescription}
+                onChange={(e) => setPlaylistDescription(e.target.value)}
+                placeholder="곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."
+                className="text-sm text-muted-foreground bg-transparent border rounded p-2 w-full resize-none mb-4"
+                rows={3}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground mb-4">
+                {playlist!.description || "곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."}
+              </p>
+            )}
+
+            {/* Control Buttons Row */}
+            <div className="flex items-center gap-2 mb-6">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8"
+                onClick={() => setAddSongModalOpen(true)}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
               
-              {isEditing ? (
-                <textarea
-                  value={playlistDescription}
-                  onChange={(e) => setPlaylistDescription(e.target.value)}
-                  placeholder="Add a description"
-                  className="text-sm text-muted-foreground bg-transparent border rounded p-2 w-full resize-none"
-                  rows={2}
-                />
-              ) : (
-                playlist.description && (
-                  <p className="text-sm text-muted-foreground">{playlist.description}</p>
-                )
-              )}
-              
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>{playlistSongs.length} songs</span>
-                <span>•</span>
-                <span>{formatTotalDuration()}</span>
-              </div>
-            </div>
-          </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8"
+                onClick={() => setAddSongModalOpen(true)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-6 mt-12">
-            <Button
-              size="lg"
-              className="rounded-full"
-              onClick={handlePlayAll}
-              disabled={playlistSongs.length === 0}
-            >
-              {isPlaying ? (
-                <>
-                  <Pause className="w-5 h-5 mr-2" />
-                  Pause
-                </>
-              ) : (
-                <>
-                  <Play className="w-5 h-5 mr-2" />
-                  Play
-                </>
-              )}
-            </Button>
-
-            <Button
-              size="lg"
-              variant="outline"
-              className="rounded-full"
-              onClick={handleShufflePlay}
-              disabled={playlistSongs.length === 0}
-            >
-              <Shuffle className="w-5 h-5 mr-2" />
-              Shuffle
-            </Button>
-
-            <Button
-              variant="outline"
-              className="rounded-full"
-              onClick={() => setAddSongModalOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Songs
-            </Button>
-
-            <div className="flex items-center gap-2 ml-auto">
               {isEditing ? (
                 <>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="rounded-full"
+                    className="w-8 h-8"
                     onClick={() => setIsEditing(false)}
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </Button>
                   <Button
-                    variant="default"
+                    variant="ghost"
                     size="icon"
-                    className="rounded-full"
+                    className="w-8 h-8"
                     onClick={handleSaveEdit}
                   >
-                    <Check className="w-5 h-5" />
+                    <Check className="w-4 h-4" />
                   </Button>
                 </>
               ) : (
@@ -262,58 +251,120 @@ export default function PlaylistPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full"
+                    className="w-8 h-8"
                     onClick={() => setIsEditing(true)}
                   >
-                    <Edit className="w-5 h-5" />
+                    <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full"
+                    className="w-8 h-8"
                   >
-                    <Share2 className="w-5 h-5" />
+                    <Share2 className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full"
+                    className="w-8 h-8"
                     onClick={handleDelete}
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
                   </Button>
                 </>
               )}
+            </div>
+
+            {/* Large Play Button */}
+            <div className="relative mb-4">
+              <Button
+                size="icon"
+                className="w-14 h-14 rounded-full shadow-lg hover:scale-105 transition-transform"
+                onClick={handlePlayAll}
+                disabled={playlistSongs.length === 0}
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 h-6" />
+                ) : (
+                  <Play className="w-6 h-6" />
+                )}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8 ml-4"
+                onClick={handleShufflePlay}
+                disabled={playlistSongs.length === 0}
+              >
+                <Shuffle className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Songs List */}
-      <div className="px-8 py-8">
-        {playlistSongs.length > 0 ? (
-          <AllSongs 
-            songs={playlistSongs}
-            onPlaySong={(song) => {
-              setCurrentSong(song)
-              setIsPlaying(true)
-            }}
-          />
-        ) : (
-          <div className="text-center py-24">
-            <Music className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Start building your playlist</h3>
-            <p className="text-muted-foreground mb-6">Add songs to make this playlist yours</p>
-            <Button 
-              variant="outline" 
-              className="rounded-full"
-              onClick={() => setAddSongModalOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Songs
-            </Button>
-          </div>
-        )}
+        {/* Right Panel - Songs List */}
+        <div className="flex-1 p-8 pl-0">
+          {playlistSongs.length > 0 ? (
+            <div className="space-y-0">
+              {playlistSongs.map((song, index) => (
+                <div
+                  key={song.id}
+                  className="flex items-center gap-4 p-2 rounded hover:bg-muted/30 transition-colors group cursor-pointer"
+                  onClick={() => {
+                    const songIndex = playlistSongs.findIndex(s => s.id === song.id)
+                    playPlaylist(playlistId, songIndex)
+                  }}
+                >
+                  {/* Thumbnail */}
+                  <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 bg-muted">
+                    <ImageWithFallback
+                      src={song.thumbnail || ''}
+                      alt={song.title}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Song Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate text-sm">{song.title}</h4>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {song.artist} • {song.album}
+                    </p>
+                  </div>
+
+                  {/* Duration */}
+                  <div className="text-xs text-muted-foreground flex-shrink-0 w-10 text-right">
+                    {song.duration ? formatDuration(song.duration) : "--:--"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-24">
+              <Music className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Start building your playlist</h3>
+              <p className="text-muted-foreground mb-6">Add songs to make this playlist yours</p>
+              <Button 
+                variant="outline" 
+                className="rounded-full"
+                onClick={() => setAddSongModalOpen(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Songs
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <MusicPlayer />

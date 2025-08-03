@@ -40,13 +40,13 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   const navMainItems = [
     {
       title: "Discover",
-      url: "#",
+      url: "/",
       icon: Home,
       isActive: true,
     },
     {
       title: "Trending",
-      url: "#",
+      url: "/trending",
       icon: TrendingUp,
     },
     {

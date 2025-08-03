@@ -25,6 +25,7 @@ export function MusicPlayer() {
   const [playerReady, setPlayerReady] = useState(false)
   const [seeking, setSeeking] = useState(false)
   const [seekTime, setSeekTime] = useState<number | null>(null)
+  const [hasEnded, setHasEnded] = useState(false)
   
   const {
     playerState,
@@ -51,6 +52,11 @@ export function MusicPlayer() {
     repeat
   } = playerState
 
+  // Reset hasEnded when currentSong changes
+  useEffect(() => {
+    setHasEnded(false)
+  }, [currentSong?.id])
+
 
   // ReactPlayer event handlers - following demo pattern
   const handleReady = () => {
@@ -66,6 +72,14 @@ export function MusicPlayer() {
     if (!player.duration) return
 
     setCurrentTime(player.currentTime)
+    
+    // Check if we're near the end (within 1 second) and auto-advance
+    // This is a fallback for cases where onEnded doesn't fire reliably with YouTube
+    if (player.duration > 0 && player.currentTime >= player.duration - 1 && isPlaying && !hasEnded) {
+      console.log('Near end detected via timeUpdate, auto-advancing...')
+      setHasEnded(true)
+      handleEnded()
+    }
   }
 
   const handleProgress = () => {
@@ -87,6 +101,7 @@ export function MusicPlayer() {
   const handleStart = () => {
     console.log('Playback started')
     setPlayerReady(true)
+    setHasEnded(false) // Reset ended flag for new song
   }
 
   const handlePlay = () => {
@@ -111,12 +126,19 @@ export function MusicPlayer() {
   }
 
   const handleEnded = () => {
-    console.log('Playback ended')
-    if (repeat === 'one') {
-      setIsPlaying(true)
-    } else {
-      playNext()
-    }
+    if (hasEnded) return // Prevent duplicate calls
+    
+    console.log('Playback ended for:', currentSong?.title)
+    console.log('Current player state:', {
+      currentPlaylist: playerState.currentPlaylist,
+      playlistQueue: playerState.playlistQueue,
+      repeat,
+      shuffle
+    })
+    
+    setHasEnded(true)
+    // playNext already handles repeat logic, so we just call it
+    playNext()
   }
 
   const handleLoadStart = () => {

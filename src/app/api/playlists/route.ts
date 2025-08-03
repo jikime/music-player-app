@@ -30,7 +30,9 @@ export async function GET() {
         .map((ps: any) => ps.song_id),
       createdAt: playlist.created_at ? new Date(playlist.created_at) : new Date(),
       updatedAt: playlist.updated_at ? new Date(playlist.updated_at) : new Date(),
-      hasNotification: playlist.has_notification
+      hasNotification: playlist.has_notification,
+      description: playlist.description,
+      coverImage: playlist.cover_image
     }))
 
     return NextResponse.json({ playlists: transformedPlaylists })
@@ -44,7 +46,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, hasNotification } = body
+    const { name, description, coverImage, hasNotification } = body
 
     // 필수 필드 검증
     if (!name) {
@@ -58,6 +60,8 @@ export async function POST(request: NextRequest) {
       .from('playlists')
       .insert([{
         name,
+        description: description || null,
+        cover_image: coverImage || null,
         has_notification: hasNotification || false
       }])
       .select()
@@ -75,7 +79,9 @@ export async function POST(request: NextRequest) {
       songs: [],
       createdAt: playlist.created_at ? new Date(playlist.created_at) : new Date(),
       updatedAt: playlist.updated_at ? new Date(playlist.updated_at) : new Date(),
-      hasNotification: playlist.has_notification
+      hasNotification: playlist.has_notification,
+      description: playlist.description,
+      coverImage: playlist.cover_image
     }
 
     return NextResponse.json({ playlist: transformedPlaylist }, { status: 201 })

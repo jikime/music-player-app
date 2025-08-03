@@ -50,6 +50,10 @@ interface MusicStore {
   playNext: () => void
   playPrevious: () => void
   
+  // Playlist playback
+  playPlaylist: (playlistId: string, startIndex?: number) => void
+  shufflePlaylist: (playlistId: string) => void
+  
   // Search
   searchSongs: (query: string) => Song[]
 }
@@ -263,11 +267,20 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     shuffle: false,
     repeat: 'none',
     queue: [],
-    history: []
+    history: [],
+    currentPlaylist: null,
+    playlistQueue: []
   },
   setCurrentSong: (song) => {
     set((state) => ({
-      playerState: { ...state.playerState, currentSong: song, currentTime: 0 }
+      playerState: { 
+        ...state.playerState, 
+        currentSong: song, 
+        currentTime: 0,
+        // Clear playlist context when manually setting a song
+        currentPlaylist: null,
+        playlistQueue: []
+      }
     }))
     // Update play count when a song starts playing (non-blocking)
     if (song) {
@@ -307,38 +320,128 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   })),
   playNext: () => {
     const state = get()
-    const { currentSong, queue, shuffle, repeat } = state.playerState
+    const { currentSong, queue, shuffle, repeat, currentPlaylist, playlistQueue } = state.playerState
     
+    console.log('playNext called:', {
+      currentSong: currentSong?.title,
+      currentPlaylist,
+      playlistQueueLength: playlistQueue.length,
+      queueLength: queue.length,
+      shuffle,
+      repeat
+    })
+    
+    // Priority 1: Manual queue
     if (queue.length > 0) {
       const nextSongId = queue[0]
       const nextSong = state.getSong(nextSongId)
       if (nextSong) {
+        console.log('Playing from manual queue:', nextSong.title)
         set((state) => ({
           playerState: {
             ...state.playerState,
             currentSong: nextSong,
             queue: state.playerState.queue.slice(1),
-            history: currentSong ? [...state.playerState.history, currentSong.id] : state.playerState.history
+            history: currentSong ? [...state.playerState.history, currentSong.id] : state.playerState.history,
+            isPlaying: true
           }
         }))
+        return
       }
-    } else if (repeat === 'one' && currentSong) {
+    }
+    
+    // Priority 2: Repeat current song
+    if (repeat === 'one' && currentSong) {
+      console.log('Repeating current song:', currentSong.title)
       set((state) => ({
         playerState: { ...state.playerState, currentTime: 0, isPlaying: true }
       }))
-    } else if (shuffle || repeat === 'all') {
+      return
+    }
+    
+    // Priority 3: Playlist context
+    if (currentPlaylist && playlistQueue.length > 0 && currentSong) {
+      const currentIndex = playlistQueue.findIndex(id => id === currentSong.id)
+      console.log('Playlist context - current index:', currentIndex, 'of', playlistQueue.length)
+      
+      if (shuffle) {
+        // Shuffle within playlist
+        const remainingSongs = playlistQueue.filter(id => id !== currentSong.id)
+        if (remainingSongs.length > 0) {
+          const randomIndex = Math.floor(Math.random() * remainingSongs.length)
+          const nextSong = state.getSong(remainingSongs[randomIndex])
+          if (nextSong) {
+            console.log('Playing shuffled from playlist:', nextSong.title)
+            set((state) => ({
+              playerState: {
+                ...state.playerState,
+                currentSong: nextSong,
+                history: [...state.playerState.history, currentSong.id],
+                isPlaying: true
+              }
+            }))
+            return
+          }
+        }
+      } else {
+        // Sequential playlist playback
+        const nextIndex = currentIndex + 1
+        if (nextIndex < playlistQueue.length) {
+          const nextSong = state.getSong(playlistQueue[nextIndex])
+          if (nextSong) {
+            console.log('Playing next from playlist:', nextSong.title)
+            set((state) => ({
+              playerState: {
+                ...state.playerState,
+                currentSong: nextSong,
+                history: [...state.playerState.history, currentSong.id],
+                isPlaying: true
+              }
+            }))
+            return
+          }
+        } else if (repeat === 'all') {
+          // Loop back to beginning of playlist
+          const nextSong = state.getSong(playlistQueue[0])
+          if (nextSong) {
+            console.log('Looping back to start of playlist:', nextSong.title)
+            set((state) => ({
+              playerState: {
+                ...state.playerState,
+                currentSong: nextSong,
+                history: [...state.playerState.history, currentSong.id],
+                isPlaying: true
+              }
+            }))
+            return
+          }
+        } else {
+          console.log('End of playlist reached, no repeat')
+        }
+      }
+    }
+    
+    // Priority 4: General shuffle/repeat all
+    if (shuffle || repeat === 'all') {
       const availableSongs = state.songs.filter((song) => song.id !== currentSong?.id)
       if (availableSongs.length > 0) {
         const randomIndex = Math.floor(Math.random() * availableSongs.length)
         const nextSong = availableSongs[randomIndex]
+        console.log('Playing random from library:', nextSong.title)
         set((state) => ({
           playerState: {
             ...state.playerState,
             currentSong: nextSong,
-            history: currentSong ? [...state.playerState.history, currentSong.id] : state.playerState.history
+            history: currentSong ? [...state.playerState.history, currentSong.id] : state.playerState.history,
+            isPlaying: true
           }
         }))
       }
+    } else {
+      console.log('No next song found, stopping playback')
+      set((state) => ({
+        playerState: { ...state.playerState, isPlaying: false }
+      }))
     }
   },
   playPrevious: () => {
@@ -358,6 +461,74 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
         }))
       }
     }
+  },
+  
+  // Playlist playback
+  playPlaylist: (playlistId, startIndex = 0) => {
+    const state = get()
+    const playlist = state.playlists.find(p => p.id === playlistId)
+    
+    if (!playlist || playlist.songs.length === 0) return
+    
+    const playlistSongs = playlist.songs.map(songId => state.getSong(songId)).filter(Boolean) as Song[]
+    
+    if (playlistSongs.length === 0) return
+    
+    const startSong = playlistSongs[startIndex] || playlistSongs[0]
+    
+    set((state) => ({
+      playerState: {
+        ...state.playerState,
+        currentSong: startSong,
+        isPlaying: true,
+        currentPlaylist: playlistId,
+        playlistQueue: playlist.songs,
+        queue: [], // Clear manual queue when starting playlist
+        currentTime: 0
+      }
+    }))
+    
+    // Update play count (non-blocking)
+    const updateCount = get().updatePlayCount
+    setTimeout(() => {
+      updateCount(startSong.id).catch(console.warn)
+    }, 0)
+  },
+  
+  shufflePlaylist: (playlistId) => {
+    const state = get()
+    const playlist = state.playlists.find(p => p.id === playlistId)
+    
+    if (!playlist || playlist.songs.length === 0) return
+    
+    const playlistSongs = playlist.songs.map(songId => state.getSong(songId)).filter(Boolean) as Song[]
+    
+    if (playlistSongs.length === 0) return
+    
+    // Shuffle the songs
+    const shuffledSongs = [...playlist.songs].sort(() => Math.random() - 0.5)
+    const startSong = state.getSong(shuffledSongs[0])
+    
+    if (!startSong) return
+    
+    set((state) => ({
+      playerState: {
+        ...state.playerState,
+        currentSong: startSong,
+        isPlaying: true,
+        currentPlaylist: playlistId,
+        playlistQueue: shuffledSongs,
+        queue: [], // Clear manual queue when starting playlist
+        shuffle: true,
+        currentTime: 0
+      }
+    }))
+    
+    // Update play count (non-blocking)
+    const updateCount = get().updatePlayCount
+    setTimeout(() => {
+      updateCount(startSong.id).catch(console.warn)
+    }, 0)
   },
   
   // Search

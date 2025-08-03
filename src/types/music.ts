@@ -45,6 +45,8 @@ export interface PlayerState {
   repeat: 'none' | 'one' | 'all'
   queue: string[] // Song IDs
   history: string[] // Song IDs
+  currentPlaylist: string | null // Current playlist ID
+  playlistQueue: string[] // Original playlist order
 }
 
 export interface LyricsLine {
@@ -55,4 +57,37 @@ export interface LyricsLine {
 export interface WaveformData {
   peaks: number[]
   duration: number
+}
+
+export interface TrendingSnapshot {
+  id: string
+  period_type: 'daily' | 'weekly' | 'monthly'
+  snapshot_date: string
+  created_at: string
+}
+
+export interface TrendingRanking {
+  id: string
+  snapshot_id: string
+  song_id: string
+  ranking: number
+  trending_score: number
+  plays_count: number
+  play_increase_percent: number
+  created_at: string
+}
+
+export interface TrendingSong extends Song {
+  trendingScore: number
+  playIncrease: number
+  ranking: number
+  previousRanking?: number
+  rankingChange: number
+}
+
+export interface TrendingStats {
+  totalPlays: number
+  trendingSongsCount: number
+  activeListeners: number
+  periodGrowthPercent: number
 }

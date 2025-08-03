@@ -37,7 +37,9 @@ export async function GET(
         .map((ps: any) => ps.song_id),
       createdAt: playlist.created_at ? new Date(playlist.created_at) : new Date(),
       updatedAt: playlist.updated_at ? new Date(playlist.updated_at) : new Date(),
-      hasNotification: playlist.has_notification
+      hasNotification: playlist.has_notification,
+      description: playlist.description,
+      coverImage: playlist.cover_image
     }
 
     return NextResponse.json({ playlist: transformedPlaylist })
@@ -54,10 +56,12 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { name, hasNotification } = body
+    const { name, description, coverImage, hasNotification } = body
 
     const updateData: any = {}
     if (name !== undefined) updateData.name = name
+    if (description !== undefined) updateData.description = description
+    if (coverImage !== undefined) updateData.cover_image = coverImage
     if (hasNotification !== undefined) updateData.has_notification = hasNotification
 
     const { data: playlist, error } = await supabase
@@ -89,7 +93,9 @@ export async function PUT(
       songs: playlistSongs?.map(ps => ps.song_id) || [],
       createdAt: playlist.created_at ? new Date(playlist.created_at) : new Date(),
       updatedAt: playlist.updated_at ? new Date(playlist.updated_at) : new Date(),
-      hasNotification: playlist.has_notification
+      hasNotification: playlist.has_notification,
+      description: playlist.description,
+      coverImage: playlist.cover_image
     }
 
     return NextResponse.json({ playlist: transformedPlaylist })
