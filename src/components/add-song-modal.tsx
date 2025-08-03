@@ -16,12 +16,10 @@ import {
   Search,
   Music,
   Plus,
-  Check,
   Loader2
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { formatDuration } from "@/lib/music-utils"
-import type { Song } from "@/types/music"
 
 interface AddSongModalProps {
   playlistId: string
@@ -111,7 +109,7 @@ export function AddSongModal({ playlistId, open, onOpenChange, existingSongIds }
                   {/* Thumbnail */}
                   <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted">
                     <ImageWithFallback
-                      src={song.thumbnail}
+                      src={song.thumbnail || ''}
                       alt={song.title}
                       width={48}
                       height={48}

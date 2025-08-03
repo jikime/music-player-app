@@ -20,8 +20,7 @@ import { useMusicStore } from "@/lib/store"
 import type { Song } from "@/types/music"
 
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-}
+type AppSidebarProps = React.ComponentProps<typeof Sidebar>
 
 export function AppSidebar({ ...props }: AppSidebarProps) {
   const { playlists, bookmarks, getSong } = useMusicStore()

@@ -2,13 +2,13 @@ import { Song, Playlist, Bookmark } from '@/types/music'
 
 const API_BASE_URL = '/api'
 
-// API Response Types
-interface ApiResponse<T> {
-  success?: boolean
-  error?: string
-  message?: string
-  data?: T
-}
+// API Response Types (commented out as unused)
+// interface ApiResponse<T> {
+//   success?: boolean
+//   error?: string
+//   message?: string
+//   data?: T
+// }
 
 interface SongsResponse {
   songs: Song[]

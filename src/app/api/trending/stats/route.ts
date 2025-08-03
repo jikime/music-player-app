@@ -25,13 +25,13 @@ async function getTrendingStatsFromSupabase(periodType: string) {
     const songs = trendingData.songs || []
     
     // Calculate real statistics from the trending data
-    const totalPlays = songs.reduce((sum: number, song: any) => sum + (song.plays || 0), 0)
+    const totalPlays = songs.reduce((sum: number, song: { plays?: number }) => sum + (song.plays || 0), 0)
     const trendingSongsCount = songs.length
     const activeListeners = Math.floor(totalPlays * 0.15) // Estimate 15% of plays are unique listeners
     
     // Calculate average growth percentage from the trending songs
     const avgGrowthPercent = songs.length > 0 
-      ? songs.reduce((sum: number, song: any) => sum + (song.playIncrease || 0), 0) / songs.length
+      ? songs.reduce((sum: number, song: { playIncrease?: number }) => sum + (song.playIncrease || 0), 0) / songs.length
       : 0
     
     const stats = {

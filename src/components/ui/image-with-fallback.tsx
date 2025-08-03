@@ -59,7 +59,7 @@ export function ImageWithFallback({
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [src, fallbackSrc, timeout])
+  }, [src, fallbackSrc, timeout, hasFailed])
 
   const handleLoad = () => {
     isLoadingRef.current = false

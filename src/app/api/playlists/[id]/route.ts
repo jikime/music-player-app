@@ -4,9 +4,10 @@ import { supabase } from '@/lib/supabase'
 // GET - 특정 플레이리스트 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { data: playlist, error } = await supabase
       .from('playlists')
       .select(`
@@ -17,7 +18,7 @@ export async function GET(
           songs(*)
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) {
@@ -33,8 +34,8 @@ export async function GET(
       id: playlist.id,
       name: playlist.name,
       songs: playlist.playlist_songs
-        .sort((a: any, b: any) => a.position - b.position)
-        .map((ps: any) => ps.song_id),
+        .sort((a: { position: number }, b: { position: number }) => a.position - b.position)
+        .map((ps: { song_id: string }) => ps.song_id),
       createdAt: playlist.created_at ? new Date(playlist.created_at) : new Date(),
       updatedAt: playlist.updated_at ? new Date(playlist.updated_at) : new Date(),
       hasNotification: playlist.has_notification,
@@ -52,13 +53,19 @@ export async function GET(
 // PUT - 플레이리스트 업데이트
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { name, description, coverImage, hasNotification } = body
 
-    const updateData: any = {}
+    const updateData: {
+      name?: string;
+      description?: string;
+      cover_image?: string;
+      has_notification?: boolean;
+    } = {}
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
     if (coverImage !== undefined) updateData.cover_image = coverImage
@@ -67,7 +74,7 @@ export async function PUT(
     const { data: playlist, error } = await supabase
       .from('playlists')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -83,7 +90,7 @@ export async function PUT(
     const { data: playlistSongs } = await supabase
       .from('playlist_songs')
       .select('song_id, position')
-      .eq('playlist_id', params.id)
+      .eq('playlist_id', id)
       .order('position')
 
     // Database 형식을 클라이언트 형식으로 변환
@@ -108,13 +115,14 @@ export async function PUT(
 // DELETE - 플레이리스트 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { error } = await supabase
       .from('playlists')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) {
       console.error('Error deleting playlist:', error)

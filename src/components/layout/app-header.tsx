@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { MoreHorizontal, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import { AddLinkModal } from "@/components/add-link-modal"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 

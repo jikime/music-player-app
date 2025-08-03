@@ -1,7 +1,6 @@
 "use client"
 
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
-import { MoreHorizontal } from "lucide-react"
 
 import {
   SidebarGroup,

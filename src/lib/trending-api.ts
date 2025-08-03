@@ -1,26 +1,26 @@
 import { TrendingSong, TrendingSnapshot, TrendingStats } from '@/types/music'
 
-const SUPABASE_PROJECT_ID = 'wghfyzkujsxvmdzzdgth'
-const SUPABASE_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co`
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+// const SUPABASE_PROJECT_ID = 'wghfyzkujsxvmdzzdgth' // unused
+// const SUPABASE_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co`
+// const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-// Types for Supabase responses
-interface SupabaseTrendingSong {
-  song_id: string
-  title: string
-  artist: string
-  album: string | null
-  duration: number
-  url: string
-  thumbnail: string | null
-  plays: number
-  liked: boolean
-  current_ranking: number
-  previous_ranking: number
-  ranking_change: number
-  trending_score: number
-  play_increase_percent: number
-}
+// Types for Supabase responses (commented out as unused)
+// interface SupabaseTrendingSong {
+//   song_id: string
+//   title: string
+//   artist: string
+//   album: string | null
+//   duration: number
+//   url: string
+//   thumbnail: string | null
+//   plays: number
+//   liked: boolean
+//   current_ranking: number
+//   previous_ranking: number
+//   ranking_change: number
+//   trending_score: number
+//   play_increase_percent: number
+// }
 
 export const trendingApi = {
   // Get trending songs with comparison data

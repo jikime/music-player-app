@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -46,7 +46,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
   const { initializeData } = useMusicStore()
 
   // Auto-fill video information when URL is valid
-  const fetchVideoInfo = async (videoUrl: string) => {
+  const fetchVideoInfo = useCallback(async (videoUrl: string) => {
     const videoId = extractVideoId(videoUrl)
     if (!videoId) return
 
@@ -63,7 +63,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
     } finally {
       setIsFetchingInfo(false)
     }
-  }
+  }, [artist, title])
 
   // Validate URL and fetch video info
   useEffect(() => {
@@ -80,7 +80,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
     if (isValid) {
       fetchVideoInfo(url)
     }
-  }, [url])
+  }, [url, fetchVideoInfo])
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -146,7 +146,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
         throw new Error(errorData.error || 'Failed to add song')
       }
 
-      const { song } = await response.json()
+      await response.json() // Response contains song data but we don't need it
       
       // Reset form and close modal
       setUrl("")

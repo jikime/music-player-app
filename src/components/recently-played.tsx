@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
-import { ChevronRight, ChevronLeft, MoreHorizontal } from "lucide-react"
+import { ChevronRight, ChevronLeft } from "lucide-react"
 import { formatDuration } from "@/lib/music-utils"
 import type { Song } from "@/types/music"
 

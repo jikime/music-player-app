@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Music, Loader2 } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { Music } from "lucide-react"
 
 interface LoadingScreenProps {
   message?: string
@@ -11,13 +11,13 @@ export function LoadingScreen({ message = "Loading music library..." }: LoadingS
   const [progress, setProgress] = useState(0)
   const [currentStep, setCurrentStep] = useState("Initializing...")
 
-  const steps = [
+  const steps = useMemo(() => [
     "Initializing...",
     "Loading songs...",
     "Fetching playlists...",
     "Setting up player...",
     "Almost ready..."
-  ]
+  ], [])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -37,7 +37,7 @@ export function LoadingScreen({ message = "Loading music library..." }: LoadingS
     }, 200)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [steps])
 
   return (
     <div className="flex h-screen items-center justify-center bg-background">

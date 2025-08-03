@@ -87,7 +87,9 @@ export const getYouTubeDuration = (videoId: string): Promise<number> => {
     
     document.body.appendChild(iframe)
     
-    let player: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let player: any = null
+    // eslint-disable-next-line prefer-const
     let timeout: NodeJS.Timeout
     
     const cleanup = () => {
@@ -123,6 +125,7 @@ export const getYouTubeDuration = (videoId: string): Promise<number> => {
       try {
         player = new window.YT.Player(iframe, {
           events: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onReady: (event: any) => {
               try {
                 const duration = event.target.getDuration()
@@ -133,6 +136,7 @@ export const getYouTubeDuration = (videoId: string): Promise<number> => {
                 reject(error)
               }
             },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onError: (error: any) => {
               cleanup()
               reject(new Error(`YouTube player error: ${error.data}`))
@@ -221,6 +225,7 @@ export const fetchYouTubeDuration = async (url: string): Promise<number> => {
 // YouTube iframe API 타입 정의
 declare global {
   interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     YT: any
     onYouTubeIframeAPIReady: () => void
   }

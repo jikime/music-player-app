@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, DatabasePlaylist } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 // GET - 모든 플레이리스트 조회 (songs 포함)
 export async function GET() {
@@ -22,12 +22,21 @@ export async function GET() {
     }
 
     // Database 형식을 클라이언트 형식으로 변환
-    const transformedPlaylists = playlists.map((playlist: any) => ({
+    const transformedPlaylists = playlists.map((playlist: {
+      id: string;
+      name: string;
+      playlist_songs: { song_id: string; position: number }[];
+      created_at: string;
+      updated_at: string;
+      has_notification: boolean;
+      description: string;
+      cover_image: string;
+    }) => ({
       id: playlist.id,
       name: playlist.name,
       songs: playlist.playlist_songs
-        .sort((a: any, b: any) => a.position - b.position)
-        .map((ps: any) => ps.song_id),
+        .sort((a: { position: number }, b: { position: number }) => a.position - b.position)
+        .map((ps: { song_id: string }) => ps.song_id),
       createdAt: playlist.created_at ? new Date(playlist.created_at) : new Date(),
       updatedAt: playlist.updated_at ? new Date(playlist.updated_at) : new Date(),
       hasNotification: playlist.has_notification,

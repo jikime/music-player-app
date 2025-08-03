@@ -4,9 +4,10 @@ import { supabase } from '@/lib/supabase'
 // POST - 플레이리스트에 노래 추가
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { songId } = body
 
@@ -21,7 +22,7 @@ export async function POST(
     const { data: lastSong } = await supabase
       .from('playlist_songs')
       .select('position')
-      .eq('playlist_id', params.id)
+      .eq('playlist_id', id)
       .order('position', { ascending: false })
       .limit(1)
       .single()
@@ -32,7 +33,7 @@ export async function POST(
     const { data: playlistSong, error } = await supabase
       .from('playlist_songs')
       .insert([{
-        playlist_id: params.id,
+        playlist_id: id,
         song_id: songId,
         position: nextPosition
       }])
@@ -54,7 +55,7 @@ export async function POST(
     await supabase
       .from('playlists')
       .update({ updated_at: new Date().toISOString() })
-      .eq('id', params.id)
+      .eq('id', id)
 
     return NextResponse.json({ 
       message: 'Song added to playlist successfully',
@@ -74,9 +75,10 @@ export async function POST(
 // DELETE - 플레이리스트에서 노래 제거
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     const songId = searchParams.get('songId')
 
@@ -90,7 +92,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('playlist_songs')
       .delete()
-      .eq('playlist_id', params.id)
+      .eq('playlist_id', id)
       .eq('song_id', songId)
 
     if (error) {
@@ -102,7 +104,7 @@ export async function DELETE(
     await supabase
       .from('playlists')
       .update({ updated_at: new Date().toISOString() })
-      .eq('id', params.id)
+      .eq('id', id)
 
     return NextResponse.json({ message: 'Song removed from playlist successfully' })
   } catch (error) {

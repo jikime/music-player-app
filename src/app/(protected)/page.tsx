@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useMusicStore } from "@/lib/store"
 import { MusicPlayer } from "@/components/music-player"
 import { LoadingScreen } from "@/components/loading-screen"
@@ -22,7 +22,7 @@ export default function Component() {
   // Initialize data when component mounts
   useEffect(() => {
     initializeData()
-  }, [])
+  }, [initializeData])
 
   // Get all recently played songs from store
   const recentSongs = recentlyPlayed

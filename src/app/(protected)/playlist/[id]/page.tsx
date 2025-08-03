@@ -23,7 +23,7 @@ import {
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { formatDuration } from "@/lib/music-utils"
-import type { Song, Playlist } from "@/types/music"
+import type { Song } from "@/types/music"
 
 export default function PlaylistPage() {
   const params = useParams()
@@ -57,9 +57,9 @@ export default function PlaylistPage() {
   }, [playlist, songs])
   
   // Calculate total duration
-  const totalDuration = useMemo(() => {
-    return playlistSongs.reduce((total, song) => total + (song.duration || 0), 0)
-  }, [playlistSongs])
+  // const totalDuration = useMemo(() => {
+  //   return playlistSongs.reduce((total, song) => total + (song.duration || 0), 0)
+  // }, [playlistSongs])
 
   // Initialize data on mount if needed
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function PlaylistPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Playlist not found</h2>
-          <p className="text-muted-foreground mb-6">The playlist you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground mb-6">The playlist you&apos;re looking for doesn&apos;t exist.</p>
           <Button onClick={() => window.history.back()}>Go Back</Button>
         </div>
       </div>
@@ -314,7 +314,7 @@ export default function PlaylistPage() {
         <div className="flex-1 p-8 pl-0">
           {playlistSongs.length > 0 ? (
             <div className="space-y-0">
-              {playlistSongs.map((song, index) => (
+              {playlistSongs.map((song) => (
                 <div
                   key={song.id}
                   className="flex items-center gap-4 p-2 rounded hover:bg-muted/30 transition-colors group cursor-pointer"

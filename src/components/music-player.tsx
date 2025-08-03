@@ -36,7 +36,7 @@ export function MusicPlayer() {
     toggleShuffle,
     toggleRepeat,
     playNext,
-    playPrevious,
+    // playPrevious, // unused
     isBookmarked,
     addBookmark,
     removeBookmark
@@ -112,13 +112,13 @@ export function MusicPlayer() {
     setIsPlaying(false)
   }
 
-  const handleSeeking = (seconds: number) => {
-    setSeeking(true)
-  }
+  // const handleSeeking = (seconds: number) => {
+  //   setSeeking(true)
+  // }
 
-  const handleSeeked = (seconds: number) => {
-    setSeeking(false)
-  }
+  // const handleSeeked = (seconds: number) => {
+  //   setSeeking(false)
+  // }
 
   const handleRateChange = () => {
     const player = playerRef.current
@@ -145,13 +145,13 @@ export function MusicPlayer() {
     console.log('Loading started')
   }
 
-  const handleBuffer = () => {
-    // Buffering started
-  }
+  // const handleBuffer = () => {
+  //   // Buffering started
+  // }
 
-  const handleBufferEnd = () => {
-    // Buffering ended
-  }
+  // const handleBufferEnd = () => {
+  //   // Buffering ended
+  // }
 
   // Track if we're currently seeking (drag in progress)
   const [isDragging, setIsDragging] = useState(false)
