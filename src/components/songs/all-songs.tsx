@@ -179,13 +179,15 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                     <span className="text-muted-foreground text-sm font-mono w-6 flex-shrink-0">
                       #{currentPage * ITEMS_PER_PAGE + index + 1}
                     </span>
-                    <ImageWithFallback
-                      src={song.thumbnail || "/placeholder.svg"}
-                      alt={song.title}
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 rounded object-cover flex-shrink-0"
-                    />
+                    <div className="w-12 h-12 rounded overflow-hidden relative flex-shrink-0 bg-muted">
+                      <ImageWithFallback
+                        src={song.thumbnail || "/placeholder.svg"}
+                        alt={song.title}
+                        fill
+                        sizes="48px"
+                        className="object-cover"
+                      />
+                    </div>
                     <div className="flex-1 min-w-0 max-w-[calc(100vw-280px)]">
                       <h3 className="font-medium text-foreground truncate text-ellipsis overflow-hidden whitespace-nowrap">{song.title}</h3>
                       <p className="text-sm text-muted-foreground truncate text-ellipsis overflow-hidden whitespace-nowrap">{song.artist}</p>
@@ -234,18 +236,21 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                 onClick={() => onPlaySong(song)}
               >
                 <span className="text-muted-foreground w-8 text-sm">#{currentPage * ITEMS_PER_PAGE + index + 1}</span>
-                <ImageWithFallback
-                  src={song.thumbnail || "/placeholder.svg"}
-                  alt={song.title}
-                  width={50}
-                  height={50}
-                  className="w-12 aspect-square rounded object-cover"
-                />
+                <div className="w-12 h-12 rounded overflow-hidden relative bg-muted">
+                  <ImageWithFallback
+                    src={song.thumbnail || "/placeholder.svg"}
+                    alt={song.title}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium text-foreground truncate">{song.title}</h3>
-                  <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {song.artist}{song.album && ` • ${song.album}`}
+                  </p>
                 </div>
-                <div className="text-sm text-muted-foreground min-w-0 flex-1 truncate">{song.album || 'Unknown Album'}</div>
                 <div className="flex items-center gap-4">
                   <div className="hidden lg:flex items-center gap-1 text-muted-foreground">
                     <Music className="w-4 h-4" />

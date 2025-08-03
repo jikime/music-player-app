@@ -222,9 +222,9 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
               <ImageWithFallback
                 src={song.thumbnail || "/placeholder.svg"}
                 alt={song.title}
-                width={224}
-                height={224}
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 640px) 144px, (max-width: 768px) 176px, (max-width: 1024px) 208px, 224px"
+                className="object-cover"
               />
             </div>
             <div className="p-3 md:p-4 flex flex-col flex-1">
