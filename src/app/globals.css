@@ -51,6 +51,7 @@
   --font-mono: Ubuntu Mono, monospace;
   --radius: 0.625rem;
   --music-player-height: 7rem;
+  --music-player-height-mobile: 12rem;
   --shadow-2xs: 0px 6px 12px -3px hsl(0 0% 0% / 0.04);
   --shadow-xs: 0px 6px 12px -3px hsl(0 0% 0% / 0.04);
   --shadow-sm: 0px 6px 12px -3px hsl(0 0% 0% / 0.09), 0px 1px 2px -4px hsl(0 0% 0% / 0.09);
@@ -320,7 +321,13 @@
   
   /* Music player specific responsive utilities */
   .music-player-offset {
-    padding-bottom: var(--music-player-height);
+    padding-bottom: var(--music-player-height-mobile);
+  }
+  
+  @media (min-width: 768px) {
+    .music-player-offset {
+      padding-bottom: var(--music-player-height);
+    }
   }
   
   /* Responsive image containers */

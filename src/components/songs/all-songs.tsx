@@ -119,23 +119,25 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
   )
 
   return (
-    <div>
+    <div className="py-4 md:py-6">
       <LoadingContent 
         isLoading={isLoading} 
         fallback={
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 px-4 md:px-6">
               <Skeleton className="h-4 w-24" />
               <div className="flex items-center gap-2">
                 <Skeleton className="h-8 w-8 rounded" />
                 <Skeleton className="h-8 w-8 rounded" />
               </div>
             </div>
-            {skeletonRows}
+            <div className="px-4 md:px-6">
+              {skeletonRows}
+            </div>
           </div>
         }
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 px-4 md:px-6">
           <h2 className="text-sm text-muted-foreground uppercase tracking-wider">ALL SONGS</h2>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
@@ -161,7 +163,7 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
           )}
         </div>
         <div 
-          className={`space-y-2 transition-all duration-300 ease-in-out ${
+          className={`px-4 md:px-6 space-y-2 transition-all duration-300 ease-in-out ${
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
@@ -184,13 +186,19 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                       height={48}
                       className="w-12 h-12 rounded object-cover flex-shrink-0"
                     />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-foreground truncate">{song.title}</h3>
-                      <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                        <span>{formatDuration(song.duration)}</span>
-                        <span>{formatPlays(song.plays)} plays</span>
-                        {song.album && <span className="truncate">{song.album}</span>}
+                    <div className="flex-1 min-w-0 max-w-[calc(100vw-280px)]">
+                      <h3 className="font-medium text-foreground truncate text-ellipsis overflow-hidden whitespace-nowrap">{song.title}</h3>
+                      <p className="text-sm text-muted-foreground truncate text-ellipsis overflow-hidden whitespace-nowrap">{song.artist}</p>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground overflow-hidden">
+                        <span className="flex-shrink-0">{formatDuration(song.duration)}</span>
+                        <span className="flex-shrink-0">•</span>
+                        <span className="flex-shrink-0">{formatPlays(song.plays)} plays</span>
+                        {song.album && (
+                          <>
+                            <span className="flex-shrink-0">•</span>
+                            <span className="truncate">{song.album}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -274,7 +282,7 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
         
         {/* Page indicator */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-6">
+          <div className="flex items-center justify-center gap-2 mt-6 px-4 md:px-6">
             {Array.from({ length: totalPages }).map((_, index) => (
               <button
                 key={index}

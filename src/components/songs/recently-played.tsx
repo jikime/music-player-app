@@ -16,27 +16,50 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
   const [currentPage, setCurrentPage] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   const [showAll, setShowAll] = useState(false)
-  const [itemsPerPage, setItemsPerPage] = useState(4)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const containerRef = useRef<HTMLDivElement>(null)
   
-  // Calculate items per page based on actual container width
+  // Calculate items per page based on screen size and container width
   const calculateItemsPerPage = () => {
-    if (!containerRef.current) return 4
+    if (!containerRef.current) {
+      // Default fallback based on screen width
+      if (typeof window !== 'undefined') {
+        const screenWidth = window.innerWidth
+        if (screenWidth < 768) return 2 // Mobile/Tablet: 2 items maximum
+        if (screenWidth < 1024) return 3 // Small desktop: 3 items
+        return 5 // Large desktop: 5 items
+      }
+      return 5
+    }
     
     const containerWidth = containerRef.current.offsetWidth
-    const cardWidth = 224 // w-56 = 224px
-    const gap = 16 // gap-4 = 16px
+    const screenWidth = window.innerWidth
+    
+    // Responsive card width based on screen size
+    let cardWidth: number
+    if (screenWidth < 768) {
+      cardWidth = 140 // Smaller cards for 2 items on mobile/tablet (w-35)
+    } else {
+      cardWidth = 224 // Full size cards on desktop (w-56)
+    }
+    
+    const gap = screenWidth < 768 ? 12 : 16 // Smaller gap on mobile
     
     // Calculate how many cards fit exactly
     let itemsToShow = 1
     let totalWidth = cardWidth
     
-    while (totalWidth + gap + cardWidth <= containerWidth && itemsToShow < 6) {
+    const maxItems = screenWidth < 768 ? 2 : 6 // Limit to 2 items on mobile/tablet
+    
+    while (totalWidth + gap + cardWidth <= containerWidth && itemsToShow < maxItems) {
       totalWidth += gap + cardWidth
       itemsToShow++
     }
     
-    return Math.max(1, Math.min(6, itemsToShow))
+    // Ensure minimum items based on screen size
+    const minItems = screenWidth < 768 ? 1 : 2
+    
+    return Math.max(minItems, Math.min(maxItems, itemsToShow))
   }
   
   useEffect(() => {
@@ -117,20 +140,17 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
     setShowAll(!showAll)
   }
   const skeletonCards = (
-    <div className="flex gap-4 mb-4 items-stretch">
+    <div className="flex justify-center gap-4 overflow-x-auto mb-4">
       {Array.from({ length: itemsPerPage }).map((_, index) => (
-        <div key={index} className="bg-card/50 border-border rounded-xl border shadow-sm flex flex-col w-56 flex-shrink-0">
+        <div key={index} className="bg-card/50 border-border rounded-xl border shadow-sm flex flex-col w-40 sm:w-48 md:w-52 lg:w-56 flex-shrink-0">
           <Skeleton className="w-full aspect-square rounded-t-xl" />
-          <div className="p-4 flex flex-col flex-1 space-y-2">
+          <div className="p-3 md:p-4 flex flex-col flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/2" />
             <Skeleton className="h-3 w-1/3 mt-auto" />
           </div>
         </div>
       ))}
-      <div className="flex items-center">
-        <Skeleton className="h-8 w-24" />
-      </div>
     </div>
   )
 
@@ -152,14 +172,14 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
           </div>
         }
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 px-4 md:px-6">
           <h2 className="text-sm text-muted-foreground uppercase tracking-wider">RECENTLY PLAYED</h2>
           {songs.length > itemsPerPage && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 text-muted-foreground hover:text-foreground"
+                className="h-8 text-xs md:text-sm text-muted-foreground hover:text-foreground"
                 onClick={handleViewAll}
               >
                 {showAll ? "Show Less" : "View All"}
@@ -187,17 +207,15 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
         </div>
         <div 
           ref={containerRef}
-          className={`transition-all duration-300 ease-in-out ${
+          className={`px-4 md:px-6 transition-all duration-300 ease-in-out ${
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
-          <div className={`${showAll ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'flex gap-5 items-stretch justify-center'} mb-4`}>
+          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-5' : 'flex justify-center gap-4 overflow-x-auto'} mb-4`}>
             {currentSongs.map((song) => (
               <div
                 key={song.id}
-                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${
-                  showAll ? 'w-full' : 'w-56 flex-shrink-0'
-                }`}
+                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-40 sm:w-48 md:w-52 lg:w-56 flex-shrink-0'}`}
                 onClick={() => onPlaySong(song)}
           >
             <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative">
@@ -209,9 +227,9 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="p-4 flex flex-col flex-1">
-              <h3 className="font-semibold mb-1 line-clamp-2 leading-tight min-h-[2.5rem]" title={song.title}>{song.title}</h3>
-              <p className="text-sm text-muted-foreground truncate mb-1" title={song.artist}>{song.artist}</p>
+            <div className="p-3 md:p-4 flex flex-col flex-1">
+              <h3 className="font-semibold mb-1 line-clamp-2 leading-tight min-h-[2rem] md:min-h-[2.5rem] text-sm md:text-base" title={song.title}>{song.title}</h3>
+              <p className="text-xs md:text-sm text-muted-foreground truncate mb-1" title={song.artist}>{song.artist}</p>
               <p className="text-xs text-muted-foreground/70 mt-auto">
                 {song.duration > 0 ? formatDuration(song.duration) : '0:00'}
               </p>
