@@ -22,7 +22,7 @@ import {
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { Song } from "@/types/music"
-import { extractVideoId, fetchYouTubeDuration, getYouTubeVideoInfo } from "@/lib/youtube"
+import { extractVideoId, fetchYouTubeDuration, getYouTubeVideoInfo, getThumbnailUrl } from "@/lib/youtube"
 
 interface AddLinkModalProps {
   open: boolean
@@ -127,7 +127,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
         album: album || null,
         duration,
         url,
-        thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+        thumbnail: getThumbnailUrl(videoId, 'max'),
         lyrics: null,
         plays: 0,
         liked: false

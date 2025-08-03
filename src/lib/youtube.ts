@@ -3,6 +3,32 @@
  */
 
 /**
+ * YouTube 썸네일 품질 옵션
+ */
+export const getThumbnailUrl = (videoId: string, quality: 'max' | 'high' | 'medium' | 'default' = 'max'): string => {
+  const qualities = {
+    max: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+    high: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+    medium: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+    default: `https://img.youtube.com/vi/${videoId}/sddefault.jpg`
+  }
+  
+  return qualities[quality]
+}
+
+/**
+ * 최고 품질의 YouTube 썸네일 URL을 가져옵니다
+ * maxresdefault가 없는 경우 hqdefault로 폴백
+ */
+export const getBestThumbnailUrl = (url: string): string => {
+  const videoId = extractVideoId(url)
+  if (!videoId) return ''
+  
+  // 최고 품질 썸네일 (1280x720)
+  return getThumbnailUrl(videoId, 'max')
+}
+
+/**
  * YouTube URL에서 video ID를 추출합니다
  */
 export const extractVideoId = (url: string): string | null => {
