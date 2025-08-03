@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { Button } from "@/components/ui/button"
 import {
   Heart,
@@ -15,9 +16,10 @@ import type { Song } from "@/types/music"
 interface AllSongsProps {
   songs: Song[]
   onPlaySong: (song: Song) => void
+  isLoading?: boolean
 }
 
-export function AllSongs({ songs, onPlaySong }: AllSongsProps) {
+export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps) {
   const [bookmarkingStates, setBookmarkingStates] = useState<Record<string, boolean>>({})
   
   const {
@@ -56,18 +58,52 @@ export function AllSongs({ songs, onPlaySong }: AllSongsProps) {
     }
   }
 
+  const skeletonRows = (
+    <div className="space-y-2">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div key={index} className="flex items-center gap-4 p-3 rounded-lg">
+          <Skeleton className="w-8 h-4" />
+          <Skeleton className="w-12 h-12 rounded" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+          <Skeleton className="h-3 w-24" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="w-8 h-8 rounded" />
+            <Skeleton className="w-8 h-8 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm text-muted-foreground uppercase tracking-wider">ALL SONGS</h2>
-        {songs.length > 0 && (
-          <span className="text-xs text-muted-foreground/70">
-            {songs.length} song{songs.length !== 1 ? 's' : ''} • {getTotalDuration(songs)}
-          </span>
-        )}
-      </div>
-      <div className="space-y-2">
-        {songs.map((song, index) => (
+      <LoadingContent 
+        isLoading={isLoading} 
+        fallback={
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+            {skeletonRows}
+          </div>
+        }
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm text-muted-foreground uppercase tracking-wider">ALL SONGS</h2>
+          {songs.length > 0 && (
+            <span className="text-xs text-muted-foreground/70">
+              {songs.length} song{songs.length !== 1 ? 's' : ''} • {getTotalDuration(songs)}
+            </span>
+          )}
+        </div>
+        <div className="space-y-2">
+          {songs.map((song, index) => (
           <div 
             key={song.id} 
             className="flex items-center gap-4 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
@@ -119,6 +155,7 @@ export function AllSongs({ songs, onPlaySong }: AllSongsProps) {
           </div>
         ))}
       </div>
+      </LoadingContent>
     </div>
   )
 }

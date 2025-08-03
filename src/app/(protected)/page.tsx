@@ -37,16 +37,18 @@ export default function Component() {
   }
 
   return (
-    <div className="mx-auto p-6 mb-24">
+    <div className="mx-auto p-6" style={{ paddingBottom: 'var(--music-player-height)' }}>
       <RecentlyPlayed 
-          songs={recentSongs}
-          onPlaySong={handlePlaySong}
-        />
-        
-        <AllSongs 
-          songs={songs}
-          onPlaySong={handlePlaySong}
-        />
+        songs={recentSongs}
+        onPlaySong={handlePlaySong}
+        isLoading={isLoading}
+      />
+      
+      <AllSongs 
+        songs={songs}
+        onPlaySong={handlePlaySong}
+        isLoading={isLoading}
+      />
       
       <MusicPlayer />  
     </div>

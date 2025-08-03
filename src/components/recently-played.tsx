@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { ChevronRight } from "lucide-react"
 import { formatDuration } from "@/lib/music-utils"
 import type { Song } from "@/types/music"
@@ -7,14 +8,42 @@ import type { Song } from "@/types/music"
 interface RecentlyPlayedProps {
   songs: Song[]
   onPlaySong: (song: Song) => void
+  isLoading?: boolean
 }
 
-export function RecentlyPlayed({ songs, onPlaySong }: RecentlyPlayedProps) {
+export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: RecentlyPlayedProps) {
+  const skeletonCards = (
+    <div className="flex gap-4 mb-4 items-stretch">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="bg-card/50 border-border rounded-xl border shadow-sm flex flex-col w-56 flex-shrink-0">
+          <Skeleton className="w-full aspect-square rounded-t-xl" />
+          <div className="p-4 flex flex-col flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+            <Skeleton className="h-3 w-1/3 mt-auto" />
+          </div>
+        </div>
+      ))}
+      <div className="flex items-center">
+        <Skeleton className="h-8 w-24" />
+      </div>
+    </div>
+  )
+
   return (
     <div className="mb-8">
-      <h2 className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">RECENTLY PLAYED</h2>
-      <div className="flex gap-4 mb-4 items-stretch">
-        {songs.map((song) => (
+      <LoadingContent 
+        isLoading={isLoading} 
+        fallback={
+          <div>
+            <Skeleton className="h-4 w-36 mb-4" />
+            {skeletonCards}
+          </div>
+        }
+      >
+        <h2 className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">RECENTLY PLAYED</h2>
+        <div className="flex gap-4 mb-4 items-stretch">
+          {songs.map((song) => (
           <div
             key={song.id}
             className="bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col w-56 flex-shrink-0"
@@ -43,8 +72,9 @@ export function RecentlyPlayed({ songs, onPlaySong }: RecentlyPlayedProps) {
             View all
             <ChevronRight className="w-4 h-4" />
           </Button>
+          </div>
         </div>
-      </div>
+      </LoadingContent>
     </div>
   )
 }
