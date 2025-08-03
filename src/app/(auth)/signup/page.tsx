@@ -85,93 +85,85 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-lg shadow-sm">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">회원가입</h1>
-          <p className="text-sm text-gray-600">아래 정보를 입력하여 계정을 만드세요</p>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+      <div className="w-full max-w-md space-y-6 p-8 bg-card rounded-lg border border-border shadow-lg">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold text-foreground">회원가입</h1>
+          <p className="text-sm text-muted-foreground">아래 정보를 입력하여 계정을 만드세요</p>
         </div>
 
         {errors.root && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
             {errors.root.message}
           </div>
         )}
 
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="name" className="text-sm font-medium text-foreground">
               이름
             </Label>
             <Input
               id="name"
               type="text"
               placeholder="홍길동"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.name ? "border-red-500" : "border-gray-300"
-              }`}
+              className={errors.name ? "border-destructive focus:ring-destructive" : ""}
               {...register("name")}
             />
             {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message}</p>
+              <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="email" className="text-sm font-medium text-foreground">
               이메일
             </Label>
             <Input
               id="email"
               type="email"
               placeholder="m@example.com"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.email ? "border-red-500" : "border-gray-300"
-              }`}
+              className={errors.email ? "border-destructive focus:ring-destructive" : ""}
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-sm text-red-500">{errors.email.message}</p>
+              <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="password" className="text-sm font-medium text-foreground">
               비밀번호
             </Label>
             <Input
               id="password"
               type="password"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.password ? "border-red-500" : "border-gray-300"
-              }`}
+              className={errors.password ? "border-destructive focus:ring-destructive" : ""}
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-sm text-red-500">{errors.password.message}</p>
+              <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
               비밀번호 확인
             </Label>
             <Input
               id="confirmPassword"
               type="password"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.confirmPassword ? "border-red-500" : "border-gray-300"
-              }`}
+              className={errors.confirmPassword ? "border-destructive focus:ring-destructive" : ""}
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
-              <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+              <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
             )}
           </div>
 
           <Button
             type="submit"
-            className="w-full bg-black hover:bg-gray-800 text-white py-2 px-4 rounded-md font-medium transition-colors"
+            className="w-full"
             disabled={isLoading}
           >
             {isLoading ? "처리 중..." : "가입하기"}
@@ -183,14 +175,14 @@ export default function SignUpPage() {
             <Separator className="w-full" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">또는</span>
+            <span className="bg-card px-2 text-muted-foreground">또는</span>
           </div>
         </div>
 
         <Button
           type="button"
           variant="outline"
-          className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors bg-transparent"
+          className="w-full flex items-center justify-center gap-2"
           onClick={() => {
             // 구글 로그인 로직
           }}
@@ -217,9 +209,9 @@ export default function SignUpPage() {
           구글 계정으로 가입
         </Button>
 
-        <div className="text-center text-sm text-gray-600">
+        <div className="text-center text-sm text-muted-foreground">
           이미 계정이 있으신가요?{" "}
-          <Link href="/signin" className="font-medium text-blue-600 hover:text-blue-500 underline">
+          <Link href="/signin" className="font-medium text-primary hover:text-primary/80 underline">
             로그인
           </Link>
         </div>

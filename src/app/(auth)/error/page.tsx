@@ -51,8 +51,8 @@ function AuthErrorContent() {
   }, [searchParams])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] p-4">
-      <div className="w-full max-w-md p-8 space-y-6 bg-background border border-border rounded-lg shadow-lg">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+      <div className="w-full max-w-md p-8 space-y-6 bg-card border border-border rounded-lg shadow-lg">
         <div className="flex flex-col items-center text-center space-y-4">
           <div className="p-3 bg-destructive/10 rounded-full">
             <AlertCircle className="w-10 h-10 text-destructive" />
@@ -63,7 +63,7 @@ function AuthErrorContent() {
         
         <div className="space-y-4 pt-4">
           <Button asChild className="w-full">
-            <Link href="/auth/signin">로그인 페이지로 돌아가기</Link>
+            <Link href="/signin">로그인 페이지로 돌아가기</Link>
           </Button>
           
           <Button asChild variant="outline" className="w-full">
