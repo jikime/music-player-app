@@ -138,13 +138,15 @@ export default function PlaylistPage() {
   }
 
   return (
-    <div className="min-h-screen flex justify-center" style={{ paddingBottom: 'var(--music-player-height)' }}>
-      <div className="flex max-w-6xl w-full">
+    <div className="min-h-screen" style={{ paddingBottom: 'var(--music-player-height)' }}>
+      <div className="flex flex-col md:flex-row md:justify-center max-w-6xl w-full mx-auto">
         {/* Left Panel - Playlist Info */}
-        <div className="w-80 flex-shrink-0 p-8">
-          <div className="sticky top-8">
-            {/* Cover Image */}
-            <div className="w-full aspect-square rounded-lg shadow-2xl overflow-hidden mb-6 relative">
+        <div className="w-full md:w-80 md:flex-shrink-0 p-4 md:p-8">
+          <div className="md:sticky md:top-8">
+            {/* Mobile Horizontal Layout */}
+            <div className="flex md:block gap-4 mb-6 md:mb-0">
+              {/* Cover Image */}
+              <div className="w-32 md:w-full aspect-square rounded-lg shadow-2xl overflow-hidden md:mb-6 relative flex-shrink-0">
               {playlist!.coverImage ? (
                 playlist!.coverImage.startsWith('bg-') ? (
                   // Gradient background
@@ -167,48 +169,77 @@ export default function PlaylistPage() {
                   <Music className="w-16 h-16 text-muted-foreground/50" />
                 </div>
               )}
+              </div>
+
+              {/* Right Content for Mobile */}
+              <div className="flex-1 md:w-full pl-2 md:pl-0 min-w-0">
+                {/* Playlist Title */}
+                <div className="text-left mb-3 md:mb-4">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={playlistName}
+                      onChange={(e) => setPlaylistName(e.target.value)}
+                      className="text-lg md:text-2xl font-bold bg-transparent border-b-2 border-primary outline-none w-full text-left"
+                    />
+                  ) : (
+                    <h1 className="text-lg md:text-2xl font-bold line-clamp-2 leading-tight">{playlist!.name}</h1>
+                  )}
+                </div>
+                
+                {/* Platform Label */}
+                <div className="text-left mb-2 md:mb-4">
+                  <p className="text-xs md:text-sm text-muted-foreground">YouTube Music</p>
+                </div>
+                
+                {/* Artists */}
+                <div className="text-left mb-2 md:mb-0">
+                  {playlistSongs.length > 0 && (
+                    <p className="text-xs md:text-sm text-muted-foreground truncate">
+                      {Array.from(new Set(playlistSongs.slice(0, 3).map(song => song.artist))).join(', ')}
+                      {playlistSongs.length > 3 && ' 등'}
+                    </p>
+                  )}
+                </div>
+                
+                {/* Description - Hidden on mobile, shown on desktop */}
+                <div className="text-left hidden md:block">
+                  {isEditing ? (
+                    <textarea
+                      value={playlistDescription}
+                      onChange={(e) => setPlaylistDescription(e.target.value)}
+                      placeholder="곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."
+                      className="text-sm text-muted-foreground bg-transparent border rounded p-2 w-full resize-none mb-4"
+                      rows={3}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-4 leading-relaxed">
+                      {playlist!.description || "곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Playlist Title */}
-            {isEditing ? (
-              <input
-                type="text"
-                value={playlistName}
-                onChange={(e) => setPlaylistName(e.target.value)}
-                className="text-2xl font-bold bg-transparent border-b-2 border-primary outline-none w-full mb-4"
-              />
-            ) : (
-              <h1 className="text-2xl font-bold mb-4">{playlist!.name}</h1>
-            )}
-            
-            {/* Platform Label */}
-            <p className="text-sm text-muted-foreground mb-4">YouTube Music</p>
-            
-            {/* Artists */}
-            {playlistSongs.length > 0 && (
-              <p className="text-sm text-muted-foreground mb-2">
-                {Array.from(new Set(playlistSongs.slice(0, 3).map(song => song.artist))).join(', ')}
-                {playlistSongs.length > 3 && ' 등'}
-              </p>
-            )}
-            
-            {/* Description */}
-            {isEditing ? (
-              <textarea
-                value={playlistDescription}
-                onChange={(e) => setPlaylistDescription(e.target.value)}
-                placeholder="곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."
-                className="text-sm text-muted-foreground bg-transparent border rounded p-2 w-full resize-none mb-4"
-                rows={3}
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground mb-4">
-                {playlist!.description || "곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."}
-              </p>
-            )}
+            {/* Mobile Description - Below the horizontal layout */}
+            <div className="text-left md:hidden mb-4 px-1">
+              {isEditing ? (
+                <textarea
+                  value={playlistDescription}
+                  onChange={(e) => setPlaylistDescription(e.target.value)}
+                  placeholder="곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."
+                  className="text-sm text-muted-foreground bg-transparent border rounded p-3 w-full resize-none"
+                  rows={2}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                  {playlist!.description || "곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."}
+                </p>
+              )}
+            </div>
 
             {/* Control Buttons Row */}
-            <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center justify-start gap-3 mb-6 md:mb-6 px-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -283,7 +314,7 @@ export default function PlaylistPage() {
             </div>
 
             {/* Large Play Button */}
-            <div className="relative mb-4">
+            <div className="relative mb-6 flex justify-start px-1">
               <Button
                 size="icon"
                 className="w-14 h-14 rounded-full shadow-lg hover:scale-105 transition-transform"
@@ -311,20 +342,20 @@ export default function PlaylistPage() {
         </div>
 
         {/* Right Panel - Songs List */}
-        <div className="flex-1 p-8 pl-0">
+        <div className="flex-1 p-4 md:p-8 md:pl-0">
           {playlistSongs.length > 0 ? (
-            <div className="space-y-0">
+            <div className="space-y-1">
               {playlistSongs.map((song) => (
                 <div
                   key={song.id}
-                  className="flex items-center gap-4 p-2 rounded hover:bg-muted/30 transition-colors group cursor-pointer"
+                  className="flex items-center gap-3 md:gap-4 p-3 md:p-3 rounded-lg hover:bg-muted/30 transition-colors group cursor-pointer"
                   onClick={() => {
                     const songIndex = playlistSongs.findIndex(s => s.id === song.id)
                     playPlaylist(playlistId, songIndex)
                   }}
                 >
                   {/* Thumbnail */}
-                  <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 bg-muted">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded overflow-hidden flex-shrink-0 bg-muted">
                     <ImageWithFallback
                       src={song.thumbnail || ''}
                       alt={song.title}
@@ -336,24 +367,24 @@ export default function PlaylistPage() {
 
                   {/* Song Info */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate text-sm">{song.title}</h4>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {song.artist} • {song.album}
+                    <h4 className="font-medium text-sm md:text-base line-clamp-1 leading-tight">{song.title}</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">
+                      {song.artist}{song.album && ` • ${song.album}`}
                     </p>
                   </div>
 
                   {/* Duration */}
-                  <div className="text-xs text-muted-foreground flex-shrink-0 w-10 text-right">
+                  <div className="text-xs md:text-sm text-muted-foreground flex-shrink-0 w-10 md:w-12 text-right">
                     {song.duration ? formatDuration(song.duration) : "--:--"}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-24">
-              <Music className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Start building your playlist</h3>
-              <p className="text-muted-foreground mb-6">Add songs to make this playlist yours</p>
+            <div className="text-center py-12 md:py-24">
+              <Music className="w-12 h-12 md:w-16 md:h-16 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-base md:text-lg font-semibold mb-2">Start building your playlist</h3>
+              <p className="text-sm md:text-base text-muted-foreground mb-6">Add songs to make this playlist yours</p>
               <Button 
                 variant="outline" 
                 className="rounded-full"

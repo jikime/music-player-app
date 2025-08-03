@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
@@ -20,7 +20,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
   const containerRef = useRef<HTMLDivElement>(null)
   
   // Calculate items per page based on screen size and container width
-  const calculateItemsPerPage = () => {
+  const calculateItemsPerPage = useCallback(() => {
     if (!containerRef.current) {
       // Default fallback based on screen width
       if (typeof window !== 'undefined') {
@@ -60,7 +60,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
     const minItems = screenWidth < 768 ? 3 : 2
     
     return Math.max(minItems, Math.min(maxItems, itemsToShow))
-  }
+  }, [])
   
   useEffect(() => {
     const updateItemsPerPage = () => {
@@ -90,7 +90,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
       clearTimeout(timeoutId)
       clearTimeout(initialTimeout)
     }
-  }, [itemsPerPage])
+  }, [itemsPerPage, calculateItemsPerPage])
   
   // Additional effect to recalculate when container ref is set
   useEffect(() => {
@@ -101,7 +101,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
         setCurrentPage(0)
       }
     }
-  }, [isLoading, itemsPerPage])
+  }, [isLoading, itemsPerPage, calculateItemsPerPage])
   
   // Calculate pagination
   const totalPages = Math.ceil(songs.length / itemsPerPage)
@@ -172,8 +172,8 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
           </div>
         }
       >
-        <div className="flex items-center justify-between mb-4 px-4 md:px-6">
-          <h2 className="text-sm text-muted-foreground uppercase tracking-wider">RECENTLY PLAYED</h2>
+        <div className="flex items-center justify-between mb-4 px-2 md:px-6">
+          <h2 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider">RECENTLY PLAYED</h2>
           {songs.length > itemsPerPage && (
             <div className="flex items-center gap-1 md:gap-2">
               <Button
@@ -207,15 +207,15 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
         </div>
         <div 
           ref={containerRef}
-          className={`px-4 md:px-6 transition-all duration-300 ease-in-out ${
+          className={`px-2 md:px-6 transition-all duration-300 ease-in-out ${
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
-          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-5' : 'flex justify-center gap-3 sm:gap-4 overflow-x-auto'} mb-4`}>
+          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4 lg:gap-5' : 'flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide'} mb-4`}>
             {currentSongs.map((song) => (
               <div
                 key={song.id}
-                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-36 sm:w-44 md:w-52 lg:w-56 flex-shrink-0'}`}
+                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-32 sm:w-40 md:w-52 lg:w-56 flex-shrink-0'}`}
                 onClick={() => onPlaySong(song)}
           >
             <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative">
@@ -227,8 +227,8 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
                 className="object-cover"
               />
             </div>
-            <div className="p-3 md:p-4 flex flex-col flex-1">
-              <h3 className="font-semibold mb-1 line-clamp-2 leading-tight min-h-[2rem] md:min-h-[2.5rem] text-sm md:text-base" title={song.title}>{song.title}</h3>
+            <div className="p-2 md:p-4 flex flex-col flex-1">
+              <h3 className="font-semibold mb-1 line-clamp-2 leading-tight min-h-[2rem] md:min-h-[2.5rem] text-xs md:text-base" title={song.title}>{song.title}</h3>
               <p className="text-xs md:text-sm text-muted-foreground truncate mb-1" title={song.artist}>{song.artist}</p>
               <p className="text-xs text-muted-foreground/70 mt-auto">
                 {song.duration > 0 ? formatDuration(song.duration) : '0:00'}

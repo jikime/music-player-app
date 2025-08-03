@@ -137,8 +137,8 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
           </div>
         }
       >
-        <div className="flex items-center justify-between mb-4 px-4 md:px-6">
-          <h2 className="text-sm text-muted-foreground uppercase tracking-wider">ALL SONGS</h2>
+        <div className="flex items-center justify-between mb-4 px-2 md:px-6">
+          <h2 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider">ALL SONGS</h2>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
               <Button
@@ -163,7 +163,7 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
           )}
         </div>
         <div 
-          className={`px-4 md:px-6 space-y-2 transition-all duration-300 ease-in-out ${
+          className={`px-2 md:px-6 space-y-2 transition-all duration-300 ease-in-out ${
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
@@ -171,36 +171,30 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
             <div key={song.id}>
               {/* Mobile Layout: Card Style */}
               <div 
-                className="md:hidden bg-card rounded-lg p-4 border hover:bg-card/70 group cursor-pointer"
+                className="md:hidden bg-card rounded-lg p-3 border hover:bg-card/70 group cursor-pointer"
                 onClick={() => onPlaySong(song)}
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="text-muted-foreground text-sm font-mono w-6 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-muted-foreground text-xs font-mono w-6 flex-shrink-0">
                       #{currentPage * ITEMS_PER_PAGE + index + 1}
                     </span>
-                    <div className="w-12 h-12 rounded overflow-hidden relative flex-shrink-0 bg-muted">
+                    <div className="w-10 h-10 rounded overflow-hidden relative flex-shrink-0 bg-muted">
                       <ImageWithFallback
                         src={song.thumbnail || "/placeholder.svg"}
                         alt={song.title}
                         fill
-                        sizes="48px"
+                        sizes="40px"
                         className="object-cover"
                       />
                     </div>
-                    <div className="flex-1 min-w-0 max-w-[calc(100vw-280px)]">
-                      <h3 className="font-medium text-foreground truncate text-ellipsis overflow-hidden whitespace-nowrap">{song.title}</h3>
-                      <p className="text-sm text-muted-foreground truncate text-ellipsis overflow-hidden whitespace-nowrap">{song.artist}</p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground overflow-hidden">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground text-sm leading-tight line-clamp-1">{song.title}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{song.artist}</p>
+                      <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                         <span className="flex-shrink-0">{formatDuration(song.duration)}</span>
                         <span className="flex-shrink-0">•</span>
-                        <span className="flex-shrink-0">{formatPlays(song.plays)} plays</span>
-                        {song.album && (
-                          <>
-                            <span className="flex-shrink-0">•</span>
-                            <span className="truncate">{song.album}</span>
-                          </>
-                        )}
+                        <span className="flex-shrink-0">{formatPlays(song.plays)}</span>
                       </div>
                     </div>
                   </div>
@@ -208,23 +202,23 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`w-9 h-9 ${isBookmarked(song.id) ? "text-primary" : "text-muted-foreground"} hover:text-primary`}
+                      className={`w-8 h-8 ${isBookmarked(song.id) ? "text-primary" : "text-muted-foreground"} hover:text-primary`}
                       onClick={(e) => handleToggleBookmark(song.id, e)}
                       disabled={bookmarkingStates[song.id]}
                     >
                       {bookmarkingStates[song.id] ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3 h-3 animate-spin" />
                       ) : (
-                        <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
+                        <Heart className={`w-3 h-3 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
                       )}
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="w-9 h-9 text-muted-foreground"
+                      className="w-8 h-8 text-muted-foreground"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <MoreHorizontal className="w-4 h-4" />
+                      <MoreHorizontal className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
@@ -287,7 +281,7 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
         
         {/* Page indicator */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-6 px-4 md:px-6">
+          <div className="flex items-center justify-center gap-2 mt-6 px-2 md:px-6">
             {Array.from({ length: totalPages }).map((_, index) => (
               <button
                 key={index}

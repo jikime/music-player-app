@@ -299,9 +299,9 @@ export function MusicPlayer() {
       )}
 
       {/* Mobile Layout: Stacked */}
-      <div className="md:hidden p-3 space-y-3">
+      <div className="md:hidden p-2 space-y-2">
         {/* Top Row: Song Info + Play Button */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {currentSong ? (
             <>
               <ImageWithFallback
