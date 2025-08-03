@@ -158,6 +158,14 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
+                size="sm"
+                className="h-8 text-muted-foreground hover:text-foreground"
+                onClick={handleViewAll}
+              >
+                {showAll ? "Show Less" : "View All"}
+              </Button>
+              <Button
+                variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-50"
                 onClick={handlePrevious}
@@ -173,14 +181,6 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
                 disabled={!canGoNext || isAnimating || showAll}
               >
                 <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-muted-foreground hover:text-foreground"
-                onClick={handleViewAll}
-              >
-                {showAll ? "Show Less" : "View All"}
               </Button>
             </div>
           )}

@@ -48,9 +48,9 @@ export function LoadingScreen({ message = "Loading music library..." }: LoadingS
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
               <Music className="w-10 h-10 text-primary" />
             </div>
-            <div className="absolute -top-1 -right-1">
+            {/* <div className="absolute -top-1 -right-1">
               <Loader2 className="w-6 h-6 text-accent animate-spin" />
-            </div>
+            </div> */}
           </div>
         </div>
 

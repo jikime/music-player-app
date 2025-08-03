@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { Button } from "@/components/ui/button"
@@ -8,8 +8,10 @@ import {
   Clock,
   Music,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
-import { formatDuration, formatPlays, getTotalDuration } from "@/lib/music-utils"
+import { formatDuration, formatPlays } from "@/lib/music-utils"
 import { useMusicStore } from "@/lib/store"
 import type { Song } from "@/types/music"
 
@@ -21,12 +23,48 @@ interface AllSongsProps {
 
 export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps) {
   const [bookmarkingStates, setBookmarkingStates] = useState<Record<string, boolean>>({})
+  const [currentPage, setCurrentPage] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(false)
+  
+  const ITEMS_PER_PAGE = 10 // All Songs는 더 많이 표시
   
   const {
     isBookmarked,
     addBookmark,
     removeBookmark
   } = useMusicStore()
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(songs.length / ITEMS_PER_PAGE)
+  const canGoPrev = currentPage > 0
+  const canGoNext = currentPage < totalPages - 1
+  
+  // Get current page songs
+  const currentSongs = useMemo(() => {
+    const start = currentPage * ITEMS_PER_PAGE
+    return songs.slice(start, start + ITEMS_PER_PAGE)
+  }, [songs, currentPage])
+  
+  const handlePageChange = async (newPage: number) => {
+    if (newPage === currentPage || isAnimating) return
+    
+    setIsAnimating(true)
+    await new Promise(resolve => setTimeout(resolve, 150))
+    setCurrentPage(newPage)
+    setIsAnimating(false)
+  }
+  
+  const handlePrevious = () => {
+    if (canGoPrev) {
+      handlePageChange(currentPage - 1)
+    }
+  }
+  
+  const handleNext = () => {
+    if (canGoNext) {
+      handlePageChange(currentPage + 1)
+    }
+  }
 
   const handleToggleBookmark = async (songId: string, event: React.MouseEvent) => {
     event.stopPropagation()
@@ -60,7 +98,7 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
 
   const skeletonRows = (
     <div className="space-y-2">
-      {Array.from({ length: 8 }).map((_, index) => (
+      {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
         <div key={index} className="flex items-center gap-4 p-3 rounded-lg">
           <Skeleton className="w-8 h-4" />
           <Skeleton className="w-12 h-12 rounded" />
@@ -88,7 +126,10 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
           <div>
             <div className="flex items-center justify-between mb-4">
               <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-3 w-32" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded" />
+                <Skeleton className="h-8 w-8 rounded" />
+              </div>
             </div>
             {skeletonRows}
           </div>
@@ -96,20 +137,41 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm text-muted-foreground uppercase tracking-wider">ALL SONGS</h2>
-          {songs.length > 0 && (
-            <span className="text-xs text-muted-foreground/70">
-              {songs.length} song{songs.length !== 1 ? 's' : ''} • {getTotalDuration(songs)}
-            </span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                onClick={handlePrevious}
+                disabled={!canGoPrev || isAnimating}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                onClick={handleNext}
+                disabled={!canGoNext || isAnimating}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </div>
-        <div className="space-y-2">
-          {songs.map((song, index) => (
+        <div 
+          className={`space-y-2 transition-all duration-300 ease-in-out ${
+            isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+          }`}
+        >
+          {currentSongs.map((song, index) => (
           <div 
             key={song.id} 
             className="flex items-center gap-4 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
             onClick={() => onPlaySong(song)}
           >
-            <span className="text-muted-foreground w-8 text-sm">#{index + 1}</span>
+            <span className="text-muted-foreground w-8 text-sm">#{currentPage * ITEMS_PER_PAGE + index + 1}</span>
             <ImageWithFallback
               src={song.thumbnail || "/placeholder.svg"}
               alt={song.title}
@@ -154,6 +216,23 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
             </div>
           </div>
         ))}
+        
+        {/* Page indicator */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            {Array.from({ length: totalPages }).map((_, index) => (
+              <button
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  index === currentPage 
+                    ? 'bg-primary scale-125' 
+                    : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                }`}
+                onClick={() => handlePageChange(index)}
+              />
+            ))}
+          </div>
+        )}
       </div>
       </LoadingContent>
     </div>

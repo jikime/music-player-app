@@ -21,7 +21,6 @@ import {
   Loader2
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
-import { Song } from "@/types/music"
 import { extractVideoId, fetchYouTubeDuration, getYouTubeVideoInfo, getThumbnailUrl } from "@/lib/youtube"
 
 interface AddLinkModalProps {
@@ -168,7 +167,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={() => handleModalClose(isLoading, onOpenChange)}>
-      <DialogContent className="sm:max-w-[350px] bg-card border-border text-foreground">
+      <DialogContent className="max-w-[350px] bg-card border-border text-foreground">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-red-600 rounded-lg">

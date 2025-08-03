@@ -11,13 +11,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider
-    style={
-      {
-        "--sidebar-width-icon": "2.7rem",
-      } as React.CSSProperties
-    }
-    >
+    <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         <AppHeader />

@@ -5,6 +5,7 @@ import {
   Home,
   TrendingUp,
   Link,
+  Music,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -58,6 +59,17 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <div className="flex items-center gap-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[state=expanded]:px-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 flex-shrink-0">
+            <Music className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+            <span className="text-sm font-semibold text-foreground">Music Player</span>
+            <span className="text-xs text-muted-foreground">Your music library</span>
+          </div>
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainItems} />
         <NavPlaylists playlists={playlists} />
