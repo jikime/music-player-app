@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { CreatePlaylistModal } from "@/components/create-playlist-modal"
+import { CreatePlaylistModal } from "@/components/playlist/create-playlist-modal"
 import type { Playlist } from "@/types/music"
 
 export function NavPlaylists({ playlists }: { playlists: Playlist[] }) {

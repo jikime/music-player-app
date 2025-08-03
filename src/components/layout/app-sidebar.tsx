@@ -7,9 +7,9 @@ import {
   Music,
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavPlaylists } from "@/components/nav-playlists"
-import { NavBookmarks } from "@/components/nav-bookmarks"
+import { NavMain } from "@/components/layout/nav-main"
+import { NavPlaylists } from "@/components/layout/nav-playlists"
+import { NavBookmarks } from "@/components/layout/nav-bookmarks"
 import {
   Sidebar,
   SidebarContent,

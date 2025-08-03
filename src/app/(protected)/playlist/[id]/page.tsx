@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LoadingScreen } from "@/components/loading-screen"
+import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
-import { MusicPlayer } from "@/components/music-player"
-import { AddSongModal } from "@/components/add-song-modal"
+import { MusicPlayer } from "@/components/songs/music-player"
+import { AddSongModal } from "@/components/songs/add-song-modal"
 import {
   Play,
   Pause,

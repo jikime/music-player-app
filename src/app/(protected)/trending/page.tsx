@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useMusicStore } from "@/lib/store"
-import { MusicPlayer } from "@/components/music-player"
-import { LoadingScreen } from "@/components/loading-screen"
+import { MusicPlayer } from "@/components/songs/music-player"
+import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { Button } from "@/components/ui/button"
 import {

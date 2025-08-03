@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
+import { AuthProvider } from "@/components/providers/auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,18 +30,21 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen overflow-hidden bg-background text-foreground`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </AuthProvider>
         <Script 
           src="https://www.youtube.com/iframe_api" 
           strategy="afterInteractive"
         />
+
       </body>
     </html>
   );
