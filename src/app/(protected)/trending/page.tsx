@@ -165,7 +165,8 @@ export default function TrendingPage() {
               </div>
               <div className="min-w-0 flex-1 text-center md:text-left">
                 <h3 className="text-lg md:text-2xl font-bold text-foreground">
-                  {((trendingStats.totalPlays || 0) / 1000).toFixed(0)}k
+                  <span className="md:hidden">{((trendingStats.totalPlays || 0) / 1000).toFixed(0)}k</span>
+                  <span className="hidden md:inline">{(trendingStats.totalPlays || 0).toLocaleString()}</span>
                 </h3>
                 <p className="text-xs md:text-base text-muted-foreground font-medium hidden md:block">Total Plays</p>
                 <p className="text-xs text-muted-foreground md:hidden">Plays</p>
@@ -197,7 +198,8 @@ export default function TrendingPage() {
               </div>
               <div className="min-w-0 flex-1 text-center md:text-left">
                 <h3 className="text-lg md:text-2xl font-bold text-foreground">
-                  {((trendingStats.activeListeners || 0) / 1000).toFixed(0)}k
+                  <span className="md:hidden">{((trendingStats.activeListeners || 0) / 1000).toFixed(0)}k</span>
+                  <span className="hidden md:inline">{(trendingStats.activeListeners || 0).toLocaleString()}</span>
                 </h3>
                 <p className="text-xs md:text-base text-muted-foreground font-medium hidden md:block">Active Listeners</p>
                 <p className="text-xs text-muted-foreground md:hidden">Users</p>
@@ -302,7 +304,7 @@ export default function TrendingPage() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="w-8 h-8 rounded-full opacity-100 transition-opacity"
                         onClick={() => handlePlaySong(song)}
                       >
                         {isPlaying ? (

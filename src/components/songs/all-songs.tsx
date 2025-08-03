@@ -252,11 +252,11 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="hidden lg:flex items-center gap-1 text-muted-foreground">
+                  <div className="hidden lg:flex items-center gap-1 text-muted-foreground w-20 justify-start">
                     <Music className="w-4 h-4" />
                     <span className="text-sm">{formatPlays(song.plays)}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
+                  <div className="flex items-center gap-1 text-muted-foreground w-16 justify-start">
                     <Clock className="w-4 h-4" />
                     <span className="text-sm">{formatDuration(song.duration)}</span>
                   </div>
