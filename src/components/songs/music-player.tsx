@@ -60,25 +60,33 @@ export function MusicPlayer() {
 
   // ReactPlayer event handlers - following demo pattern
   const handleReady = () => {
-    console.log('Player ready')
-    setPlayerReady(true)
+    try {
+      console.log('Player ready')
+      setPlayerReady(true)
+    } catch (error) {
+      console.warn('Error in handleReady:', error)
+    }
   }
 
   const handleTimeUpdate = () => {
-    const player = playerRef.current
-    // We only want to update time slider if we are not currently seeking
-    if (!player || seeking || isDragging) return
+    try {
+      const player = playerRef.current
+      // We only want to update time slider if we are not currently seeking
+      if (!player || seeking || isDragging) return
 
-    if (!player.duration) return
+      if (!player.duration) return
 
-    setCurrentTime(player.currentTime)
-    
-    // Check if we're near the end (within 1 second) and auto-advance
-    // This is a fallback for cases where onEnded doesn't fire reliably with YouTube
-    if (player.duration > 0 && player.currentTime >= player.duration - 1 && isPlaying && !hasEnded) {
-      console.log('Near end detected via timeUpdate, auto-advancing...')
-      setHasEnded(true)
-      handleEnded()
+      setCurrentTime(player.currentTime)
+      
+      // Check if we're near the end (within 1 second) and auto-advance
+      // This is a fallback for cases where onEnded doesn't fire reliably with YouTube
+      if (player.duration > 0 && player.currentTime >= player.duration - 1 && isPlaying && !hasEnded) {
+        console.log('Near end detected via timeUpdate, auto-advancing...')
+        setHasEnded(true)
+        handleEnded()
+      }
+    } catch (error) {
+      console.warn('Error in handleTimeUpdate:', error)
     }
   }
 
@@ -255,7 +263,7 @@ export function MusicPlayer() {
   }
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-background/80 backdrop-blur-sm z-10">
+    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-background backdrop-blur-md z-10">
       {/* Hidden React Player */}
       {currentSong && (
         <ReactPlayer
@@ -280,7 +288,10 @@ export function MusicPlayer() {
           onPause={handlePause}
           onRateChange={handleRateChange}
           onEnded={handleEnded}
-          onError={(e) => console.log('onError', e)}
+          onError={(e) => {
+            console.warn('YouTube Player Error (this is usually safe to ignore):', e)
+            // Don't throw or break the app for YouTube API errors
+          }}
           onTimeUpdate={handleTimeUpdate}
           onProgress={handleProgress}
           onDurationChange={handleDurationChange}
