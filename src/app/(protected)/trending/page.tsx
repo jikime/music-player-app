@@ -124,27 +124,27 @@ export default function TrendingPage() {
     <div className="min-h-screen" style={{ paddingBottom: 'var(--music-player-height)' }}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-primary" />
+              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 md:gap-3">
+                <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                 Trending
               </h1>
-              <p className="text-muted-foreground mt-2">
+              <p className="text-muted-foreground mt-1 md:mt-2 text-sm md:text-base">
                 Discover what&apos;s hot right now
               </p>
             </div>
             
             {/* Period Selector */}
-            <div className="flex gap-2">
+            <div className="flex gap-1 md:gap-2 self-start sm:self-auto">
               {(['daily', 'weekly', 'monthly'] as const).map((period) => (
                 <Button
                   key={period}
                   variant={selectedPeriod === period ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedPeriod(period)}
-                  className="capitalize"
+                  className="capitalize text-xs md:text-sm px-2 md:px-3"
                 >
                   {period}
                 </Button>
@@ -155,14 +155,14 @@ export default function TrendingPage() {
       </div>
 
       {/* Trending Stats */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-card rounded-lg p-6 border border-border">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="bg-card rounded-lg p-4 md:p-6 border border-border">
             <div className="flex items-center gap-3">
-              <Headphones className="w-8 h-8 text-blue-500" />
-              <div>
-                <h3 className="text-2xl font-bold">{(trendingStats.totalPlays || 0).toLocaleString()}</h3>
-                <p className="text-sm text-muted-foreground">Total Plays</p>
+              <Headphones className="w-6 h-6 md:w-8 md:h-8 text-blue-500 flex-shrink-0" />
+              <div className="min-w-0">
+                <h3 className="text-lg md:text-2xl font-bold">{(trendingStats.totalPlays || 0).toLocaleString()}</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">Total Plays</p>
                 {(trendingStats.periodGrowthPercent || 0) !== 0 && (
                   <p className={`text-xs ${(trendingStats.periodGrowthPercent || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {(trendingStats.periodGrowthPercent || 0) > 0 ? '+' : ''}{(trendingStats.periodGrowthPercent || 0).toFixed(1)}% from last {selectedPeriod.replace('ly', '')}
@@ -172,12 +172,12 @@ export default function TrendingPage() {
             </div>
           </div>
           
-          <div className="bg-card rounded-lg p-6 border border-border">
+          <div className="bg-card rounded-lg p-4 md:p-6 border border-border">
             <div className="flex items-center gap-3">
-              <Music className="w-8 h-8 text-green-500" />
-              <div>
-                <h3 className="text-2xl font-bold">{trendingStats.trendingSongsCount || 0}</h3>
-                <p className="text-sm text-muted-foreground">Trending Songs</p>
+              <Music className="w-6 h-6 md:w-8 md:h-8 text-green-500 flex-shrink-0" />
+              <div className="min-w-0">
+                <h3 className="text-lg md:text-2xl font-bold">{trendingStats.trendingSongsCount || 0}</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">Trending Songs</p>
                 <p className="text-xs text-muted-foreground">
                   Top songs this {selectedPeriod.replace('ly', '')}
                 </p>
@@ -185,12 +185,12 @@ export default function TrendingPage() {
             </div>
           </div>
           
-          <div className="bg-card rounded-lg p-6 border border-border">
+          <div className="bg-card rounded-lg p-4 md:p-6 border border-border sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-purple-500" />
-              <div>
-                <h3 className="text-2xl font-bold">{(trendingStats.activeListeners || 0).toLocaleString()}</h3>
-                <p className="text-sm text-muted-foreground">Active Listeners</p>
+              <Users className="w-6 h-6 md:w-8 md:h-8 text-purple-500 flex-shrink-0" />
+              <div className="min-w-0">
+                <h3 className="text-lg md:text-2xl font-bold">{(trendingStats.activeListeners || 0).toLocaleString()}</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">Active Listeners</p>
                 <p className="text-xs text-muted-foreground">
                   Estimated unique listeners
                 </p>
@@ -201,9 +201,9 @@ export default function TrendingPage() {
 
         {/* Trending Songs List */}
         <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <h2 className="text-xl font-semibold">Top Trending Songs</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+          <div className="p-4 md:p-6 border-b border-border">
+            <h2 className="text-lg md:text-xl font-semibold">Top Trending Songs</h2>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1">
               Based on plays, engagement, and growth over the past {selectedPeriod.replace('ly', '')}
             </p>
           </div>
@@ -215,116 +215,188 @@ export default function TrendingPage() {
               const isPlaying = playerState.isPlaying && isCurrentSong
               
               return (
-                <div
-                  key={song.id}
-                  className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors group"
-                >
-                  {/* Ranking */}
-                  <div className="flex items-center gap-3 min-w-[80px]">
-                    <span className="text-2xl font-bold text-muted-foreground w-8">
-                      {song.ranking}
-                    </span>
-                    {rankingChange && (
-                      <div className="flex items-center gap-1">
-                        {rankingChange.type === 'up' && (
-                          <TrendingUp className="w-4 h-4 text-green-500" />
-                        )}
-                        {rankingChange.type === 'down' && (
-                          <TrendingDown className="w-4 h-4 text-red-500" />
-                        )}
-                        {rankingChange.type !== 'same' && (
-                          <span className="text-xs text-muted-foreground">
-                            {rankingChange.value}
-                          </span>
+                <div key={song.id}>
+                  {/* Mobile Layout */}
+                  <div className="md:hidden p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      {/* Ranking & Change */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xl font-bold text-muted-foreground w-6">
+                          {song.ranking}
+                        </span>
+                        {rankingChange && (
+                          <div className="flex items-center">
+                            {rankingChange.type === 'up' && (
+                              <TrendingUp className="w-3 h-3 text-green-500" />
+                            )}
+                            {rankingChange.type === 'down' && (
+                              <TrendingDown className="w-3 h-3 text-red-500" />
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Play Button */}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handlePlaySong(song)}
-                  >
-                    {isPlaying ? (
-                      <Pause className="w-4 h-4" />
-                    ) : (
-                      <Play className="w-4 h-4" />
-                    )}
-                  </Button>
+                      {/* Thumbnail */}
+                      <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted">
+                        <ImageWithFallback
+                          src={song.thumbnail || ''}
+                          alt={song.title}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
 
-                  {/* Thumbnail */}
-                  <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted">
-                    <ImageWithFallback
-                      src={song.thumbnail || ''}
-                      alt={song.title}
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                      {/* Song Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate text-sm">{song.title}</h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {song.artist}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                          <span>{formatDuration(song.duration)}</span>
+                          <span>{song.plays.toLocaleString()} plays</span>
+                          <span className={song.playIncrease > 0 ? 'text-green-500' : song.playIncrease < 0 ? 'text-red-500' : ''}>
+                            {song.playIncrease > 0 ? '+' : ''}{Number(song.playIncrease).toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
 
-                  {/* Song Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">{song.title}</h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {song.artist} {song.album && `• ${song.album}`}
-                    </p>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Headphones className="w-4 h-4" />
-                      <span>{song.plays.toLocaleString()}</span>
-                    </div>
-                    
-                    <div className={`flex items-center gap-1 ${
-                      song.playIncrease > 0 ? 'text-green-500' : 
-                      song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'
-                    }`}>
-                      {song.playIncrease > 0 ? (
-                        <TrendingUp className="w-4 h-4" />
-                      ) : song.playIncrease < 0 ? (
-                        <TrendingDown className="w-4 h-4" />
-                      ) : null}
-                      <span>{song.playIncrease > 0 ? '+' : ''}{Number(song.playIncrease).toFixed(1)}%</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{formatDuration(song.duration)}</span>
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="w-8 h-8"
+                          onClick={() => handlePlaySong(song)}
+                        >
+                          {isPlaying ? (
+                            <Pause className="w-4 h-4" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="w-8 h-8"
+                          onClick={() => toggleBookmark(song)}
+                        >
+                          <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  {/* Desktop Layout */}
+                  <div className="hidden md:flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors group">
+                    {/* Ranking */}
+                    <div className="flex items-center gap-3 min-w-[80px]">
+                      <span className="text-2xl font-bold text-muted-foreground w-8">
+                        {song.ranking}
+                      </span>
+                      {rankingChange && (
+                        <div className="flex items-center gap-1">
+                          {rankingChange.type === 'up' && (
+                            <TrendingUp className="w-4 h-4 text-green-500" />
+                          )}
+                          {rankingChange.type === 'down' && (
+                            <TrendingDown className="w-4 h-4 text-red-500" />
+                          )}
+                          {rankingChange.type !== 'same' && (
+                            <span className="text-xs text-muted-foreground">
+                              {rankingChange.value}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Play Button */}
                     <Button
                       size="icon"
                       variant="ghost"
                       className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => toggleBookmark(song)}
+                      onClick={() => handlePlaySong(song)}
                     >
-                      <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
+                      {isPlaying ? (
+                        <Pause className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
                     </Button>
-                    
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                    
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
+
+                    {/* Thumbnail */}
+                    <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted">
+                      <ImageWithFallback
+                        src={song.thumbnail || ''}
+                        alt={song.title}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Song Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate">{song.title}</h3>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {song.artist} {song.album && `• ${song.album}`}
+                      </p>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Headphones className="w-4 h-4" />
+                        <span>{song.plays.toLocaleString()}</span>
+                      </div>
+                      
+                      <div className={`flex items-center gap-1 ${
+                        song.playIncrease > 0 ? 'text-green-500' : 
+                        song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'
+                      }`}>
+                        {song.playIncrease > 0 ? (
+                          <TrendingUp className="w-4 h-4" />
+                        ) : song.playIncrease < 0 ? (
+                          <TrendingDown className="w-4 h-4" />
+                        ) : null}
+                        <span>{song.playIncrease > 0 ? '+' : ''}{Number(song.playIncrease).toFixed(1)}%</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatDuration(song.duration)}</span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => toggleBookmark(song)}
+                      >
+                        <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
+                      </Button>
+                      
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                      
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )

@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "./auth"
-import { supabase } from "./supabase"
+import { supabase } from "@/lib/supabase"
 
 /**
  * 서버 컴포넌트에서 현재 세션 정보를 가져오는 함수

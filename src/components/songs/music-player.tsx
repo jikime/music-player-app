@@ -287,7 +287,117 @@ export function MusicPlayer() {
         />
       )}
 
-      <div className="flex items-center gap-4 p-4">
+      {/* Mobile Layout: Stacked */}
+      <div className="md:hidden p-3 space-y-3">
+        {/* Top Row: Song Info + Play Button */}
+        <div className="flex items-center gap-3">
+          {currentSong ? (
+            <>
+              <ImageWithFallback
+                src={currentSong.thumbnail || "/placeholder.svg"}
+                alt={currentSong.title}
+                width={48}
+                height={48}
+                className="w-12 h-12 rounded object-cover flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-foreground truncate text-sm">{currentSong.title}</h4>
+                <p className="text-xs text-muted-foreground truncate">{currentSong.artist}</p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={`w-9 h-9 ${isBookmarked(currentSong.id) ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
+                  onClick={toggleBookmark}
+                >
+                  <Heart className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-10 h-10 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  disabled={!currentSong || !playerReady}
+                >
+                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-3 w-full">
+              <div className="w-12 h-12 rounded bg-muted/50 flex items-center justify-center flex-shrink-0">
+                <Music className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-muted-foreground text-sm">No song selected</h4>
+                <p className="text-xs text-muted-foreground/70">Add a YouTube link to start playing</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Progress Bar */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-10 text-right">
+            {formatTime(seeking && seekTime !== null ? seekTime : currentTime)}
+          </span>
+          <Slider 
+            value={[duration > 0 ? ((seeking && seekTime !== null ? seekTime : currentTime) / duration) * 100 : 0]} 
+            max={100} 
+            step={0.1}
+            onValueChange={handleSeekChange}
+            onValueCommit={handleSeekCommit}
+            className="flex-1" 
+            disabled={!currentSong || !playerReady}
+          />
+          <span className="text-xs text-muted-foreground w-10">{formatTime(duration)}</span>
+        </div>
+
+        {/* Controls Row */}
+        <div className="flex items-center justify-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`w-9 h-9 ${shuffle ? 'text-accent' : 'text-muted-foreground'} hover:text-foreground`}
+            onClick={toggleShuffle}
+          >
+            <Shuffle className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="w-9 h-9 text-muted-foreground hover:text-foreground"
+            onClick={handlePrevious}
+            disabled={!currentSong}
+          >
+            <SkipBack className="w-5 h-5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="w-9 h-9 text-muted-foreground hover:text-foreground"
+            onClick={handleNext}
+            disabled={!currentSong}
+          >
+            <SkipForward className="w-5 h-5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`w-9 h-9 ${repeat !== 'none' ? 'text-accent' : 'text-muted-foreground'} hover:text-foreground relative`}
+            onClick={toggleRepeat}
+          >
+            <Repeat className="w-4 h-4" />
+            {repeat === 'one' && (
+              <span className="absolute -top-1 -right-1 text-xs bg-accent text-accent-foreground rounded-full w-4 h-4 flex items-center justify-center text-[10px]">1</span>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Desktop Layout: Single Row */}
+      <div className="hidden md:flex items-center gap-4 p-4">
         {/* Current Song */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {currentSong ? (
@@ -369,7 +479,7 @@ export function MusicPlayer() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className={`${repeat !== 'none' ? 'text-accent' : 'text-muted-foreground'} hover:text-foreground`}
+              className={`${repeat !== 'none' ? 'text-accent' : 'text-muted-foreground'} hover:text-foreground relative`}
               onClick={toggleRepeat}
             >
               <Repeat className="w-4 h-4" />
@@ -400,7 +510,7 @@ export function MusicPlayer() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-gray-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
             onClick={() => setVolume(volume > 0 ? 0 : 0.7)}
           >
             {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}

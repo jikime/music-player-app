@@ -166,56 +166,111 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
           }`}
         >
           {currentSongs.map((song, index) => (
-          <div 
-            key={song.id} 
-            className="flex items-center gap-4 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
-            onClick={() => onPlaySong(song)}
-          >
-            <span className="text-muted-foreground w-8 text-sm">#{currentPage * ITEMS_PER_PAGE + index + 1}</span>
-            <ImageWithFallback
-              src={song.thumbnail || "/placeholder.svg"}
-              alt={song.title}
-              width={50}
-              height={50}
-              className="w-12 aspect-square rounded object-cover"
-            />
-            <div className="flex-1">
-              <h3 className="font-medium text-foreground">{song.title}</h3>
-              <p className="text-sm text-muted-foreground">{song.artist}</p>
-            </div>
-            <div className="text-sm text-muted-foreground min-w-0 flex-1">{song.album || 'Unknown Album'}</div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Music className="w-4 h-4" />
-                <span className="text-sm">{formatPlays(song.plays)}</span>
-              </div>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span className="text-sm">{formatDuration(song.duration)}</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`w-8 h-8 ${isBookmarked(song.id) ? "text-primary" : "text-muted-foreground"} hover:text-primary`}
-                onClick={(e) => handleToggleBookmark(song.id, e)}
-                disabled={bookmarkingStates[song.id]}
+            <div key={song.id}>
+              {/* Mobile Layout: Card Style */}
+              <div 
+                className="md:hidden bg-card rounded-lg p-4 border hover:bg-card/70 group cursor-pointer"
+                onClick={() => onPlaySong(song)}
               >
-                {bookmarkingStates[song.id] ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-8 h-8 text-muted-foreground opacity-0 group-hover:opacity-100"
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-muted-foreground text-sm font-mono w-6 flex-shrink-0">
+                      #{currentPage * ITEMS_PER_PAGE + index + 1}
+                    </span>
+                    <ImageWithFallback
+                      src={song.thumbnail || "/placeholder.svg"}
+                      alt={song.title}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded object-cover flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground truncate">{song.title}</h3>
+                      <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                        <span>{formatDuration(song.duration)}</span>
+                        <span>{formatPlays(song.plays)} plays</span>
+                        {song.album && <span className="truncate">{song.album}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`w-9 h-9 ${isBookmarked(song.id) ? "text-primary" : "text-muted-foreground"} hover:text-primary`}
+                      onClick={(e) => handleToggleBookmark(song.id, e)}
+                      disabled={bookmarkingStates[song.id]}
+                    >
+                      {bookmarkingStates[song.id] ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-9 h-9 text-muted-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop Layout: Table Row Style */}
+              <div 
+                className="hidden md:flex items-center gap-4 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
+                onClick={() => onPlaySong(song)}
               >
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
+                <span className="text-muted-foreground w-8 text-sm">#{currentPage * ITEMS_PER_PAGE + index + 1}</span>
+                <ImageWithFallback
+                  src={song.thumbnail || "/placeholder.svg"}
+                  alt={song.title}
+                  width={50}
+                  height={50}
+                  className="w-12 aspect-square rounded object-cover"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-foreground truncate">{song.title}</h3>
+                  <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+                </div>
+                <div className="text-sm text-muted-foreground min-w-0 flex-1 truncate">{song.album || 'Unknown Album'}</div>
+                <div className="flex items-center gap-4">
+                  <div className="hidden lg:flex items-center gap-1 text-muted-foreground">
+                    <Music className="w-4 h-4" />
+                    <span className="text-sm">{formatPlays(song.plays)}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-sm">{formatDuration(song.duration)}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`w-8 h-8 ${isBookmarked(song.id) ? "text-primary" : "text-muted-foreground"} hover:text-primary`}
+                    onClick={(e) => handleToggleBookmark(song.id, e)}
+                    disabled={bookmarkingStates[song.id]}
+                  >
+                    {bookmarkingStates[song.id] ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8 text-muted-foreground opacity-0 group-hover:opacity-100"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
         
         {/* Page indicator */}
         {totalPages > 1 && (
