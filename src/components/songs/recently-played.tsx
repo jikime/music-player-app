@@ -25,7 +25,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
       // Default fallback based on screen width
       if (typeof window !== 'undefined') {
         const screenWidth = window.innerWidth
-        if (screenWidth < 768) return 2 // Mobile/Tablet: 2 items maximum
+        if (screenWidth < 768) return 3 // Mobile/Tablet: 3 items maximum
         if (screenWidth < 1024) return 3 // Small desktop: 3 items
         return 5 // Large desktop: 5 items
       }
@@ -49,7 +49,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
     let itemsToShow = 1
     let totalWidth = cardWidth
     
-    const maxItems = screenWidth < 768 ? 2 : 6 // Limit to 2 items on mobile/tablet
+    const maxItems = screenWidth < 768 ? 3 : 6 // Limit to 3 items on mobile/tablet
     
     while (totalWidth + gap + cardWidth <= containerWidth && itemsToShow < maxItems) {
       totalWidth += gap + cardWidth
@@ -57,7 +57,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
     }
     
     // Ensure minimum items based on screen size
-    const minItems = screenWidth < 768 ? 1 : 2
+    const minItems = screenWidth < 768 ? 3 : 2
     
     return Math.max(minItems, Math.min(maxItems, itemsToShow))
   }
@@ -140,9 +140,9 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
     setShowAll(!showAll)
   }
   const skeletonCards = (
-    <div className="flex justify-center gap-4 overflow-x-auto mb-4">
+    <div className="flex justify-center gap-3 sm:gap-4 overflow-x-auto mb-4">
       {Array.from({ length: itemsPerPage }).map((_, index) => (
-        <div key={index} className="bg-card/50 border-border rounded-xl border shadow-sm flex flex-col w-40 sm:w-48 md:w-52 lg:w-56 flex-shrink-0">
+        <div key={index} className="bg-card/50 border-border rounded-xl border shadow-sm flex flex-col w-36 sm:w-44 md:w-52 lg:w-56 flex-shrink-0">
           <Skeleton className="w-full aspect-square rounded-t-xl" />
           <div className="p-3 md:p-4 flex flex-col flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
@@ -211,11 +211,11 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
-          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-5' : 'flex justify-center gap-4 overflow-x-auto'} mb-4`}>
+          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-5' : 'flex justify-center gap-3 sm:gap-4 overflow-x-auto'} mb-4`}>
             {currentSongs.map((song) => (
               <div
                 key={song.id}
-                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-40 sm:w-48 md:w-52 lg:w-56 flex-shrink-0'}`}
+                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-36 sm:w-44 md:w-52 lg:w-56 flex-shrink-0'}`}
                 onClick={() => onPlaySong(song)}
           >
             <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative">
