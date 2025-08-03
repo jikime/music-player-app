@@ -168,15 +168,15 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={() => handleModalClose(isLoading, onOpenChange)}>
-      <DialogContent className="sm:max-w-[350px] bg-gray-900 border-gray-700 text-white">
+      <DialogContent className="sm:max-w-[350px] bg-card border-border text-foreground">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-red-600 rounded-lg">
-              <Youtube className="w-5 h-5 text-white" />
+              <Youtube className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-white">Add YouTube Music</DialogTitle>
-              <DialogDescription className="text-gray-400 text-sm">
+              <DialogTitle className="text-lg font-bold text-foreground">Add YouTube Music</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
                 Add a YouTube video to your music collection
               </DialogDescription>
             </div>
@@ -185,7 +185,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label className="text-gray-300 flex items-center gap-2 text-sm">
+            <Label className="text-foreground flex items-center gap-2 text-sm">
               <Youtube className="w-4 h-4" />
               YouTube URL *
               {isFetchingInfo && (
@@ -198,7 +198,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
                 placeholder="https://www.youtube.com/watch?v=..."
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 pr-10"
+                className="bg-input border-border text-foreground placeholder-muted-foreground pr-10"
                 required
               />
               {url && (
@@ -217,7 +217,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
           </div>
           
           <div className="space-y-2">
-            <Label className="text-gray-300 flex items-center gap-2 text-sm">
+            <Label className="text-foreground flex items-center gap-2 text-sm">
               <Music className="w-4 h-4" />
               Song Title *
             </Label>
@@ -225,13 +225,13 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
               placeholder="Enter song title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+              className="bg-input border-border text-foreground placeholder-muted-foreground"
               required
             />
           </div>
           
           <div className="space-y-2">
-            <Label className="text-gray-300 flex items-center gap-2 text-sm">
+            <Label className="text-foreground flex items-center gap-2 text-sm">
               <User className="w-4 h-4" />
               Artist *
             </Label>
@@ -239,13 +239,13 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
               placeholder="Enter artist name"
               value={artist}
               onChange={(e) => setArtist(e.target.value)}
-              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+              className="bg-input border-border text-foreground placeholder-muted-foreground"
               required
             />
           </div>
           
           <div className="space-y-2">
-            <Label className="text-gray-300 flex items-center gap-2 text-sm">
+            <Label className="text-foreground flex items-center gap-2 text-sm">
               <Disc3 className="w-4 h-4" />
               Album (Optional)
             </Label>
@@ -253,7 +253,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
               placeholder="Enter album name (optional)"
               value={album}
               onChange={(e) => setAlbum(e.target.value)}
-              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+              className="bg-input border-border text-foreground placeholder-muted-foreground"
             />
           </div>
           
@@ -263,7 +263,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
               variant="outline"
               onClick={() => handleModalClose(isLoading, onOpenChange)}
               disabled={isLoading}
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="border-border text-muted-foreground hover:bg-muted"
             >
               Cancel
             </Button>

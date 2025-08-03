@@ -233,7 +233,7 @@ export function MusicPlayer() {
   }
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/20 backdrop-blur-sm z-10">
+    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-background/80 backdrop-blur-sm z-10">
       {/* Hidden React Player */}
       {currentSong && (
         <ReactPlayer
@@ -278,29 +278,29 @@ export function MusicPlayer() {
                 className="w-15 h-15 rounded object-cover"
               />
               <div className="min-w-0">
-                <h4 className="font-medium text-white truncate">{currentSong.title}</h4>
-                <p className="text-sm text-gray-400 truncate">{currentSong.artist}</p>
+                <h4 className="font-medium text-foreground truncate">{currentSong.title}</h4>
+                <p className="text-sm text-muted-foreground truncate">{currentSong.artist}</p>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className={`${isBookmarked(currentSong.id) ? 'text-pink-500' : 'text-gray-400'} hover:text-pink-500`}
+                className={`${isBookmarked(currentSong.id) ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
                 onClick={toggleBookmark}
               >
                 <Heart className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
               </Button>
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
                 <Download className="w-4 h-4" />
               </Button>
             </>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="w-15 h-15 rounded bg-white/10 flex items-center justify-center">
-                <Music className="w-6 h-6 text-gray-400" />
+              <div className="w-15 h-15 rounded bg-muted/50 flex items-center justify-center">
+                <Music className="w-6 h-6 text-muted-foreground" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-400">No song selected</h4>
-                <p className="text-sm text-gray-500">Add a YouTube link to start playing</p>
+                <h4 className="font-medium text-muted-foreground">No song selected</h4>
+                <p className="text-sm text-muted-foreground/70">Add a YouTube link to start playing</p>
               </div>
             </div>
           )}
@@ -312,7 +312,7 @@ export function MusicPlayer() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className={`${shuffle ? 'text-purple-500' : 'text-gray-400'} hover:text-white`}
+              className={`${shuffle ? 'text-accent' : 'text-muted-foreground'} hover:text-foreground`}
               onClick={toggleShuffle}
             >
               <Shuffle className="w-4 h-4" />
@@ -320,7 +320,7 @@ export function MusicPlayer() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-gray-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
               onClick={handlePrevious}
               disabled={!currentSong}
             >
@@ -329,7 +329,7 @@ export function MusicPlayer() {
             <Button
               variant="ghost"
               size="icon"
-              className="w-10 h-10 bg-white text-black hover:bg-gray-200 disabled:opacity-50"
+              className="w-10 h-10 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               onClick={() => setIsPlaying(!isPlaying)}
               disabled={!currentSong || !playerReady}
             >
@@ -338,7 +338,7 @@ export function MusicPlayer() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-gray-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
               onClick={handleNext}
               disabled={!currentSong}
             >
@@ -347,7 +347,7 @@ export function MusicPlayer() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className={`${repeat !== 'none' ? 'text-purple-500' : 'text-gray-400'} hover:text-white`}
+              className={`${repeat !== 'none' ? 'text-accent' : 'text-muted-foreground'} hover:text-foreground`}
               onClick={toggleRepeat}
             >
               <Repeat className="w-4 h-4" />
@@ -357,7 +357,7 @@ export function MusicPlayer() {
             </Button>
           </div>
           <div className="flex items-center gap-2 w-full max-w-md">
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground">
               {formatTime(seeking && seekTime !== null ? seekTime : currentTime)}
             </span>
             <Slider 
@@ -369,7 +369,7 @@ export function MusicPlayer() {
               className="flex-1" 
               disabled={!currentSong || !playerReady}
             />
-            <span className="text-xs text-gray-400">{formatTime(duration)}</span>
+            <span className="text-xs text-muted-foreground">{formatTime(duration)}</span>
           </div>
         </div>
 
