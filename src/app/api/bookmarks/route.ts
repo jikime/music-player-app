@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/server-auth'
 
-// GET - 모든 북마크 조회
+// GET - 현재 사용자의 북마크 조회
 export async function GET() {
   try {
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { data: bookmarks, error } = await supabase
       .from('bookmarks')
       .select(`
         *,
         songs(*)
       `)
+      .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -34,6 +42,12 @@ export async function GET() {
 // POST - 북마크 추가
 export async function POST(request: NextRequest) {
   try {
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { songId } = body
 
@@ -47,7 +61,8 @@ export async function POST(request: NextRequest) {
     const { data: bookmark, error } = await supabase
       .from('bookmarks')
       .insert([{
-        song_id: songId
+        song_id: songId,
+        user_id: currentUser.id
       }])
       .select()
       .single()
@@ -80,6 +95,12 @@ export async function POST(request: NextRequest) {
 // DELETE - 북마크 제거 (by songId)
 export async function DELETE(request: NextRequest) {
   try {
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const songId = searchParams.get('songId')
 
@@ -94,6 +115,7 @@ export async function DELETE(request: NextRequest) {
       .from('bookmarks')
       .delete()
       .eq('song_id', songId)
+      .eq('user_id', currentUser.id)
 
     if (error) {
       console.error('Error deleting bookmark:', error)

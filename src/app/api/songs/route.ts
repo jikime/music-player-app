@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, DatabaseSong } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/server-auth'
 
-// GET - 모든 노래 조회
+// GET - 모든 노래 조회 (사용자와 무관)
 export async function GET() {
   try {
     const { data: songs, error } = await supabase
@@ -39,6 +40,12 @@ export async function GET() {
 // POST - 새 노래 추가
 export async function POST(request: NextRequest) {
   try {
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { title, artist, album, duration, url, thumbnail, lyrics, plays, liked } = body
 
@@ -61,7 +68,8 @@ export async function POST(request: NextRequest) {
         thumbnail,
         lyrics,
         plays: plays || 0,
-        liked: liked || false
+        liked: liked || false,
+        user_id: currentUser.id
       }])
       .select()
       .single()

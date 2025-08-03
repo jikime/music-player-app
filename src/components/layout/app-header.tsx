@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useSession, signIn, signOut } from "next-auth/react"
+import { usePathname } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,6 +32,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle"
 export function AppHeader() {
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)
   const { data: session, status } = useSession()
+  const pathname = usePathname()
 
   const handleSignIn = () => {
     signIn()
@@ -49,6 +51,45 @@ export function AppHeader() {
       .toUpperCase()
   }
 
+  // 경로에 따른 breadcrumb 생성
+  const getBreadcrumbs = () => {
+    const segments = pathname.split('/').filter(Boolean)
+    const breadcrumbs: Array<{
+      label: string;
+      href: string;
+      isHome?: boolean;
+      isCurrent?: boolean;
+      isLink?: boolean;
+    }> = [
+      { label: 'VIBE Music', href: '/', isHome: true }
+    ]
+
+    // 현재 경로에 따른 breadcrumb 매핑
+    if (pathname === '/') {
+      breadcrumbs.push({ label: 'Discover', href: '/', isCurrent: true })
+    } else if (pathname === '/trending') {
+      breadcrumbs.push({ label: 'Trending', href: '/trending', isCurrent: true })
+    } else if (pathname.startsWith('/playlist/')) {
+      breadcrumbs.push({ label: 'Playlists', href: '/playlist', isLink: true })
+      // playlist ID가 있는 경우
+      if (segments.length > 1) {
+        breadcrumbs.push({ label: `Playlist ${segments[1]}`, href: pathname, isCurrent: true })
+      }
+    } else {
+      // 기본적으로 현재 경로의 마지막 segment를 사용
+      const currentSegment = segments[segments.length - 1]
+      if (currentSegment) {
+        breadcrumbs.push({ 
+          label: currentSegment.charAt(0).toUpperCase() + currentSegment.slice(1), 
+          href: pathname, 
+          isCurrent: true 
+        })
+      }
+    }
+
+    return breadcrumbs
+  }
+
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b border-border">
@@ -60,15 +101,25 @@ export function AppHeader() {
           />
           <Breadcrumb>
             <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#" className="text-muted-foreground">
-                  VIBE Music Player
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="text-foreground font-semibold">Discover</BreadcrumbPage>
-              </BreadcrumbItem>
+              {getBreadcrumbs().map((breadcrumb, index) => (
+                <div key={`${breadcrumb.href}-${index}`} className="flex items-center">
+                  {index > 0 && <BreadcrumbSeparator className="hidden md:block" />}
+                  <BreadcrumbItem className={breadcrumb.isHome ? "hidden md:block" : ""}>
+                    {breadcrumb.isCurrent ? (
+                      <BreadcrumbPage className="text-foreground font-semibold">
+                        {breadcrumb.label}
+                      </BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink 
+                        href={breadcrumb.href} 
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {breadcrumb.label}
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </div>
+              ))}
             </BreadcrumbList>
           </Breadcrumb>
         </div>

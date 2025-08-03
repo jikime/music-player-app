@@ -54,7 +54,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
             <Music className="w-5 h-5 text-primary" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold text-foreground">Music Player</span>
+            <span className="text-sm font-semibold text-foreground">VIBE Music</span>
             <span className="text-xs text-muted-foreground">Your music library</span>
           </div>
         </div>

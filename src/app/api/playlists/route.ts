@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/server-auth'
 
-// GET - 모든 플레이리스트 조회 (songs 포함)
+// GET - 현재 사용자의 플레이리스트 조회 (songs 포함)
 export async function GET() {
   try {
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { data: playlists, error } = await supabase
       .from('playlists')
       .select(`
@@ -14,6 +21,7 @@ export async function GET() {
           songs(*)
         )
       `)
+      .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -54,6 +62,12 @@ export async function GET() {
 // POST - 새 플레이리스트 생성
 export async function POST(request: NextRequest) {
   try {
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { name, description, coverImage, hasNotification } = body
 
@@ -71,7 +85,8 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         cover_image: coverImage || null,
-        has_notification: hasNotification || false
+        has_notification: hasNotification || false,
+        user_id: currentUser.id
       }])
       .select()
       .single()
