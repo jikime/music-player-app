@@ -37,7 +37,7 @@ export default function Component() {
   }
 
   return (
-    <div className="min-h-screen px-4 md:px-6 music-player-offset">
+    <div className="min-h-screen p-4 md:p-6 music-player-offset">
       <RecentlyPlayed 
         songs={recentSongs}
         onPlaySong={handlePlaySong}
