@@ -258,7 +258,7 @@ export default function TrendingPage() {
                   {/* Thumbnail */}
                   <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted">
                     <ImageWithFallback
-                      src={song.thumbnail}
+                      src={song.thumbnail || ''}
                       alt={song.title}
                       width={48}
                       height={48}

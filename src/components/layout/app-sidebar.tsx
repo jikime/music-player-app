@@ -4,7 +4,6 @@ import * as React from "react"
 import {
   Home,
   TrendingUp,
-  Link,
   Music,
 } from "lucide-react"
 
@@ -19,8 +18,6 @@ import {
 } from "@/components/ui/sidebar"
 import { useMusicStore } from "@/lib/store"
 import type { Song } from "@/types/music"
-import { AddLinkModal } from "@/components/add-link-modal"
-import { useState } from "react"
 
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -28,7 +25,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ ...props }: AppSidebarProps) {
   const { playlists, bookmarks, getSong } = useMusicStore()
-  const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)
 
 
   // Get bookmarked songs
@@ -49,12 +45,6 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       url: "/trending",
       icon: TrendingUp,
     },
-    {
-      title: "Add YouTube Link",
-      url: "#",
-      icon: Link,
-      onClick: () => setAddLinkModalOpen(true),
-    },
   ]
 
   return (
@@ -74,7 +64,6 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
         <NavMain items={navMainItems} />
         <NavPlaylists playlists={playlists} />
         <NavBookmarks bookmarkedSongs={bookmarkedSongs as Song[]} onPlaySong={() => {}} />
-        <AddLinkModal open={addLinkModalOpen} onOpenChange={setAddLinkModalOpen} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
