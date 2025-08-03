@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 15.4.2 music streaming application built with React 19, TypeScript, and Tailwind CSS 4. The app uses shadcn/ui components based on Radix UI primitives for a modern, accessible UI.
+Modern music streaming application built with Next.js 15.4.2, React 19, TypeScript, and Supabase. Features authentication, playlist management, real-time music playback, and responsive design with a dark theme interface.
 
 ## Essential Commands
 
@@ -23,61 +23,95 @@ npm run lint       # Run ESLint checks
 ## Architecture
 
 ### Tech Stack
-- **Next.js 15.4.2** with App Router (`/src/app/`)
-- **React 19.1.0** with TypeScript
-- **Tailwind CSS 4** with custom theme variables in `globals.css`
-- **shadcn/ui** components in `/src/components/ui/`
-- **Radix UI** for accessible primitives (Avatar, ScrollArea, Slider, etc.)
+- **Next.js 15.4.2** with App Router and React 19.1.0
+- **TypeScript** with strict mode and path alias `@/*` → `./src/*`
+- **Supabase** for backend (PostgreSQL database, authentication)
+- **NextAuth.js** for authentication with email/password and Google OAuth
+- **Zustand** for global state management
+- **React Query** for server state management
+- **Tailwind CSS 4** with custom theme variables and oklch color space
+- **shadcn/ui** components based on Radix UI primitives
+- **React Player** and **Wavesurfer.js** for audio playback
 
-### Key Files and Patterns
+### Key Architecture Patterns
 
-1. **Main Application Component**: `src/components/music-streaming-app.tsx`
-   - Central component containing all music player functionality
-   - Manages state for playlists, playback, and UI interactions
-   - Uses mock data for songs, playlists, and user bookmarks
+#### Authentication & Authorization
+- JWT-based authentication with NextAuth.js
+- Middleware-based route protection (`src/middleware.ts`)
+- Protected routes: `/`, `/playlist/*`, `/trending`, and all `/api/*` except auth endpoints
+- User data isolation via `user_id` foreign keys (no RLS)
 
-2. **Component Structure**:
-   - shadcn/ui components are in `src/components/ui/`
-   - Use the `cn()` utility from `src/lib/utils.ts` for className merging
-   - Components follow the shadcn/ui pattern with forwardRef and displayName
+#### State Management Architecture
+- **Zustand Store** (`src/lib/store.ts`): Central music player state, songs, playlists, bookmarks
+- **React Query**: Server state caching and synchronization
+- **Player State**: Includes queue management, playlist context, shuffle/repeat modes
 
-3. **Styling Approach**:
-   - Tailwind CSS 4 with inline theme syntax
-   - CSS variables defined in `globals.css` for theming
-   - Dark theme with purple/indigo gradients and glassmorphism effects
-   - Use oklch color space for color definitions
+#### Database Schema
+Core tables: `users`, `songs`, `playlists`, `playlist_songs`, `bookmarks`, `trending_snapshots`, `trending_rankings`
 
-4. **TypeScript Configuration**:
-   - Path alias: `@/*` maps to `./src/*`
-   - Strict mode enabled
-   - Use proper TypeScript types for all components and functions
+#### Responsive Design
+- **Mobile Hook**: `src/hooks/use-mobile.ts` with 768px breakpoint
+- **Mobile-first**: Responsive design with mobile considerations
+
+### Project Structure
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # Authentication pages (signin, signup)
+│   ├── (protected)/       # Protected routes with layout
+│   └── api/               # API routes (songs, playlists, bookmarks, trending)
+├── components/
+│   ├── layout/           # Sidebar, header, navigation components
+│   ├── ui/               # shadcn/ui components
+│   ├── songs/            # Music player, song management
+│   └── playlist/         # Playlist creation/management
+├── lib/                  # Core utilities
+│   ├── store.ts         # Zustand store (central state management)
+│   ├── api.ts           # API client functions
+│   ├── supabase.ts      # Supabase client configuration
+│   └── auth.ts          # NextAuth configuration
+├── hooks/               # Custom React hooks including use-mobile.ts
+└── types/               # TypeScript type definitions
+```
 
 ## Development Guidelines
 
-1. **Adding New UI Components**:
-   - Check if shadcn/ui has the component first
-   - Follow existing component patterns in `src/components/ui/`
-   - Use Radix UI primitives when building custom components
+### Working with State
+- **Music Store**: Use `useMusicStore()` for player state, songs, playlists, bookmarks
+- **Player Context**: The store manages playlist playbook context and queue behavior
+- **API Integration**: Store methods handle API calls and state updates automatically
 
-2. **State Management**:
-   - Currently using React useState for local state
-   - Main app state is managed in `music-streaming-app.tsx`
+### Responsive Development
+- Use `useIsMobile()` hook from `src/hooks/use-mobile.ts` for responsive logic
+- Mobile breakpoint: 768px (matches Tailwind's `md:` breakpoint)
+- Apply mobile-specific layouts and interactions using the hook
 
-3. **Icons**:
-   - Use Lucide React icons (already installed)
-   - Import icons as needed: `import { Play, Pause, etc } from 'lucide-react'`
+### Component Patterns
+- Follow shadcn/ui patterns with forwardRef and displayName
+- Use `cn()` utility from `src/lib/utils.ts` for className merging
+- Import Lucide React icons as needed
+- Apply Tailwind CSS 4 with inline theme syntax
 
-4. **Testing**:
-   - No test framework currently configured
-   - When adding tests, check with user for preferred testing approach
+### API Development
+- Protected endpoints require authentication via middleware
+- Use server-side session validation in API routes
+- Follow RESTful patterns for CRUD operations
+- Handle user data isolation with `user_id` filtering
 
-## Current Project State
+### Authentication Flow
+1. Middleware checks JWT tokens for protected routes
+2. Unauthenticated users redirected to `/signin`
+3. API routes validate sessions using `getServerSession`
+4. User data filtered by authenticated user's `user_id`
 
-The application includes:
-- Sidebar navigation (Discover, Trending, Streaming)
-- Playlist management with create/delete functionality
-- Bookmarks/saved songs feature
-- Recently played section
-- Top 100 Billboard list
-- Full music player controls (play/pause, skip, volume, progress)
-- Mock data for demonstration purposes
+## Environment Requirements
+
+Required environment variables:
+```env
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+GOOGLE_CLIENT_ID=your-google-client-id (optional)
+GOOGLE_CLIENT_SECRET=your-google-client-secret (optional)
+```

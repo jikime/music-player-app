@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Music,
   Camera,
@@ -46,6 +47,7 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
   const [selectedGradient, setSelectedGradient] = useState(gradientOptions[0])
   const [isLoading, setIsLoading] = useState(false)
   const [useGradient, setUseGradient] = useState(true)
+  const isMobile = useIsMobile()
   
   const { addPlaylist } = useMusicStore()
 
@@ -95,40 +97,64 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border">
+      <DialogContent className={`bg-card border-border ${
+        isMobile 
+          ? 'max-w-[95vw] w-full mx-2' 
+          : 'sm:max-w-[500px]'
+      }`}>
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Create Playlist</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+          <DialogTitle className={`font-bold ${
+            isMobile ? 'text-lg' : 'text-xl'
+          }`}>Create Playlist</DialogTitle>
+          <DialogDescription className={`text-muted-foreground ${
+            isMobile ? 'text-sm' : 'text-base'
+          }`}>
             Add a name and description for your playlist
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className={isMobile ? 'space-y-4' : 'space-y-6'}>
           {/* Cover Image Section */}
-          <div className="flex gap-6">
-            <div className="relative group">
-              <div className={`w-44 h-44 rounded-lg overflow-hidden ${useGradient ? selectedGradient : 'bg-muted'} shadow-xl`}>
+          <div className={`${
+            isMobile ? 'flex flex-col space-y-4' : 'flex gap-6'
+          }`}>
+            <div className={`relative group ${
+              isMobile ? 'self-center' : ''
+            }`}>
+              <div className={`rounded-lg overflow-hidden shadow-xl ${
+                isMobile 
+                  ? 'w-32 h-32' 
+                  : 'w-44 h-44'
+              } ${useGradient ? selectedGradient : 'bg-muted'}`}>
                 {!useGradient && coverImage ? (
                   <ImageWithFallback
                     src={coverImage}
                     alt="Playlist cover"
-                    width={176}
-                    height={176}
+                    width={isMobile ? 128 : 176}
+                    height={isMobile ? 128 : 176}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Music className="w-16 h-16 text-white/80" />
+                    <Music className={`text-white/80 ${
+                      isMobile ? 'w-12 h-12' : 'w-16 h-16'
+                    }`} />
                   </div>
                 )}
               </div>
               
               {/* Upload/Edit Button */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+              <div className={`absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center transition-opacity ${
+                isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}>
                 <label htmlFor="cover-upload" className="cursor-pointer">
-                  <div className="flex flex-col items-center gap-2 text-white">
-                    <Camera className="w-8 h-8" />
-                    <span className="text-sm font-medium">Choose photo</span>
+                  <div className={`flex flex-col items-center text-white ${
+                    isMobile ? 'gap-1' : 'gap-2'
+                  }`}>
+                    <Camera className={isMobile ? 'w-6 h-6' : 'w-8 h-8'} />
+                    <span className={`font-medium ${
+                      isMobile ? 'text-xs' : 'text-sm'
+                    }`}>Choose photo</span>
                   </div>
                   <input
                     id="cover-upload"
@@ -145,37 +171,50 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  className={`absolute p-1 bg-black/60 rounded-full text-white transition-opacity ${
+                    isMobile 
+                      ? 'top-1 right-1 opacity-100' 
+                      : 'top-2 right-2 opacity-0 group-hover:opacity-100'
+                  }`}
                 >
-                  <X className="w-4 h-4" />
+                  <X className={isMobile ? 'w-3 h-3' : 'w-4 h-4'} />
                 </button>
               )}
             </div>
 
             {/* Form Fields */}
-            <div className="flex-1 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+            <div className={`${
+              isMobile ? 'w-full space-y-3' : 'flex-1 space-y-4'
+            }`}>
+              <div className={isMobile ? 'space-y-1' : 'space-y-2'}>
+                <Label htmlFor="name" className={isMobile ? 'text-sm' : ''}>
+                  Name
+                </Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="My Awesome Playlist"
+                  placeholder={isMobile ? "Playlist name" : "My Awesome Playlist"}
                   className="bg-background"
+                  size={isMobile ? "sm" : "default"}
                   required
                   maxLength={100}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (optional)</Label>
+              <div className={isMobile ? 'space-y-1' : 'space-y-2'}>
+                <Label htmlFor="description" className={isMobile ? 'text-sm' : ''}>
+                  Description (optional)
+                </Label>
                 <Textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Give your playlist a catchy description"
-                  className="bg-background resize-none"
-                  rows={3}
+                  placeholder={isMobile ? "Describe your playlist" : "Give your playlist a catchy description"}
+                  className={`bg-background resize-none ${
+                    isMobile ? 'text-sm' : ''
+                  }`}
+                  rows={isMobile ? 2 : 3}
                   maxLength={300}
                 />
               </div>
@@ -184,18 +223,26 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
 
           {/* Gradient Selection */}
           {useGradient && (
-            <div className="space-y-3">
+            <div className={isMobile ? 'space-y-2' : 'space-y-3'}>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-muted-foreground" />
-                <Label className="text-sm">Choose a color</Label>
+                <Sparkles className={`text-muted-foreground ${
+                  isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'
+                }`} />
+                <Label className={isMobile ? 'text-xs' : 'text-sm'}>
+                  Choose a color
+                </Label>
               </div>
-              <div className="grid grid-cols-8 gap-2">
+              <div className={`grid gap-2 ${
+                isMobile ? 'grid-cols-6' : 'grid-cols-8'
+              }`}>
                 {gradientOptions.map((gradient, index) => (
                   <button
                     key={index}
                     type="button"
                     onClick={() => setSelectedGradient(gradient)}
-                    className={`w-10 h-10 rounded ${gradient} ${
+                    className={`rounded ${gradient} ${
+                      isMobile ? 'w-8 h-8' : 'w-10 h-10'
+                    } ${
                       selectedGradient === gradient 
                         ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' 
                         : ''
@@ -207,10 +254,13 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className={`flex justify-end gap-3 ${
+            isMobile ? 'pt-2' : 'pt-2'
+          }`}>
             <Button
               type="button"
               variant="outline"
+              size={isMobile ? "sm" : "default"}
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
@@ -218,13 +268,16 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
             </Button>
             <Button 
               type="submit" 
+              size={isMobile ? "sm" : "default"}
               disabled={!name.trim() || isLoading}
-              className="min-w-[100px]"
+              className={isMobile ? 'min-w-[80px]' : 'min-w-[100px]'}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  <Loader2 className={`animate-spin mr-2 ${
+                    isMobile ? 'w-3 h-3' : 'w-4 h-4'
+                  }`} />
+                  {isMobile ? 'Creating...' : 'Creating...'}
                 </>
               ) : (
                 'Create'

@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { AlertCircle } from "lucide-react"
 import { useEffect, useState, Suspense } from "react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 function AuthErrorContent() {
   const searchParams = useSearchParams()
   const [errorMessage, setErrorMessage] = useState<string>("")
+  const isMobile = useIsMobile()
   
   useEffect(() => {
     // URL에서 에러 코드 및 메시지 가져오기
@@ -51,22 +53,38 @@ function AuthErrorContent() {
   }, [searchParams])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-      <div className="w-full max-w-md p-8 space-y-6 bg-card border border-border rounded-lg shadow-lg">
-        <div className="flex flex-col items-center text-center space-y-4">
-          <div className="p-3 bg-destructive/10 rounded-full">
-            <AlertCircle className="w-10 h-10 text-destructive" />
+    <div className={`flex flex-col items-center justify-center min-h-screen bg-background ${
+      isMobile ? 'p-3' : 'p-4'
+    }`}>
+      <div className={`w-full max-w-md bg-card border border-border rounded-lg shadow-lg ${
+        isMobile ? 'p-6 space-y-4' : 'p-8 space-y-6'
+      }`}>
+        <div className={`flex flex-col items-center text-center ${
+          isMobile ? 'space-y-3' : 'space-y-4'
+        }`}>
+          <div className={`bg-destructive/10 rounded-full ${
+            isMobile ? 'p-2' : 'p-3'
+          }`}>
+            <AlertCircle className={`text-destructive ${
+              isMobile ? 'w-8 h-8' : 'w-10 h-10'
+            }`} />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">인증 오류</h1>
-          <p className="text-muted-foreground">{errorMessage}</p>
+          <h1 className={`font-bold text-foreground ${
+            isMobile ? 'text-xl' : 'text-2xl'
+          }`}>인증 오류</h1>
+          <p className={`text-muted-foreground ${
+            isMobile ? 'text-sm' : 'text-base'
+          }`}>{errorMessage}</p>
         </div>
         
-        <div className="space-y-4 pt-4">
-          <Button asChild className="w-full">
+        <div className={`pt-4 ${
+          isMobile ? 'space-y-3' : 'space-y-4'
+        }`}>
+          <Button asChild className="w-full" size={isMobile ? "sm" : "default"}>
             <Link href="/signin">로그인 페이지로 돌아가기</Link>
           </Button>
           
-          <Button asChild variant="outline" className="w-full">
+          <Button asChild variant="outline" className="w-full" size={isMobile ? "sm" : "default"}>
             <Link href="/">홈으로 돌아가기</Link>
           </Button>
         </div>
@@ -77,7 +95,11 @@ function AuthErrorContent() {
 
 export default function AuthErrorPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen text-muted-foreground">
+        Loading...
+      </div>
+    }>
       <AuthErrorContent />
     </Suspense>
   )

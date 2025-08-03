@@ -12,12 +12,14 @@ import type { z } from "zod"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 type LoginFormData = z.infer<typeof loginSchema>
 
 export default function SignInPage() {
   const { login, loginWithGoogle, error: authError, isLoading } = useAuth()
   const router = useRouter()
+  const isMobile = useIsMobile()
   
   const {
     register,
@@ -58,54 +60,79 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <div className="w-full max-w-md space-y-6 p-8 bg-card rounded-lg border border-border shadow-lg">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold text-foreground">로그인</h1>
-          <p className="text-sm text-muted-foreground">아래 정보를 입력하여 로그인해주세요.</p>
+    <div className={`min-h-screen flex items-center justify-center bg-background ${
+      isMobile ? 'px-3 py-4' : 'px-4'
+    }`}>
+      <div className={`w-full max-w-md bg-card rounded-lg border border-border shadow-lg ${
+        isMobile ? 'space-y-4 p-6' : 'space-y-6 p-8'
+      }`}>
+        <div className={`text-center ${
+          isMobile ? 'space-y-1' : 'space-y-2'
+        }`}>
+          <h1 className={`font-bold text-foreground ${
+            isMobile ? 'text-xl' : 'text-2xl'
+          }`}>로그인</h1>
+          <p className={`text-muted-foreground ${
+            isMobile ? 'text-xs' : 'text-sm'
+          }`}>아래 정보를 입력하여 로그인해주세요.</p>
         </div>
 
         {errors.root && (
-          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+          <div className={`bg-destructive/10 border border-destructive/20 text-destructive rounded-lg ${
+            isMobile ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm'
+          }`}>
             {errors.root.message}
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-foreground">
+        <form className={isMobile ? 'space-y-3' : 'space-y-4'} onSubmit={handleSubmit(onSubmit)}>
+          <div className={isMobile ? 'space-y-1' : 'space-y-2'}>
+            <Label htmlFor="email" className={`font-medium text-foreground ${
+              isMobile ? 'text-xs' : 'text-sm'
+            }`}>
               이메일
             </Label>
             <Input
               id="email"
               type="email"
               placeholder="m@example.com"
-              className={errors.email ? "border-destructive focus:ring-destructive" : ""}
+              className={`${errors.email ? "border-destructive focus:ring-destructive" : ""} ${
+                isMobile ? 'text-sm' : ''
+              }`}
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className={`text-destructive ${
+                isMobile ? 'text-xs' : 'text-sm'
+              }`}>{errors.email.message}</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium text-foreground">
+          <div className={isMobile ? 'space-y-1' : 'space-y-2'}>
+            <Label htmlFor="password" className={`font-medium text-foreground ${
+              isMobile ? 'text-xs' : 'text-sm'
+            }`}>
               비밀번호
             </Label>
             <Input
               id="password"
               type="password"
-              className={errors.password ? "border-destructive focus:ring-destructive" : ""}
+              className={`${errors.password ? "border-destructive focus:ring-destructive" : ""} ${
+                isMobile ? 'text-sm' : ''
+              }`}
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
+              <p className={`text-destructive ${
+                isMobile ? 'text-xs' : 'text-sm'
+              }`}>{errors.password.message}</p>
             )}
           </div>
 
           <Button
             type="submit"
             className="w-full"
+            size={isMobile ? "sm" : "default"}
             disabled={isLoading}
           >
             {isLoading ? "처리 중..." : "로그인"}
@@ -116,19 +143,26 @@ export default function SignInPage() {
           <div className="absolute inset-0 flex items-center">
             <Separator className="w-full" />
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">또는</span>
+          <div className={`relative flex justify-center uppercase ${
+            isMobile ? 'text-xs' : 'text-xs'
+          }`}>
+            <span className={`bg-card text-muted-foreground ${
+              isMobile ? 'px-2' : 'px-2'
+            }`}>또는</span>
           </div>
         </div>
 
         <Button
           type="button"
           variant="outline"
-          className="w-full flex items-center justify-center gap-2"
+          className={`w-full flex items-center justify-center ${
+            isMobile ? 'gap-2 text-sm' : 'gap-2'
+          }`}
+          size={isMobile ? "sm" : "default"}
           onClick={handleGoogleLogin}
           disabled={isLoading}
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
+          <svg className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} viewBox="0 0 24 24">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -149,7 +183,9 @@ export default function SignInPage() {
           구글 계정으로 로그인
         </Button>
 
-        <div className="text-center text-sm text-muted-foreground">
+        <div className={`text-center text-muted-foreground ${
+          isMobile ? 'text-xs' : 'text-sm'
+        }`}>
           계정이 없으신가요?{" "}
           <Link href="/signup" className="font-medium text-primary hover:text-primary/80 underline">
             회원 가입
