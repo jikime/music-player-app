@@ -38,7 +38,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
     // Responsive card width based on screen size
     let cardWidth: number
     if (screenWidth < 768) {
-      cardWidth = 140 // Smaller cards for 2 items on mobile/tablet (w-35)
+      cardWidth = screenWidth < 400 ? 110 : 140 // Even smaller for very small screens
     } else {
       cardWidth = 224 // Full size cards on desktop (w-56)
     }
@@ -172,7 +172,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
           </div>
         }
       >
-        <div className="flex items-center justify-between mb-4 px-2 md:px-6">
+        <div className="flex items-center justify-between mb-4 px-1 md:px-6">
           <h2 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider">RECENTLY PLAYED</h2>
           {songs.length > itemsPerPage && (
             <div className="flex items-center gap-1 md:gap-2">
@@ -207,7 +207,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
         </div>
         <div 
           ref={containerRef}
-          className={`px-2 md:px-6 transition-all duration-300 ease-in-out ${
+          className={`px-1 md:px-6 transition-all duration-300 ease-in-out ${
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
@@ -215,7 +215,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
             {currentSongs.map((song) => (
               <div
                 key={song.id}
-                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-32 sm:w-40 md:w-52 lg:w-56 flex-shrink-0'}`}
+                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-28 sm:w-32 md:w-52 lg:w-56 flex-shrink-0'}`}
                 onClick={() => onPlaySong(song)}
           >
             <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative">
@@ -227,8 +227,8 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
                 className="object-cover"
               />
             </div>
-            <div className="p-2 md:p-4 flex flex-col flex-1">
-              <h3 className="font-semibold mb-1 line-clamp-2 leading-tight min-h-[2rem] md:min-h-[2.5rem] text-xs md:text-base" title={song.title}>{song.title}</h3>
+            <div className="p-1.5 md:p-4 flex flex-col flex-1">
+              <h3 className="font-semibold mb-1 line-clamp-2 leading-tight min-h-[1.5rem] md:min-h-[2.5rem] text-xs md:text-base" title={song.title}>{song.title}</h3>
               <p className="text-xs md:text-sm text-muted-foreground truncate mb-1" title={song.artist}>{song.artist}</p>
               <p className="text-xs text-muted-foreground/70 mt-auto">
                 {song.duration > 0 ? formatDuration(song.duration) : '0:00'}

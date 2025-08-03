@@ -37,7 +37,7 @@ export default function Component() {
   }
 
   return (
-    <div className="min-h-screen p-2 md:p-6 pb-28">
+    <div className="min-h-screen p-1 md:p-6 pb-28">
       <RecentlyPlayed 
         songs={recentSongs}
         onPlaySong={handlePlaySong}
