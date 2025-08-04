@@ -5,6 +5,7 @@ import {
   Home,
   TrendingUp,
   Music,
+  User,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 
@@ -48,6 +49,11 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       url: "/trending",
       icon: TrendingUp,
     },
+    ...(isAuthenticated ? [{
+      title: "My Songs",
+      url: "/my-songs",
+      icon: User,
+    }] : [])
   ]
 
   return (

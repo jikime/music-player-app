@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { AddSongModal } from "@/components/playlist/add-song-modal"
+import { CreatePlaylistModal } from "@/components/playlist/create-playlist-modal"
 import {
   Play,
   Pause,
@@ -43,10 +44,8 @@ export default function PlaylistPage() {
     shufflePlaylist
   } = useMusicStore()
 
-  const [isEditing, setIsEditing] = useState(false)
-  const [playlistName, setPlaylistName] = useState("")
-  const [playlistDescription, setPlaylistDescription] = useState("")
   const [addSongModalOpen, setAddSongModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const [deletingSongId, setDeletingSongId] = useState<string | null>(null)
   
   // Find the playlist
@@ -70,12 +69,6 @@ export default function PlaylistPage() {
     }
   }, [playlists.length, songs.length, isLoading, initializeData])
 
-  useEffect(() => {
-    if (playlist) {
-      setPlaylistName(playlist.name)
-      setPlaylistDescription(playlist.description || "")
-    }
-  }, [playlist])
 
   // Show loading if data is being loaded or playlist not found yet
   if (isLoading || (!playlist && playlists.length === 0)) {
@@ -115,17 +108,6 @@ export default function PlaylistPage() {
     shufflePlaylist(playlistId)
   }
 
-  const handleSaveEdit = async () => {
-    try {
-      await updatePlaylist(playlistId, {
-        name: playlistName,
-        description: playlistDescription
-      })
-      setIsEditing(false)
-    } catch (error) {
-      console.error("Failed to update playlist:", error)
-    }
-  }
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this playlist?")) {
@@ -191,16 +173,7 @@ export default function PlaylistPage() {
               <div className="flex-1 md:w-full pl-1 md:pl-0 min-w-0">
                 {/* Playlist Title */}
                 <div className="text-left mb-2 md:mb-4">
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={playlistName}
-                      onChange={(e) => setPlaylistName(e.target.value)}
-                      className="text-base md:text-2xl font-bold bg-transparent border-b-2 border-primary outline-none w-full text-left"
-                    />
-                  ) : (
-                    <h1 className="text-base md:text-2xl font-bold line-clamp-2 leading-tight">{playlist!.name}</h1>
-                  )}
+                  <h1 className="text-base md:text-2xl font-bold line-clamp-2 leading-tight">{playlist!.name}</h1>
                 </div>
                 
                 {/* Platform Label */}
@@ -228,89 +201,45 @@ export default function PlaylistPage() {
                   >
                     <Plus className="w-3 h-3" />
                   </Button>
-
-                  {isEditing ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-6 h-6"
-                        onClick={() => setIsEditing(false)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-6 h-6"
-                        onClick={handleSaveEdit}
-                      >
-                        <Check className="w-3 h-3" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-6 h-6"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-6 h-6"
-                      >
-                        <Share2 className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-6 h-6"
-                        onClick={handleDelete}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-6 h-6"
+                    onClick={() => setEditModalOpen(true)}
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-6 h-6"
+                  >
+                    <Share2 className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-6 h-6"
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
                 </div>
                 
                 {/* Description - Hidden on mobile, shown on desktop */}
                 <div className="text-left hidden md:block">
-                  {isEditing ? (
-                    <textarea
-                      value={playlistDescription}
-                      onChange={(e) => setPlaylistDescription(e.target.value)}
-                      placeholder=""
-                      className="text-sm text-muted-foreground bg-transparent border rounded p-2 w-full resize-none mb-4"
-                      rows={3}
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-4 leading-relaxed">
-                      {playlist!.description || ""}
-                    </p>
-                  )}
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-4 leading-relaxed">
+                    {playlist!.description || ""}
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Mobile Description - Below the horizontal layout */}
             <div className="text-left md:hidden mb-3">
-              {isEditing ? (
-                <textarea
-                  value={playlistDescription}
-                  onChange={(e) => setPlaylistDescription(e.target.value)}
-                  placeholder=""
-                  className="text-sm text-muted-foreground bg-transparent border rounded p-2 w-full resize-none"
-                  rows={2}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                  {playlist!.description || ""}
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                {playlist!.description || ""}
+              </p>
             </div>
 
             {/* Desktop Control Buttons Row */}
@@ -323,53 +252,29 @@ export default function PlaylistPage() {
               >
                 <Plus className="w-4 h-4" />
               </Button>
-
-              {isEditing ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8"
-                    onClick={() => setIsEditing(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8"
-                    onClick={handleSaveEdit}
-                  >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8"
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8"
+                onClick={() => setEditModalOpen(true)}
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8"
+              >
+                <Share2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8"
+                onClick={handleDelete}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
 
             {/* Large Play Button */}
@@ -484,6 +389,18 @@ export default function PlaylistPage() {
         open={addSongModalOpen}
         onOpenChange={setAddSongModalOpen}
         existingSongIds={playlist?.songs || []}
+      />
+
+      <CreatePlaylistModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        editMode={true}
+        playlistToEdit={playlist ? {
+          id: playlist.id,
+          name: playlist.name,
+          description: playlist.description,
+          coverImage: playlist.coverImage
+        } : undefined}
       />
     </div>
   )

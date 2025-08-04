@@ -36,11 +36,31 @@ interface BookmarkResponse {
 
 // Songs API
 export const songsApi = {
-  // 모든 노래 조회
+  // 모든 노래 조회 (공용 + 내가 추가한 노래)
   getAll: async (): Promise<Song[]> => {
     const response = await fetch(`${API_BASE_URL}/songs`)
     if (!response.ok) {
       throw new Error('Failed to fetch songs')
+    }
+    const data: SongsResponse = await response.json()
+    return data.songs
+  },
+
+  // 내가 추가한 노래만 조회
+  getMySongs: async (): Promise<Song[]> => {
+    const response = await fetch(`${API_BASE_URL}/songs?myOnly=true`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch my songs')
+    }
+    const data: SongsResponse = await response.json()
+    return data.songs
+  },
+
+  // 모든 노래 조회 (Discover - All Songs용)
+  getAllSongs: async (): Promise<Song[]> => {
+    const response = await fetch(`${API_BASE_URL}/songs?allSongs=true`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch all songs')
     }
     const data: SongsResponse = await response.json()
     return data.songs

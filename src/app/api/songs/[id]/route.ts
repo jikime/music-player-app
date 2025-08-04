@@ -1,5 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, DatabaseSong } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/server-auth'
+
+// 소유권 검증 헬퍼 함수
+async function verifyOwnership(songId: string, userId: string) {
+  const { data: song, error } = await supabase
+    .from('songs')
+    .select('user_id')
+    .eq('id', songId)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return { error: 'Song not found', status: 404 }
+    }
+    return { error: 'Database error', status: 500 }
+  }
+
+  // 공용 노래(user_id가 null)는 수정/삭제 불가
+  if (song.user_id === null) {
+    return { error: 'Cannot modify public songs', status: 403 }
+  }
+
+  // 소유자가 아닌 경우
+  if (song.user_id !== userId) {
+    return { error: 'Forbidden', status: 403 }
+  }
+
+  return { success: true }
+}
 
 // GET - 특정 노래 조회
 export async function GET(
@@ -34,7 +63,8 @@ export async function GET(
       lyrics: song.lyrics,
       uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
       plays: song.plays,
-      liked: song.liked
+      liked: song.liked,
+      shared: song.shared
     }
 
     return NextResponse.json({ song: transformedSong })
@@ -51,8 +81,21 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
+    
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 소유권 검증
+    const ownershipCheck = await verifyOwnership(id, currentUser.id)
+    if (!ownershipCheck.success) {
+      return NextResponse.json({ error: ownershipCheck.error }, { status: ownershipCheck.status })
+    }
+
     const body = await request.json()
-    const { title, artist, album, duration, url, thumbnail, lyrics, plays, liked } = body
+    const { title, artist, album, duration, url, thumbnail, lyrics, plays, liked, shared } = body
 
     const updateData: Partial<DatabaseSong> = {}
     if (title !== undefined) updateData.title = title
@@ -64,6 +107,7 @@ export async function PUT(
     if (lyrics !== undefined) updateData.lyrics = lyrics
     if (plays !== undefined) updateData.plays = plays
     if (liked !== undefined) updateData.liked = liked
+    if (shared !== undefined) updateData.shared = shared
 
     const { data: song, error } = await supabase
       .from('songs')
@@ -92,7 +136,8 @@ export async function PUT(
       lyrics: song.lyrics,
       uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
       plays: song.plays,
-      liked: song.liked
+      liked: song.liked,
+      shared: song.shared
     }
 
     return NextResponse.json({ song: transformedSong })
@@ -109,6 +154,19 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 소유권 검증
+    const ownershipCheck = await verifyOwnership(id, currentUser.id)
+    if (!ownershipCheck.success) {
+      return NextResponse.json({ error: ownershipCheck.error }, { status: ownershipCheck.status })
+    }
+
     const { error } = await supabase
       .from('songs')
       .delete()

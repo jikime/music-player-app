@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import * as React from "react"
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,13 @@ import { useMusicStore } from "@/lib/store"
 interface CreatePlaylistModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  editMode?: boolean
+  playlistToEdit?: {
+    id: string
+    name: string
+    description?: string
+    coverImage?: string
+  }
 }
 
 // Predefined gradient options like Spotify
@@ -40,7 +48,7 @@ const gradientOptions = [
   "bg-gradient-to-br from-emerald-600 to-green-600",
 ]
 
-export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalProps) {
+export function CreatePlaylistModal({ open, onOpenChange, editMode = false, playlistToEdit }: CreatePlaylistModalProps) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [coverImage, setCoverImage] = useState<string | null>(null)
@@ -49,7 +57,33 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
   const [useGradient, setUseGradient] = useState(true)
   const isMobile = useIsMobile()
   
-  const { addPlaylist } = useMusicStore()
+  const { addPlaylist, updatePlaylist } = useMusicStore()
+
+  // Initialize form when editing
+  React.useEffect(() => {
+    if (editMode && playlistToEdit && open) {
+      setName(playlistToEdit.name)
+      setDescription(playlistToEdit.description || "")
+      
+      if (playlistToEdit.coverImage) {
+        if (playlistToEdit.coverImage.startsWith('bg-')) {
+          setSelectedGradient(playlistToEdit.coverImage)
+          setUseGradient(true)
+          setCoverImage(null)
+        } else {
+          setCoverImage(playlistToEdit.coverImage)
+          setUseGradient(false)
+        }
+      }
+    } else if (!open) {
+      // Reset form when closing
+      setName("")
+      setDescription("")
+      setCoverImage(null)
+      setSelectedGradient(gradientOptions[0])
+      setUseGradient(true)
+    }
+  }, [editMode, playlistToEdit, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,11 +91,21 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
 
     setIsLoading(true)
     try {
-      await addPlaylist({
-        name: name.trim(),
-        description: description.trim(),
-        coverImage: useGradient ? selectedGradient : (coverImage || selectedGradient)
-      })
+      if (editMode && playlistToEdit) {
+        // Update existing playlist
+        await updatePlaylist(playlistToEdit.id, {
+          name: name.trim(),
+          description: description.trim(),
+          coverImage: useGradient ? selectedGradient : (coverImage || selectedGradient)
+        })
+      } else {
+        // Create new playlist
+        await addPlaylist({
+          name: name.trim(),
+          description: description.trim(),
+          coverImage: useGradient ? selectedGradient : (coverImage || selectedGradient)
+        })
+      }
       
       // Reset form
       setName("")
@@ -71,8 +115,8 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
       setUseGradient(true)
       onOpenChange(false)
     } catch (error) {
-      console.error("Failed to create playlist:", error)
-      alert("Failed to create playlist. Please try again.")
+      console.error(`Failed to ${editMode ? 'update' : 'create'} playlist:`, error)
+      alert(`Failed to ${editMode ? 'update' : 'create'} playlist. Please try again.`)
     } finally {
       setIsLoading(false)
     }
@@ -105,11 +149,11 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
         <DialogHeader>
           <DialogTitle className={`font-bold ${
             isMobile ? 'text-lg' : 'text-xl'
-          }`}>Create Playlist</DialogTitle>
+          }`}>{editMode ? 'Edit Playlist' : 'Create Playlist'}</DialogTitle>
           <DialogDescription className={`text-muted-foreground ${
             isMobile ? 'text-sm' : 'text-base'
           }`}>
-            Add a name and description for your playlist
+            {editMode ? 'Update the name and description for your playlist' : 'Add a name and description for your playlist'}
           </DialogDescription>
         </DialogHeader>
 
@@ -279,7 +323,7 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
                   {isMobile ? 'Creating...' : 'Creating...'}
                 </>
               ) : (
-                'Create'
+                editMode ? 'Update' : 'Create'
               )}
             </Button>
           </div>

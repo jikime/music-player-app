@@ -10,6 +10,7 @@ export interface Song {
   uploadedAt: Date
   plays: number
   liked: boolean
+  shared: boolean
 }
 
 export interface Playlist {

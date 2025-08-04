@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -18,14 +19,18 @@ import {
   Disc3,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Share2
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { extractVideoId, fetchYouTubeDuration, getYouTubeVideoInfo, getThumbnailUrl } from "@/lib/youtube"
+import type { Song } from "@/types/music"
 
 interface AddLinkModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  editMode?: boolean
+  songToEdit?: Song
 }
 
 const handleModalClose = (isLoading: boolean, onOpenChange: (open: boolean) => void) => {
@@ -34,16 +39,17 @@ const handleModalClose = (isLoading: boolean, onOpenChange: (open: boolean) => v
   onOpenChange(false)
 }
 
-export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
+export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit }: AddLinkModalProps) {
   const [url, setUrl] = useState("")
   const [title, setTitle] = useState("")
   const [artist, setArtist] = useState("")
   const [album, setAlbum] = useState("")
+  const [shared, setShared] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [urlValid, setUrlValid] = useState<boolean | null>(null)
   const [isFetchingInfo, setIsFetchingInfo] = useState(false)
 
-  const { initializeData } = useMusicStore()
+  const { addSong, updateSong, getMySongs } = useMusicStore()
 
   // Auto-fill video information when URL is valid
   const fetchVideoInfo = useCallback(async (videoUrl: string) => {
@@ -82,17 +88,25 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
     }
   }, [url, fetchVideoInfo])
 
-  // Reset form when modal opens/closes
+  // Initialize form when editing or reset when modal opens/closes
   useEffect(() => {
-    if (!open) {
+    if (editMode && songToEdit && open) {
+      setUrl(songToEdit.url)
+      setTitle(songToEdit.title)
+      setArtist(songToEdit.artist)
+      setAlbum(songToEdit.album || "")
+      setShared(songToEdit.shared)
+      setUrlValid(true) // Assume existing URL is valid
+    } else if (!open) {
       setUrl("")
       setTitle("")
       setArtist("")
       setAlbum("")
+      setShared(false)
       setUrlValid(null)
       setIsLoading(false)
     }
-  }, [open])
+  }, [editMode, songToEdit, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,56 +124,61 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
         return
       }
 
-      // Fetch video duration
-      let duration = 0
-      try {
-        duration = await fetchYouTubeDuration(url)
-        console.log(`Fetched duration: ${duration} seconds`)
-      } catch (durationError) {
-        console.warn('Failed to fetch duration, using 0:', durationError)
-        // Continue with duration 0 - it's not critical for saving the song
+      if (editMode && songToEdit) {
+        // Update existing song
+        const updates = {
+          title: title.trim(),
+          artist: artist.trim(),
+          album: album.trim() || undefined,
+          url: url.trim(),
+          shared: shared
+        }
+
+        await updateSong(songToEdit.id, updates)
+        
+        // Refresh my songs list
+        await getMySongs()
+      } else {
+        // Add new song
+        // Fetch video duration for new songs
+        let duration = 0
+        try {
+          duration = await fetchYouTubeDuration(url)
+          console.log(`Fetched duration: ${duration} seconds`)
+        } catch (durationError) {
+          console.warn('Failed to fetch duration, using 0:', durationError)
+          // Continue with duration 0 - it's not critical for saving the song
+        }
+
+        const songData = {
+          title: title.trim(),
+          artist: artist.trim(),
+          album: album.trim() || undefined,
+          duration,
+          url: url.trim(),
+          thumbnail: getThumbnailUrl(videoId, 'max'),
+          lyrics: undefined,
+          plays: 0,
+          liked: false,
+          shared: shared
+        }
+
+        await addSong(songData)
+        
+        // Refresh my songs list
+        await getMySongs()
       }
-
-      const songData = {
-        title,
-        artist,
-        album: album || null,
-        duration,
-        url,
-        thumbnail: getThumbnailUrl(videoId, 'max'),
-        lyrics: null,
-        plays: 0,
-        liked: false
-      }
-
-      // API 호출을 통해 노래 추가
-      const response = await fetch('/api/songs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(songData)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to add song')
-      }
-
-      await response.json() // Response contains song data but we don't need it
       
       // Reset form and close modal
       setUrl("")
       setTitle("")
       setArtist("")
       setAlbum("")
+      setShared(false)
       onOpenChange(false)
-      
-      // 스토어 데이터 새로고침 (중복 방지)
-      await initializeData()
     } catch (error) {
-      console.error("Error adding song:", error)
-      alert(`Failed to add song: ${error instanceof Error ? error.message : 'Please try again.'}`)
+      console.error(`Error ${editMode ? 'updating' : 'adding'} song:`, error)
+      alert(`Failed to ${editMode ? 'update' : 'add'} song: ${error instanceof Error ? error.message : 'Please try again.'}`)
     } finally {
       setIsLoading(false)
     }
@@ -174,9 +193,11 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
               <Youtube className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-foreground">Add YouTube Music</DialogTitle>
+              <DialogTitle className="text-lg font-bold text-foreground">
+                {editMode ? 'Edit Song' : 'Add YouTube Music'}
+              </DialogTitle>
               <DialogDescription className="text-muted-foreground text-sm">
-                Add a YouTube video to your music collection
+                {editMode ? 'Edit song information' : 'Add a YouTube video to your music collection'}
               </DialogDescription>
             </div>
           </div>
@@ -255,6 +276,25 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
               className="bg-input border-border text-foreground placeholder-muted-foreground"
             />
           </div>
+
+          {/* Share Option */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="shared"
+              checked={shared}
+              onCheckedChange={(checked) => setShared(checked as boolean)}
+            />
+            <Label 
+              htmlFor="shared" 
+              className="text-sm font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <Share2 className="w-4 h-4" />
+              Share with community
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Other users will be able to see and play this song
+          </p>
           
           <div className="flex justify-end gap-3 pt-4">
             <Button
@@ -282,7 +322,7 @@ export function AddLinkModal({ open, onOpenChange }: AddLinkModalProps) {
                   Loading...
                 </>
               ) : (
-                'Add Song'
+                editMode ? 'Update Song' : 'Add Song'
               )}
             </Button>
           </div>

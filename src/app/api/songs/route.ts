@@ -8,10 +8,40 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+    const myOnly = searchParams.get('myOnly') === 'true'
+    const allSongs = searchParams.get('allSongs') === 'true'
+    
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
     
     let supabaseQuery = supabase
       .from('songs')
       .select('*')
+    
+    // 사용자별 필터링
+    if (myOnly) {
+      // My Songs: 인증된 사용자가 추가한 노래만
+      if (!currentUser) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      supabaseQuery = supabaseQuery.eq('user_id', currentUser.id)
+    } else if (allSongs) {
+      // Discover - All Songs: 공용 노래 + 공유된 노래 + 내 노래
+      if (currentUser) {
+        supabaseQuery = supabaseQuery.or(`user_id.is.null,shared.eq.true,user_id.eq.${currentUser.id}`)
+      } else {
+        // 비인증 사용자는 공용 노래 + 공유된 노래만
+        supabaseQuery = supabaseQuery.or(`user_id.is.null,shared.eq.true`)
+      }
+    } else {
+      // 기본 동작: 공용 노래 + 현재 사용자가 추가한 노래
+      if (currentUser) {
+        supabaseQuery = supabaseQuery.or(`user_id.is.null,user_id.eq.${currentUser.id}`)
+      } else {
+        // 비인증 사용자는 공용 노래만
+        supabaseQuery = supabaseQuery.is('user_id', null)
+      }
+    }
     
     // 검색 쿼리가 있으면 필터링
     if (query) {
@@ -44,7 +74,8 @@ export async function GET(request: NextRequest) {
       lyrics: song.lyrics,
       uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
       plays: song.plays,
-      liked: song.liked
+      liked: song.liked,
+      shared: song.shared
     }))
 
     return NextResponse.json({ songs: transformedSongs })
@@ -64,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, artist, album, duration, url, thumbnail, lyrics, plays, liked } = body
+    const { title, artist, album, duration, url, thumbnail, lyrics, plays, liked, shared } = body
 
     // 필수 필드 검증
     if (!title || !artist || !url) {
@@ -86,6 +117,7 @@ export async function POST(request: NextRequest) {
         lyrics,
         plays: plays || 0,
         liked: liked || false,
+        shared: shared || false,
         user_id: currentUser.id
       }])
       .select()
@@ -108,7 +140,8 @@ export async function POST(request: NextRequest) {
       lyrics: song.lyrics,
       uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
       plays: song.plays,
-      liked: song.liked
+      liked: song.liked,
+      shared: song.shared
     }
 
     return NextResponse.json({ song: transformedSong }, { status: 201 })

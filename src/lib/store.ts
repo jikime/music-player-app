@@ -13,10 +13,13 @@ interface MusicStore {
   
   // Songs
   songs: Song[]
+  mySongs: Song[]
   addSong: (song: Omit<Song, 'id' | 'uploadedAt'>) => Promise<void>
   updateSong: (id: string, updates: Partial<Song>) => Promise<void>
   deleteSong: (id: string) => Promise<void>
   getSong: (id: string) => Song | undefined
+  getMySongs: () => Promise<void>
+  loadAllSongs: () => Promise<void>
   
   // Playlists
   playlists: Playlist[]
@@ -42,6 +45,7 @@ interface MusicStore {
   playerState: PlayerState
   setCurrentSong: (song: Song | null) => void
   setIsPlaying: (isPlaying: boolean) => void
+  playSong: (song: Song) => void
   setVolume: (volume: number) => void
   setCurrentTime: (time: number) => void
   setDuration: (duration: number) => void
@@ -111,12 +115,37 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   
   // Songs
   songs: [],
+  mySongs: [],
+  getMySongs: async () => {
+    try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
+      const mySongs = await songsApi.getMySongs()
+      set({ mySongs })
+    } catch (error) {
+      console.error('Failed to fetch my songs:', error)
+      throw error
+    }
+  },
+  loadAllSongs: async () => {
+    try {
+      const allSongs = await songsApi.getAllSongs()
+      set({ songs: allSongs })
+    } catch (error) {
+      console.error('Failed to fetch all songs:', error)
+      throw error
+    }
+  },
   addSong: async (songData) => {
     try {
       set({ isLoading: true })
       const newSong = await songsApi.create(songData)
       set((state) => ({ 
         songs: [...state.songs, newSong],
+        mySongs: [...state.mySongs, newSong],
         isLoading: false 
       }))
     } catch (error) {
@@ -129,7 +158,8 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     try {
       const updatedSong = await songsApi.update(id, updates)
       set((state) => ({
-        songs: state.songs.map((song) => song.id === id ? updatedSong : song)
+        songs: state.songs.map((song) => song.id === id ? updatedSong : song),
+        mySongs: state.mySongs.map((song) => song.id === id ? updatedSong : song)
       }))
     } catch (error) {
       console.error('Failed to update song:', error)
@@ -141,6 +171,7 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       await songsApi.delete(id)
       set((state) => ({
         songs: state.songs.filter((song) => song.id !== id),
+        mySongs: state.mySongs.filter((song) => song.id !== id),
         bookmarks: state.bookmarks.filter((bookmark) => bookmark.songId !== id)
       }))
     } catch (error) {
@@ -370,6 +401,23 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   setIsPlaying: (isPlaying) => set((state) => ({
     playerState: { ...state.playerState, isPlaying }
   })),
+  playSong: (song) => {
+    set((state) => ({
+      playerState: {
+        ...state.playerState,
+        currentSong: song,
+        isPlaying: true,
+        currentTime: 0,
+        // Clear playlist context when manually playing a song
+        currentPlaylist: null,
+        playlistQueue: []
+      }
+    }))
+    // Update play count (non-blocking)
+    get().updatePlayCount(song.id).catch((error) => {
+      console.warn('Failed to update play count, but continuing playback:', error)
+    })
+  },
   setVolume: (volume) => set((state) => ({
     playerState: { ...state.playerState, volume }
   })),

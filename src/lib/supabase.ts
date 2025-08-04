@@ -18,8 +18,10 @@ export interface DatabaseSong {
   uploaded_at: string
   plays: number
   liked: boolean
+  shared: boolean
   created_at: string
   updated_at: string
+  user_id?: number
 }
 
 export interface DatabasePlaylist {
