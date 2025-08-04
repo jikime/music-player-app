@@ -24,11 +24,7 @@ import { useMusicStore } from "@/lib/store"
 export function MusicPlayer() {
   const pathname = usePathname()
   
-  // /profile 경로에서는 빈값 리턴
-  if (pathname === '/profile') {
-    return null
-  }
-  
+  // Initialize all hooks first
   const playerRef = useRef<HTMLVideoElement | null>(null)
   const [playerReady, setPlayerReady] = useState(false)
   const [seeking, setSeeking] = useState(false)
@@ -55,6 +51,10 @@ export function MusicPlayer() {
     removeBookmark
   } = useMusicStore()
 
+  // Track if we're currently seeking (drag in progress)
+  const [isDragging, setIsDragging] = useState(false)
+
+  // All useEffect hooks must be before the early return
   const {
     currentSong,
     isPlaying,
@@ -65,41 +65,34 @@ export function MusicPlayer() {
     repeat
   } = playerState
 
-  // YouTube URL validation
-  const isValidYouTubeUrl = (url: string): boolean => {
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)[a-zA-Z0-9_-]{11}/
-    return youtubeRegex.test(url)
-  }
-
-  // Clear loading timeout
-  const clearLoadingTimeout = () => {
+  // Helper functions that are used in useEffect
+  const clearLoadingTimeout = useCallback(() => {
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current)
       loadingTimeoutRef.current = null
     }
-  }
+  }, [])
 
-  // Start loading timeout (30 seconds)
-  const startLoadingTimeout = () => {
+  const startLoadingTimeout = useCallback(() => {
     clearLoadingTimeout()
     loadingTimeoutRef.current = setTimeout(() => {
       console.warn('Player loading timeout after 30 seconds')
       setError('Loading timeout. Please try again.')
       setIsLoading(false)
     }, 30000)
-  }
+  }, [clearLoadingTimeout])
 
-  // Retry loading current song
-  const retryLoading = () => {
-    if (!currentSong || retryCount >= 3) return
-    
-    console.log(`Retrying to load song (attempt ${retryCount + 1}/3):`, currentSong.title)
-    setRetryCount(prev => prev + 1)
-    setError(null)
-    setIsLoading(true)
-    setPlayerReady(false)
-    startLoadingTimeout()
-  }
+  const isValidYouTubeUrl = useCallback((url: string): boolean => {
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)[a-zA-Z0-9_-]{11}/
+    return youtubeRegex.test(url)
+  }, [])
+
+  // setPlayerRef callback
+  const setPlayerRef = useCallback((player: HTMLVideoElement) => {
+    if (!player) return
+    playerRef.current = player
+    console.log('Player ref set:', player)
+  }, [])
 
   // Reset hasEnded when currentSong changes
   useEffect(() => {
@@ -123,7 +116,55 @@ export function MusicPlayer() {
     } else {
       setIsLoading(false)
     }
-  }, [currentSong?.id])
+  }, [currentSong, startLoadingTimeout, clearLoadingTimeout, isValidYouTubeUrl])
+
+  // Reset player ready state when song changes
+  useEffect(() => {
+    setPlayerReady(false)
+    setSeeking(false)
+    setIsDragging(false)
+    setSeekTime(null)
+    setHasEnded(false)
+    setInternalPlaying(false)
+    
+    // Cleanup on unmount
+    return () => {
+      clearLoadingTimeout()
+    }
+  }, [currentSong, clearLoadingTimeout])
+
+  // Sync internal playing state with store state
+  useEffect(() => {
+    if (playerReady && isPlaying !== internalPlaying) {
+      setInternalPlaying(isPlaying)
+    }
+  }, [isPlaying, playerReady, internalPlaying])
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      clearLoadingTimeout()
+    }
+  }, [clearLoadingTimeout])
+  
+  // /profile 경로에서는 빈값 리턴
+  if (pathname === '/profile') {
+    return null
+  }
+
+
+  // Retry loading current song
+  const retryLoading = () => {
+    if (!currentSong || retryCount >= 3) return
+    
+    console.log(`Retrying to load song (attempt ${retryCount + 1}/3):`, currentSong.title)
+    setRetryCount(prev => prev + 1)
+    setError(null)
+    setIsLoading(true)
+    setPlayerReady(false)
+    startLoadingTimeout()
+  }
+
 
 
   // ReactPlayer event handlers - following demo pattern
@@ -255,27 +296,29 @@ export function MusicPlayer() {
     startLoadingTimeout()
   }
 
-  const handleError = (error: any) => {
+  const handleError = (error: unknown) => {
     console.error('YouTube Player Error:', error)
     clearLoadingTimeout()
     setIsLoading(false)
     
     // Determine error type and set appropriate message
     let errorMessage = 'Playback failed'
-    if (error?.code === 2) {
+    const errorCode = typeof error === 'object' && error !== null && 'code' in error ? (error as { code: number }).code : undefined
+    
+    if (errorCode === 2) {
       errorMessage = 'Invalid video ID'
-    } else if (error?.code === 5) {
+    } else if (errorCode === 5) {
       errorMessage = 'Video not supported on HTML5 player'
-    } else if (error?.code === 100) {
+    } else if (errorCode === 100) {
       errorMessage = 'Video not found or private'
-    } else if (error?.code === 101 || error?.code === 150) {
+    } else if (errorCode === 101 || errorCode === 150) {
       errorMessage = 'Video not allowed to be played in embedded players'
     }
     
     setError(errorMessage)
     
     // Attempt retry for recoverable errors (not for video not found/private)
-    if (retryCount < 3 && error?.code !== 100 && error?.code !== 101 && error?.code !== 150) {
+    if (retryCount < 3 && errorCode !== 100 && errorCode !== 101 && errorCode !== 150) {
       console.log('Attempting retry due to recoverable error')
       setTimeout(retryLoading, 2000) // Retry after 2 seconds
     }
@@ -288,9 +331,6 @@ export function MusicPlayer() {
   // const handleBufferEnd = () => {
   //   // Buffering ended
   // }
-
-  // Track if we're currently seeking (drag in progress)
-  const [isDragging, setIsDragging] = useState(false)
 
   const handleSeekStart = () => {
     setSeeking(true)
@@ -351,41 +391,7 @@ export function MusicPlayer() {
     playerRef.current.currentTime = newTime
   }
 
-  // Reset player ready state when song changes
-  useEffect(() => {
-    setPlayerReady(false)
-    setSeeking(false)
-    setIsDragging(false)
-    setSeekTime(null)
-    setHasEnded(false)
-    setInternalPlaying(false)
-    
-    // Cleanup on unmount
-    return () => {
-      clearLoadingTimeout()
-    }
-  }, [currentSong])
 
-  // Sync internal playing state with store state
-  useEffect(() => {
-    if (playerReady && isPlaying !== internalPlaying) {
-      setInternalPlaying(isPlaying)
-    }
-  }, [isPlaying, playerReady, internalPlaying])
-
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      clearLoadingTimeout()
-    }
-  }, [])
-
-  // setPlayerRef callback like in demo
-  const setPlayerRef = useCallback((player: HTMLVideoElement) => {
-    if (!player) return
-    playerRef.current = player
-    console.log('Player ref set:', player)
-  }, [])
 
 
   const handleVolumeChange = (value: number[]) => {

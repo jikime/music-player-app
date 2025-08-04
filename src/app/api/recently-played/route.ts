@@ -49,19 +49,22 @@ export async function GET() {
 
     // Database 형식을 클라이언트 형식으로 변환하고 중복 제거
     const seenSongIds = new Set<string>()
-    const transformedSongs = playHistory
-      .filter((history: any) => history.songs) // null인 경우 필터링 (삭제된 노래)
-      .filter((history: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transformedSongs = (playHistory as any[])
+      .filter((history) => history.songs) // null인 경우 필터링 (삭제된 노래)
+      .filter((history) => {
         // 중복된 song_id 제거 (가장 최근 재생 기록만 유지)
-        const songId = history.songs.id
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const songId = (history.songs as any).id
         if (seenSongIds.has(songId)) {
           return false
         }
         seenSongIds.add(songId)
         return true
       })
-      .map((history: any) => {
-        const song = history.songs
+      .map((history) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const song = history.songs as any
         return {
           id: song.id,
           title: song.title,

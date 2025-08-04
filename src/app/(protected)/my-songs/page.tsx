@@ -246,7 +246,7 @@ export default function MySongsPage() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>노래 삭제</AlertDialogTitle>
                         <AlertDialogDescription>
-                          "{songToDelete?.title}"을(를) 정말 삭제하시겠습니까?
+                          &quot;{songToDelete?.title}&quot;을(를) 정말 삭제하시겠습니까?
                           <br />
                           이 작업은 되돌릴 수 없습니다.
                         </AlertDialogDescription>
