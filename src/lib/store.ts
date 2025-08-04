@@ -433,11 +433,14 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
         playlistQueue: []
       }
     }))
-    // Update play count when a song starts playing (non-blocking)
+    // Update play count asynchronously without blocking playback
     if (song) {
-      get().updatePlayCount(song.id).catch((error) => {
-        console.warn('Failed to update play count, but continuing playback:', error)
-      })
+      // Use setTimeout to ensure playback is not blocked
+      setTimeout(() => {
+        get().updatePlayCount(song.id).catch((error) => {
+          console.warn('Failed to update play count:', error)
+        })
+      }, 0)
     }
   },
   setIsPlaying: (isPlaying) => set((state) => ({
@@ -455,10 +458,12 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
         playlistQueue: []
       }
     }))
-    // Update play count (non-blocking)
-    get().updatePlayCount(song.id).catch((error) => {
-      console.warn('Failed to update play count, but continuing playback:', error)
-    })
+    // Update play count asynchronously without blocking playback
+    setTimeout(() => {
+      get().updatePlayCount(song.id).catch((error) => {
+        console.warn('Failed to update play count:', error)
+      })
+    }, 0)
   },
   setVolume: (volume) => set((state) => ({
     playerState: { ...state.playerState, volume }
@@ -656,11 +661,12 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       }
     }))
     
-    // Update play count (non-blocking)
-    const updateCount = get().updatePlayCount
+    // Update play count asynchronously
     setTimeout(() => {
-      updateCount(startSong.id).catch(console.warn)
-    }, 0)
+      get().updatePlayCount(startSong.id).catch((error) => {
+        console.warn('Failed to update play count:', error)
+      })
+    }, 100)
   },
   
   shufflePlaylist: (playlistId) => {
@@ -692,11 +698,12 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       }
     }))
     
-    // Update play count (non-blocking)
-    const updateCount = get().updatePlayCount
+    // Update play count asynchronously
     setTimeout(() => {
-      updateCount(startSong.id).catch(console.warn)
-    }, 0)
+      get().updatePlayCount(startSong.id).catch((error) => {
+        console.warn('Failed to update play count:', error)
+      })
+    }, 100)
   },
   
   // Search

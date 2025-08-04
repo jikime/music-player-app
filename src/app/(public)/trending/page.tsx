@@ -27,7 +27,7 @@ export default function TrendingPage() {
   const isMobile = useIsMobile()
   const {
     playerState,
-    setCurrentSong,
+    playSong,
     setIsPlaying,
     isBookmarked,
     addBookmark,
@@ -70,8 +70,13 @@ export default function TrendingPage() {
 
 
   const handlePlaySong = (song: TrendingSong) => {
-    setCurrentSong(song)
-    setIsPlaying(true)
+    if (playerState.currentSong?.id === song.id) {
+      // Toggle play/pause for current song
+      setIsPlaying(!playerState.isPlaying)
+    } else {
+      // Play new song
+      playSong(song)
+    }
   }
 
   const toggleBookmark = (song: TrendingSong) => {

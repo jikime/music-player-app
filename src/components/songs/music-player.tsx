@@ -30,7 +30,6 @@ export function MusicPlayer() {
   const [seeking, setSeeking] = useState(false)
   const [seekTime, setSeekTime] = useState<number | null>(null)
   const [hasEnded, setHasEnded] = useState(false)
-  const [internalPlaying, setInternalPlaying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -76,10 +75,12 @@ export function MusicPlayer() {
   const startLoadingTimeout = useCallback(() => {
     clearLoadingTimeout()
     loadingTimeoutRef.current = setTimeout(() => {
-      console.warn('Player loading timeout after 30 seconds')
+      console.warn('Player loading timeout after 15 seconds')
       setError('Loading timeout. Please try again.')
       setIsLoading(false)
-    }, 30000)
+      // Reset playerReady to allow retry
+      setPlayerReady(false)
+    }, 15000)
   }, [clearLoadingTimeout])
 
   const isValidYouTubeUrl = useCallback((url: string): boolean => {
@@ -108,13 +109,14 @@ export function MusicPlayer() {
       return
     }
     
-    // Only set loading if we have a song and player is not ready yet
+    // Set loading state when we have a new song
     if (currentSong) {
       setIsLoading(true)
       setPlayerReady(false)
       startLoadingTimeout()
     } else {
       setIsLoading(false)
+      setPlayerReady(false)
     }
   }, [currentSong, startLoadingTimeout, clearLoadingTimeout, isValidYouTubeUrl])
 
@@ -125,20 +127,12 @@ export function MusicPlayer() {
     setIsDragging(false)
     setSeekTime(null)
     setHasEnded(false)
-    setInternalPlaying(false)
     
     // Cleanup on unmount
     return () => {
       clearLoadingTimeout()
     }
   }, [currentSong, clearLoadingTimeout])
-
-  // Sync internal playing state with store state
-  useEffect(() => {
-    if (playerReady && isPlaying !== internalPlaying) {
-      setInternalPlaying(isPlaying)
-    }
-  }, [isPlaying, playerReady, internalPlaying])
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -176,10 +170,9 @@ export function MusicPlayer() {
       setIsLoading(false)
       setError(null)
       clearLoadingTimeout()
-      // Sync internal playing state with store state
-      if (isPlaying && !internalPlaying) {
-        setInternalPlaying(true)
-      }
+      
+      // Auto-play if store state indicates playing
+      console.log('Player ready - current isPlaying state:', isPlaying)
     } catch (error) {
       console.warn('Error in handleReady:', error)
       setError('Player initialization failed')
@@ -243,10 +236,10 @@ export function MusicPlayer() {
 
   const handlePlay = () => {
     console.log('Player: onPlay event')
-    setInternalPlaying(true)
     setIsLoading(false)
     setError(null)
     clearLoadingTimeout()
+    // Only update store state if it's different to prevent loops
     if (!isPlaying) {
       setIsPlaying(true)
     }
@@ -254,7 +247,7 @@ export function MusicPlayer() {
 
   const handlePause = () => {
     console.log('Player: onPause event')
-    setInternalPlaying(false)
+    // Only update store state if it's different to prevent loops
     if (isPlaying) {
       setIsPlaying(false)
     }
@@ -425,7 +418,7 @@ export function MusicPlayer() {
           ref={setPlayerRef}
           className="react-player"
           src={currentSong.url}
-          playing={internalPlaying}
+          playing={playerReady && isPlaying}
           volume={volume}
           muted={volume === 0}
           width="1px"
@@ -498,8 +491,12 @@ export function MusicPlayer() {
                   variant="ghost"
                   size="icon"
                   className="w-10 h-10 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  disabled={!currentSong || !playerReady || isLoading || !!error}
+                  onClick={() => {
+                    if (currentSong && !error) {
+                      setIsPlaying(!isPlaying)
+                    }
+                  }}
+                  disabled={!currentSong || isLoading || !!error}
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -664,8 +661,12 @@ export function MusicPlayer() {
               variant="ghost"
               size="icon"
               className="w-10 h-10 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              onClick={() => setIsPlaying(!isPlaying)}
-              disabled={!currentSong || !playerReady || isLoading || !!error}
+              onClick={() => {
+                if (currentSong && !error) {
+                  setIsPlaying(!isPlaying)
+                }
+              }}
+              disabled={!currentSong || isLoading || !!error}
             >
               {isLoading ? (
                 <div className="w-5 h-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
