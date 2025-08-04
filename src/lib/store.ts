@@ -23,6 +23,7 @@ interface MusicStore {
   
   // Playlists
   playlists: Playlist[]
+  getPlaylists: () => Promise<void>
   addPlaylist: (playlist: { name: string; description?: string; coverImage?: string }) => Promise<void>
   updatePlaylist: (id: string, updates: Partial<Playlist>) => Promise<void>
   deletePlaylist: (id: string) => Promise<void>
@@ -77,16 +78,13 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       // Check authentication status
       const session = await getSession()
       if (!session) {
-        // If not authenticated, load public data (songs and recently played)
-        const [songs, recentlyPlayed] = await Promise.all([
-          songsApi.getAll(),
-          recentlyPlayedApi.getRecentlyPlayed()
-        ])
+        // If not authenticated, load public data (songs only)
+        const songs = await songsApi.getAll()
         set({ 
           songs, 
           playlists: [],
           bookmarks: [],
-          recentlyPlayed,
+          recentlyPlayed: [],
           isLoading: false 
         })
         return
@@ -183,6 +181,20 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   
   // Playlists
   playlists: [],
+  getPlaylists: async () => {
+    try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
+      const playlists = await playlistsApi.getAll()
+      set({ playlists })
+    } catch (error) {
+      console.error('Failed to fetch playlists:', error)
+      throw error
+    }
+  },
   addPlaylist: async (playlistData) => {
     try {
       const session = await getSession()
@@ -349,6 +361,13 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   updatePlayCount: async (songId) => {
     try {
+      // 인증된 사용자만 재생 기록을 업데이트
+      const session = await getSession()
+      if (!session) {
+        console.log('User not authenticated, skipping play count update')
+        return
+      }
+      
       const updatedSong = await recentlyPlayedApi.updatePlayCount(songId)
       // Update the song in the songs list
       set((state) => ({

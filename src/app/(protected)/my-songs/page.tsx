@@ -6,6 +6,17 @@ import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { AddLinkModal } from "@/components/songs/add-link-modal"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   Play,
   Pause,
   Plus,
@@ -34,6 +45,7 @@ export default function MySongsPage() {
   const [deletingSongId, setDeletingSongId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingSong, setEditingSong] = useState<Song | null>(null)
+  const [songToDelete, setSongToDelete] = useState<Song | null>(null)
 
   const { currentSong, isPlaying } = playerState
 
@@ -57,18 +69,27 @@ export default function MySongsPage() {
     }
   }
 
-  const handleDeleteSong = async (songId: string) => {
-    if (!confirm("이 노래를 삭제하시겠습니까?")) return
+  const handleDeleteClick = (song: Song) => {
+    setSongToDelete(song)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!songToDelete) return
     
     try {
-      setDeletingSongId(songId)
-      await deleteSong(songId)
+      setDeletingSongId(songToDelete.id)
+      await deleteSong(songToDelete.id)
+      setSongToDelete(null)
     } catch (error) {
       console.error("Failed to delete song:", error)
       alert("노래 삭제에 실패했습니다. 다시 시도해주세요.")
     } finally {
       setDeletingSongId(null)
     }
+  }
+
+  const handleDeleteCancel = () => {
+    setSongToDelete(null)
   }
 
   const handleAddSong = () => {
@@ -178,7 +199,10 @@ export default function MySongsPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div 
+                  className="flex items-center gap-2 flex-shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Button
                     variant="ghost"
                     size="icon"
@@ -190,18 +214,43 @@ export default function MySongsPage() {
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteSong(song.id)
-                    }}
-                    disabled={deletingSongId === song.id}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <AlertDialog open={songToDelete?.id === song.id} onOpenChange={(open) => !open && handleDeleteCancel()}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-8 h-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteClick(song)
+                        }}
+                        disabled={deletingSongId === song.id}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>노래 삭제</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          "{songToDelete?.title}"을(를) 정말 삭제하시겠습니까?
+                          <br />
+                          이 작업은 되돌릴 수 없습니다.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={handleDeleteCancel}>
+                          취소
+                        </AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleDeleteConfirm}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          삭제
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             ))}

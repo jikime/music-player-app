@@ -12,7 +12,18 @@ interface RecentlyPlayedProps {
   isLoading?: boolean
 }
 
-export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: RecentlyPlayedProps) {
+export function RecentlyPlayed({ songs: rawSongs, onPlaySong, isLoading = false }: RecentlyPlayedProps) {
+  // 중복 제거 - 동일한 ID를 가진 노래들을 필터링
+  const songs = useMemo(() => {
+    const seenIds = new Set<string>()
+    return rawSongs.filter(song => {
+      if (seenIds.has(song.id)) {
+        return false
+      }
+      seenIds.add(song.id)
+      return true
+    })
+  }, [rawSongs])
   const [currentPage, setCurrentPage] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   const [showAll, setShowAll] = useState(false)

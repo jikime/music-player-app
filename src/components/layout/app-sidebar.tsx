@@ -49,11 +49,13 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       url: "/trending",
       icon: TrendingUp,
     },
-    ...(isAuthenticated ? [{
-      title: "My Songs",
-      url: "/my-songs",
-      icon: User,
-    }] : [])
+    ...(isAuthenticated ? [
+      {
+        title: "My Songs",
+        url: "/my-songs",
+        icon: Music,
+      }
+    ] : [])
   ]
 
   return (

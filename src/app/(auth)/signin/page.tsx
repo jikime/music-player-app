@@ -17,7 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 type LoginFormData = z.infer<typeof loginSchema>
 
 export default function SignInPage() {
-  const { login, loginWithGoogle, error: authError, isLoading } = useAuth()
+  const { login, loginWithGoogle, isLoading } = useAuth()
   const router = useRouter()
   const isMobile = useIsMobile()
   
@@ -48,6 +48,7 @@ export default function SignInPage() {
         });
       }
     } catch (error) {
+      console.error(error);
       setError("root", { 
         type: "manual", 
         message: "로그인 중 오류가 발생했습니다." 

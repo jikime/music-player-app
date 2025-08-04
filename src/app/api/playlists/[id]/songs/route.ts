@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/server-auth'
 
 // POST - 플레이리스트에 노래 추가
 export async function POST(
@@ -7,6 +8,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
     const body = await request.json()
     const { songId } = body
@@ -15,6 +22,27 @@ export async function POST(
       return NextResponse.json(
         { error: 'Song ID is required' },
         { status: 400 }
+      )
+    }
+
+    // 플레이리스트 소유자 확인
+    const { data: playlist, error: playlistError } = await supabase
+      .from('playlists')
+      .select('user_id')
+      .eq('id', id)
+      .single()
+
+    if (playlistError || !playlist) {
+      return NextResponse.json(
+        { error: 'Playlist not found' },
+        { status: 404 }
+      )
+    }
+
+    if (playlist.user_id !== currentUser.id) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
       )
     }
 
@@ -78,6 +106,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 현재 로그인된 사용자 확인
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
     const { searchParams } = new URL(request.url)
     const songId = searchParams.get('songId')
@@ -86,6 +120,27 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Song ID is required' },
         { status: 400 }
+      )
+    }
+
+    // 플레이리스트 소유자 확인
+    const { data: playlist, error: playlistError } = await supabase
+      .from('playlists')
+      .select('user_id')
+      .eq('id', id)
+      .single()
+
+    if (playlistError || !playlist) {
+      return NextResponse.json(
+        { error: 'Playlist not found' },
+        { status: 404 }
+      )
+    }
+
+    if (playlist.user_id !== currentUser.id) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
       )
     }
 

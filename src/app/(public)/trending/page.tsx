@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { useMusicStore } from "@/lib/store"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { Button } from "@/components/ui/button"
@@ -11,19 +13,18 @@ import {
   TrendingUp,
   TrendingDown,
   Clock,
-  Music,
   Heart,
   Plus,
-  MoreHorizontal,
-  Users,
-  Headphones,
-  Minus
+  Minus,
+  Headphones
 } from "lucide-react"
 import { formatDuration } from "@/lib/music-utils"
 import { trendingApi } from "@/lib/trending-api"
-import type { TrendingSong, TrendingStats } from "@/types/music"
+import type { TrendingSong } from "@/types/music"
 
 export default function TrendingPage() {
+  const { data: session } = useSession()
+  const isMobile = useIsMobile()
   const {
     playerState,
     setCurrentSong,
@@ -36,12 +37,6 @@ export default function TrendingPage() {
 
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
   const [trendingSongs, setTrendingSongs] = useState<TrendingSong[]>([])
-  const [trendingStats, setTrendingStats] = useState<TrendingStats>({
-    totalPlays: 0,
-    trendingSongsCount: 0,
-    activeListeners: 0,
-    periodGrowthPercent: 0
-  })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,30 +52,14 @@ export default function TrendingPage() {
         setIsLoading(true)
         setError(null)
         
-        // Fetch both trending songs and statistics
-        const [songsData, statsData] = await Promise.all([
-          trendingApi.getTrendingSongs(selectedPeriod),
-          trendingApi.getTrendingStats(selectedPeriod)
-        ])
-        
+        // Fetch trending songs only
+        const songsData = await trendingApi.getTrendingSongs(selectedPeriod)
         setTrendingSongs(songsData || [])
-        setTrendingStats(statsData || {
-          totalPlays: 0,
-          trendingSongsCount: 0,
-          activeListeners: 0,
-          periodGrowthPercent: 0
-        })
       } catch (err) {
         console.error('Failed to fetch trending data:', err)
         setError('Failed to load trending data')
         // Fallback to empty data on error
         setTrendingSongs([])
-        setTrendingStats({
-          totalPlays: 0,
-          trendingSongsCount: 0,
-          activeListeners: 0,
-          periodGrowthPercent: 0
-        })
       } finally {
         setIsLoading(false)
       }
@@ -103,12 +82,6 @@ export default function TrendingPage() {
     }
   }
 
-  const getRankingChange = (song: TrendingSong) => {
-    if (!song.previousRanking || song.rankingChange === 0) return null
-    if (song.rankingChange > 0) return { type: 'up', value: song.rankingChange }
-    if (song.rankingChange < 0) return { type: 'down', value: Math.abs(song.rankingChange) }
-    return { type: 'same', value: 0 }
-  }
 
   if (isLoading) {
     return <LoadingScreen message="Loading trending music..." />
@@ -160,167 +133,36 @@ export default function TrendingPage() {
         </div>
       </div>
 
-      {/* Trending Stats */}
-      <div className="py-4 md:py-6">
-        <div className="grid grid-cols-3 gap-2 md:gap-6 mb-6 md:mb-8">
-          {/* Total Plays Card */}
-          <div className="p-3 md:p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:gap-3">
-              <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0 mb-2 md:mb-0">
-                <Headphones className="w-4 h-4 md:w-6 md:h-6 text-blue-500" />
-              </div>
-              <div className="min-w-0 flex-1 text-center md:text-left">
-                <h3 className="text-lg md:text-2xl font-bold text-foreground">
-                  <span className="md:hidden">{((trendingStats.totalPlays || 0) / 1000).toFixed(0)}k</span>
-                  <span className="hidden md:inline">{(trendingStats.totalPlays || 0).toLocaleString()}</span>
-                </h3>
-                <p className="text-xs md:text-base text-muted-foreground font-medium hidden md:block">Total Plays</p>
-                <p className="text-xs text-muted-foreground md:hidden">Plays</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Trending Songs Card */}
-          <div className="p-3 md:p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:gap-3">
-              <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0 mb-2 md:mb-0">
-                <Music className="w-4 h-4 md:w-6 md:h-6 text-green-500" />
-              </div>
-              <div className="min-w-0 flex-1 text-center md:text-left">
-                <h3 className="text-lg md:text-2xl font-bold text-foreground">
-                  {trendingStats.trendingSongsCount || 0}
-                </h3>
-                <p className="text-xs md:text-base text-muted-foreground font-medium hidden md:block">Trending Songs</p>
-                <p className="text-xs text-muted-foreground md:hidden">Songs</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Active Listeners Card */}
-          <div className="p-3 md:p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:gap-3">
-              <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0 mb-2 md:mb-0">
-                <Users className="w-4 h-4 md:w-6 md:h-6 text-purple-500" />
-              </div>
-              <div className="min-w-0 flex-1 text-center md:text-left">
-                <h3 className="text-lg md:text-2xl font-bold text-foreground">
-                  <span className="md:hidden">{((trendingStats.activeListeners || 0) / 1000).toFixed(0)}k</span>
-                  <span className="hidden md:inline">{(trendingStats.activeListeners || 0).toLocaleString()}</span>
-                </h3>
-                <p className="text-xs md:text-base text-muted-foreground font-medium hidden md:block">Active Listeners</p>
-                <p className="text-xs text-muted-foreground md:hidden">Users</p>
-              </div>
-            </div>
-          </div>
+      {/* Trending Songs List */}
+      <div className="overflow-hidden">
+        <div className="p-4 md:p-6 mb-4">
+          <h2 className="text-lg md:text-xl font-semibold">Top Trending Songs</h2>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            Based on plays, engagement, and growth over the past {selectedPeriod.replace('ly', '')}
+          </p>
         </div>
-
-        {/* Trending Songs List */}
-        <div className="overflow-hidden">
-          <div className="p-4 md:p-6 mb-4">
-            <h2 className="text-lg md:text-xl font-semibold">Top Trending Songs</h2>
-            <p className="text-xs md:text-sm text-muted-foreground mt-1">
-              Based on plays, engagement, and growth over the past {selectedPeriod.replace('ly', '')}
-            </p>
-          </div>
-          
-          <div className="space-y-1">
-            {trendingSongs.map((song) => {
-              const rankingChange = getRankingChange(song)
-              const isCurrentSong = playerState.currentSong?.id === song.id
-              const isPlaying = playerState.isPlaying && isCurrentSong
-              
-              return (
-                <div key={song.id}>
-                  {/* Mobile Layout */}
-                  <div className="md:hidden p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      {/* Ranking */}
-                      <div className="flex items-center justify-center flex-shrink-0 w-8">
-                        <span className="text-xl font-bold text-muted-foreground text-center">
-                          {song.ranking}
-                        </span>
-                      </div>
-
-                      {/* Thumbnail - Clickable */}
-                      <div 
-                        className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted group/thumb relative cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handlePlaySong(song)
-                        }}
-                      >
-                        <ImageWithFallback
-                          src={song.thumbnail || ''}
-                          alt={song.title}
-                          width={48}
-                          height={48}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-110"
-                        />
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
-                        {/* Play Icon on Hover */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
-                          {isCurrentSong && isPlaying ? (
-                            <Pause className="w-4 h-4 text-white" fill="currentColor" />
-                          ) : (
-                            <Play className="w-4 h-4 text-white" fill="currentColor" />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Song Info */}
-                      <div className="flex-1 min-w-0 max-w-[calc(100vw-260px)]">
-                        <h3 className="font-medium truncate text-ellipsis overflow-hidden whitespace-nowrap text-sm">{song.title}</h3>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground overflow-hidden">
-                          <span className="truncate">{song.artist}</span>
-                          <span className="flex-shrink-0">•</span>
-                          <span className="flex-shrink-0">{formatDuration(song.duration)}</span>
-                        </div>
-                        {/* Trend Indicator */}
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <div className={`flex items-center gap-0.5 text-xs ${song.playIncrease > 0 ? 'text-green-500' : song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
-                            {song.playIncrease > 0 ? (
-                              <TrendingUp className="w-2.5 h-2.5" />
-                            ) : song.playIncrease < 0 ? (
-                              <TrendingDown className="w-2.5 h-2.5" />
-                            ) : (
-                              <Minus className="w-2.5 h-2.5" />
-                            )}
-                            <span className="font-medium">{Math.abs(Number(song.playIncrease)).toFixed(0)}%</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="w-8 h-8"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleBookmark(song)
-                          }}
-                        >
-                          <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Desktop Layout - Grid 기반 */}
-                  <div className="hidden md:grid md:grid-cols-[4rem_3rem_1fr_6rem_6rem_4rem_8rem] lg:grid-cols-[4rem_3rem_1fr_6rem_6rem_4rem_8rem] gap-4 items-center p-4 hover:bg-muted/50 transition-colors group">
+        
+        <div className="space-y-1">
+          {trendingSongs.map((song, index) => {
+            const isCurrentSong = playerState.currentSong?.id === song.id
+            const isPlaying = playerState.isPlaying && isCurrentSong
+            
+            return (
+              <div key={song.id}>
+                {isMobile ? (
+                  /* Mobile Layout */
+                  <div className="p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
                     {/* Ranking */}
-                    <div className="flex items-center justify-center">
-                      <span className="text-2xl font-bold text-muted-foreground text-center">
-                        {song.ranking}
+                    <div className="flex items-center justify-center flex-shrink-0 w-8">
+                      <span className="text-xl font-bold text-muted-foreground text-center">
+                        {index + 1}
                       </span>
                     </div>
 
-
                     {/* Thumbnail - Clickable */}
                     <div 
-                      className="w-12 h-12 rounded overflow-hidden bg-muted group/thumb relative cursor-pointer"
+                      className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted group/thumb relative cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation()
                         handlePlaySong(song)
@@ -345,44 +187,128 @@ export default function TrendingPage() {
                       </div>
                     </div>
 
-                    {/* Song Info - 유연한 컬럼 (1fr) */}
-                    <div className="min-w-0">
-                      <h3 className="font-medium truncate text-ellipsis overflow-hidden whitespace-nowrap">{song.title}</h3>
-                      <p className="text-sm text-muted-foreground truncate text-ellipsis overflow-hidden whitespace-nowrap">
-                        {song.artist} {song.album && `• ${song.album}`}
-                      </p>
-                    </div>
-
-                    {/* Plays */}
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Headphones className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{song.plays.toLocaleString()}</span>
-                    </div>
-                    
-                    {/* Duration */}
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Clock className="w-4 h-4 flex-shrink-0" />
-                      <span>{formatDuration(song.duration)}</span>
-                    </div>
-                    
-                    {/* Trend Indicator */}
-                    <div className="flex items-center gap-1.5">
-                      <div className={`flex items-center gap-1.5 text-sm font-medium ${
-                        song.playIncrease > 0 ? 'text-green-500' : 
-                        song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'
-                      }`}>
-                        {song.playIncrease > 0 ? (
-                          <TrendingUp className="w-4 h-4" />
-                        ) : song.playIncrease < 0 ? (
-                          <TrendingDown className="w-4 h-4" />
-                        ) : (
-                          <Minus className="w-4 h-4" />
-                        )}
-                        <span>{Math.abs(Number(song.playIncrease)).toFixed(0)}%</span>
+                    {/* Song Info */}
+                    <div className="flex-1 min-w-0 max-w-[calc(100vw-260px)]">
+                      <h3 className="font-medium truncate text-ellipsis overflow-hidden whitespace-nowrap text-sm">{song.title}</h3>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground overflow-hidden">
+                        <span className="truncate">{song.artist}</span>
+                        <span className="flex-shrink-0">•</span>
+                        <span className="flex-shrink-0">{formatDuration(song.duration)}</span>
+                      </div>
+                      {/* Trend Indicator */}
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <div className={`flex items-center gap-0.5 text-xs ${song.playIncrease > 0 ? 'text-green-500' : song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                          {song.playIncrease > 0 ? (
+                            <TrendingUp className="w-2.5 h-2.5" />
+                          ) : song.playIncrease < 0 ? (
+                            <TrendingDown className="w-2.5 h-2.5" />
+                          ) : (
+                            <Minus className="w-2.5 h-2.5" />
+                          )}
+                          <span className="font-medium">{Math.abs(Number(song.playIncrease)).toFixed(0)}%</span>
+                        </div>
                       </div>
                     </div>
 
                     {/* Actions */}
+                    {session && (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="w-8 h-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleBookmark(song)
+                          }}
+                        >
+                          <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                ) : (
+                /* Desktop Layout - Grid 기반 */
+                <div className={`grid gap-4 items-center p-4 hover:bg-muted/50 transition-colors group ${
+                  session 
+                    ? 'grid-cols-[4rem_3rem_1fr_6rem_6rem_4rem_8rem]' 
+                    : 'grid-cols-[4rem_3rem_1fr_6rem_6rem_4rem]'
+                }`}>
+                  {/* Ranking */}
+                  <div className="flex items-center justify-center">
+                    <span className="text-2xl font-bold text-muted-foreground text-center">
+                      {index + 1}
+                    </span>
+                  </div>
+
+
+                  {/* Thumbnail - Clickable */}
+                  <div 
+                    className="w-12 h-12 rounded overflow-hidden bg-muted group/thumb relative cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handlePlaySong(song)
+                    }}
+                  >
+                    <ImageWithFallback
+                      src={song.thumbnail || ''}
+                      alt={song.title}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-110"
+                    />
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+                    {/* Play Icon on Hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
+                      {isCurrentSong && isPlaying ? (
+                        <Pause className="w-4 h-4 text-white" fill="currentColor" />
+                      ) : (
+                        <Play className="w-4 h-4 text-white" fill="currentColor" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Song Info - 유연한 컬럼 (1fr) */}
+                  <div className="min-w-0">
+                    <h3 className="font-medium truncate text-ellipsis overflow-hidden whitespace-nowrap">{song.title}</h3>
+                    <p className="text-sm text-muted-foreground truncate text-ellipsis overflow-hidden whitespace-nowrap">
+                      {song.artist} {song.album && `• ${song.album}`}
+                    </p>
+                  </div>
+
+                  {/* Plays */}
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Headphones className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{song.plays.toLocaleString()}</span>
+                  </div>
+                  
+                  {/* Duration */}
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    <span>{formatDuration(song.duration)}</span>
+                  </div>
+                  
+                  {/* Trend Indicator */}
+                  <div className="flex items-center gap-1.5">
+                    <div className={`flex items-center gap-1.5 text-sm font-medium ${
+                      song.playIncrease > 0 ? 'text-green-500' : 
+                      song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'
+                    }`}>
+                      {song.playIncrease > 0 ? (
+                        <TrendingUp className="w-4 h-4" />
+                      ) : song.playIncrease < 0 ? (
+                        <TrendingDown className="w-4 h-4" />
+                      ) : (
+                        <Minus className="w-4 h-4" />
+                      )}
+                      <span>{Math.abs(Number(song.playIncrease)).toFixed(0)}%</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  {session && (
                     <div className="flex items-center gap-1 justify-end">
                       <Button
                         size="icon"
@@ -404,24 +330,15 @@ export default function TrendingPage() {
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
-                      
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )
-            })}
-          </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
-
-    </div>
+      </div>
   )
 }

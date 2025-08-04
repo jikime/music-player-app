@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession, signIn, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -28,11 +28,47 @@ import {
 import { Plus, LogOut, User, Settings } from "lucide-react"
 import { AddLinkModal } from "@/components/songs/add-link-modal"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
+import Link from "next/link"
 
 export function AppHeader() {
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [profileName, setProfileName] = useState<string>('')
   const { data: session, status } = useSession()
   const pathname = usePathname()
+
+  // 프로필 이미지 로드
+  useEffect(() => {
+    const loadProfileImage = async () => {
+      if (session?.user?.email) {
+        try {
+          const response = await fetch('/api/profile')
+          const data = await response.json()
+          
+          if (data.success && data.profile) {
+            // 우선순위: 데이터베이스 이미지 > 구글 로그인 이미지
+            const imageUrl = data.profile.image || session.user.image
+            setProfileImage(imageUrl)
+            setProfileName(data.profile.name || session.user.name || '')
+          } else {
+            // 프로필이 없으면 구글 로그인 이미지 사용
+            setProfileImage(session.user.image || null)
+            setProfileName(session.user.name || '')
+          }
+        } catch (error) {
+          console.error('프로필 이미지 로드 오류:', error)
+          // 오류 시 구글 로그인 이미지 사용
+          setProfileImage(session.user.image || null)
+          setProfileName(session.user.name || '')
+        }
+      } else {
+        setProfileImage(null)
+        setProfileName('')
+      }
+    }
+
+    loadProfileImage()
+  }, [session])
 
   const handleSignIn = () => {
     signIn()
@@ -69,6 +105,8 @@ export function AppHeader() {
       breadcrumbs.push({ label: 'Discover', href: '/', isCurrent: true })
     } else if (pathname === '/trending') {
       breadcrumbs.push({ label: 'Trending', href: '/trending', isCurrent: true })
+    } else if (pathname === '/profile') {
+      breadcrumbs.push({ label: 'Profile', href: '/profile', isCurrent: true })
     } else if (pathname.startsWith('/playlist/')) {
       breadcrumbs.push({ label: 'Playlists', href: '/playlist', isLink: true })
       // playlist ID가 있는 경우
@@ -143,9 +181,9 @@ export function AppHeader() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={session.user?.image || undefined} alt={session.user?.name || "User"} />
+                      <AvatarImage src={profileImage || undefined} alt={session.user?.name || "User"} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                        {session.user?.name ? getUserInitials(session.user.name) : "U"}
+                        {profileName ? getUserInitials(profileName) : "U"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -153,16 +191,18 @@ export function AppHeader() {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none truncate">{session.user?.name || "User"}</p>
+                      <p className="text-sm font-medium leading-none truncate">{profileName || "User"}</p>
                       <p className="text-xs leading-none text-muted-foreground truncate">
                         {session.user?.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />
@@ -237,9 +277,9 @@ export function AppHeader() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={session.user?.image || undefined} alt={session.user?.name || "User"} />
+                      <AvatarImage src={profileImage || undefined} alt={session.user?.name || "User"} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {session.user?.name ? getUserInitials(session.user.name) : "U"}
+                        {profileName ? getUserInitials(profileName) : "U"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -247,21 +287,23 @@ export function AppHeader() {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{session.user?.name || "User"}</p>
+                      <p className="text-sm font-medium leading-none">{profileName || "User"}</p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {session.user?.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  {/* <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />

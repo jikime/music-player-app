@@ -7,8 +7,15 @@ export async function GET() {
   try {
     // 현재 로그인된 사용자 확인
     const currentUser = await getCurrentUser()
-    if (!currentUser) {
+    if (!currentUser || !currentUser.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 사용자 ID를 안전하게 숫자로 변환
+    const userId = typeof currentUser.id === 'string' ? parseInt(currentUser.id, 10) : Number(currentUser.id)
+    if (isNaN(userId)) {
+      console.error('Invalid user ID:', currentUser.id)
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
     }
 
     // 사용자의 재생 기록에서 최근 재생된 노래들을 가져옴
@@ -31,7 +38,7 @@ export async function GET() {
           shared
         )
       `)
-      .eq('user_id', currentUser.id)
+      .eq('user_id', userId)
       .order('played_at', { ascending: false })
       .limit(10)
 
@@ -40,10 +47,20 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch recently played songs' }, { status: 500 })
     }
 
-    // Database 형식을 클라이언트 형식으로 변환
+    // Database 형식을 클라이언트 형식으로 변환하고 중복 제거
+    const seenSongIds = new Set<string>()
     const transformedSongs = playHistory
-      .filter((history: { songs: DatabaseSong | null }) => history.songs) // null인 경우 필터링 (삭제된 노래)
-      .map((history: { songs: DatabaseSong }) => {
+      .filter((history: any) => history.songs) // null인 경우 필터링 (삭제된 노래)
+      .filter((history: any) => {
+        // 중복된 song_id 제거 (가장 최근 재생 기록만 유지)
+        const songId = history.songs.id
+        if (seenSongIds.has(songId)) {
+          return false
+        }
+        seenSongIds.add(songId)
+        return true
+      })
+      .map((history: any) => {
         const song = history.songs
         return {
           id: song.id,
@@ -73,7 +90,7 @@ export async function POST(request: NextRequest) {
   try {
     // 현재 로그인된 사용자 확인
     const currentUser = await getCurrentUser()
-    if (!currentUser) {
+    if (!currentUser || !currentUser.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -85,6 +102,13 @@ export async function POST(request: NextRequest) {
         { error: 'Song ID is required' },
         { status: 400 }
       )
+    }
+
+    // 사용자 ID를 안전하게 숫자로 변환
+    const userId = typeof currentUser.id === 'string' ? parseInt(currentUser.id, 10) : Number(currentUser.id)
+    if (isNaN(userId)) {
+      console.error('Invalid user ID:', currentUser.id)
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
     }
 
     // 먼저 현재 노래 정보를 가져옴
@@ -116,7 +140,7 @@ export async function POST(request: NextRequest) {
       supabase
         .from('play_history')
         .insert({
-          user_id: currentUser.id,
+          user_id: userId,
           song_id: songId,
           played_at: new Date().toISOString()
         })

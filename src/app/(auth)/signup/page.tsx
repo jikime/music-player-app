@@ -17,7 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 type SignupFormData = z.infer<typeof signupSchema>
 
 export default function SignUpPage() {
-  const { register: registerUser, error: authError, isLoading } = useAuth()
+  const { isLoading } = useAuth()
   const router = useRouter()
   const isMobile = useIsMobile()
   
@@ -79,6 +79,7 @@ export default function SignUpPage() {
         router.push("/auth/signin")
       }, 1500)
     } catch (error) {
+      console.error(error)
       setError("root", { 
         type: "manual", 
         message: "회원가입 중 오류가 발생했습니다." 

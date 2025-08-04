@@ -1,37 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 // Get real statistics from our trending data
 async function getTrendingStatsFromSupabase(periodType: string) {
   try {
     console.log(`Getting trending stats for ${periodType}`)
     
-    // Get the trending songs data from our existing API
-    const trendingResponse = await fetch(`http://localhost:3002/api/trending`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Get trending data directly from Supabase
+    const { data: trendingData, error } = await supabase
+      .rpc('get_trending_data', {
         period_type: periodType,
-        date: new Date().toISOString().split('T')[0]
+        snapshot_date: new Date().toISOString().split('T')[0]
       })
-    })
     
-    if (!trendingResponse.ok) {
-      throw new Error('Failed to fetch trending data for stats')
+    if (error) {
+      console.error('Error fetching trending data for stats:', error)
+      throw error
     }
     
-    const trendingData = await trendingResponse.json()
-    const songs = trendingData.songs || []
+    const songs = trendingData || []
     
     // Calculate real statistics from the trending data
     const totalPlays = songs.reduce((sum: number, song: { plays?: number }) => sum + (song.plays || 0), 0)
     const trendingSongsCount = songs.length
-    const activeListeners = Math.floor(totalPlays * 0.15) // Estimate 15% of plays are unique listeners
+    
+    // Get unique listeners from play_history for the current period
+    let current_period_start: string
+    const today = new Date().toISOString().split('T')[0]
+    
+    if (periodType === 'daily') {
+      current_period_start = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    } else if (periodType === 'weekly') {
+      current_period_start = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    } else { // monthly
+      current_period_start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    }
+    
+    // Get actual unique listeners from play_history
+    const { data: listenersData } = await supabase
+      .from('play_history')
+      .select('user_id', { count: 'exact', head: true })
+      .gte('played_at', `${current_period_start}T00:00:00Z`)
+      .lte('played_at', `${today}T23:59:59Z`)
+    
+    const activeListeners = listenersData?.length || Math.floor(totalPlays * 0.15)
     
     // Calculate average growth percentage from the trending songs
     const avgGrowthPercent = songs.length > 0 
-      ? songs.reduce((sum: number, song: { playIncrease?: number }) => sum + (song.playIncrease || 0), 0) / songs.length
+      ? songs.reduce((sum: number, song: { play_increase_percent?: string }) => sum + (parseFloat(song.play_increase_percent || '0') || 0), 0) / songs.length
       : 0
     
     const stats = {

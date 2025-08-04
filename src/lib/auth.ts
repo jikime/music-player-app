@@ -13,9 +13,9 @@ export const authOptions: NextAuthOptions = {
   
   // 페이지 경로 설정
   pages: {
-    signIn: "/auth/signin",
-    signOut: "/auth/signout",
-    error: "/auth/error",
+    signIn: "/signin",
+    signOut: "/signout",
+    error: "/error",
   },
   
   // 인증 제공자 설정

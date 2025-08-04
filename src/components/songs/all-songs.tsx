@@ -4,7 +4,7 @@ import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { Button } from "@/components/ui/button"
 import {
   Heart,
-  MoreHorizontal,
+  Plus,
   Clock,
   Music,
   Loader2,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { formatDuration, formatPlays } from "@/lib/music-utils"
 import { useMusicStore } from "@/lib/store"
+import { AddToPlaylistPopover } from "@/components/songs/add-to-playlist-popover"
 import type { Song } from "@/types/music"
 
 interface AllSongsProps {
@@ -219,14 +220,16 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                         <Heart className={`w-3 h-3 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
                       )}
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-7 h-7 text-muted-foreground"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="w-3 h-3" />
-                    </Button>
+                    <AddToPlaylistPopover song={song}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-7 h-7 text-muted-foreground hover:text-primary"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </AddToPlaylistPopover>
                   </div>
                 </div>
               </div>
@@ -280,13 +283,16 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                       <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
                     )}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8 text-muted-foreground opacity-0 group-hover:opacity-100"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
+                  <AddToPlaylistPopover song={song}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-8 h-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </AddToPlaylistPopover>
                 </div>
               </div>
             </div>

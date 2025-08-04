@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import { usePathname } from "next/navigation"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
@@ -21,6 +22,13 @@ import {
 import { useMusicStore } from "@/lib/store"
 
 export function MusicPlayer() {
+  const pathname = usePathname()
+  
+  // /profile 경로에서는 빈값 리턴
+  if (pathname === '/profile') {
+    return null
+  }
+  
   const playerRef = useRef<HTMLVideoElement | null>(null)
   const [playerReady, setPlayerReady] = useState(false)
   const [seeking, setSeeking] = useState(false)
