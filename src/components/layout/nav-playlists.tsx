@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { CreatePlaylistModal } from "@/components/playlist/create-playlist-modal"
+import { PlaylistCover } from "@/components/playlist/playlist-cover"
 import type { Playlist } from "@/types/music"
 
 export function NavPlaylists({ playlists }: { playlists: Playlist[] }) {
@@ -25,13 +26,18 @@ export function NavPlaylists({ playlists }: { playlists: Playlist[] }) {
           <SidebarMenuItem key={playlist.id || index}>
             <SidebarMenuButton 
               tooltip={playlist.name} 
-              className="relative"
+              className="relative flex items-center gap-2"
               onClick={() => router.push(`/playlist/${playlist.id}`)}
             >
-              <Music className="w-4 h-4" />
-              <span className="truncate">{playlist.name}</span>
+              <PlaylistCover
+                coverImage={playlist.coverImage}
+                playlistName={playlist.name}
+                size="sm"
+                className="flex-shrink-0"
+              />
+              <span className="truncate flex-1">{playlist.name}</span>
               {playlist.hasNotification && (
-                <div className="w-2 h-2 bg-yellow-500 rounded-full ml-auto" />
+                <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0" />
               )}
             </SidebarMenuButton>
           </SidebarMenuItem>

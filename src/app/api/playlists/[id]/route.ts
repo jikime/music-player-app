@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { validateCoverImage } from '@/lib/playlist-utils'
 
 // GET - 특정 플레이리스트 조회
 export async function GET(
@@ -59,6 +60,37 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     const { name, description, coverImage, hasNotification } = body
+
+    // 이미지 데이터 검증 및 로깅
+    if (coverImage !== undefined) {
+      const validation = validateCoverImage(coverImage)
+      if (!validation.isValid) {
+        return NextResponse.json(
+          { error: validation.error || 'Invalid cover image' },
+          { status: 400 }
+        )
+      }
+
+      if (coverImage) {
+        const isGradient = coverImage.startsWith('bg-')
+        const isBase64 = coverImage.startsWith('data:image/')
+        const size = coverImage.length
+        console.log(`Playlist Update Cover Image - Type: ${isGradient ? 'gradient' : isBase64 ? 'base64' : 'unknown'}, Size: ${size} chars`)
+        
+        if (isBase64) {
+          const estimatedBytes = Math.floor((coverImage.split(',')[1]?.length || 0) * 3 / 4)
+          console.log(`Base64 image estimated size: ${estimatedBytes} bytes (${(estimatedBytes / 1024).toFixed(2)} KB)`)
+          
+          // 10MB 제한
+          if (estimatedBytes > 10 * 1024 * 1024) {
+            return NextResponse.json(
+              { error: 'Cover image is too large. Maximum size is 10MB.' },
+              { status: 400 }
+            )
+          }
+        }
+      }
+    }
 
     const updateData: {
       name?: string;

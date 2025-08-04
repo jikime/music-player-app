@@ -7,6 +7,18 @@ import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { AddSongModal } from "@/components/playlist/add-song-modal"
 import { CreatePlaylistModal } from "@/components/playlist/create-playlist-modal"
+import { PlaylistCover } from "@/components/playlist/playlist-cover"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   Play,
   Pause,
@@ -47,6 +59,7 @@ export default function PlaylistPage() {
   const [addSongModalOpen, setAddSongModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [deletingSongId, setDeletingSongId] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   
   // Find the playlist
   const playlist = playlists.find(p => p.id === playlistId)
@@ -109,16 +122,24 @@ export default function PlaylistPage() {
   }
 
 
-  const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete this playlist?")) {
-      try {
-        await deletePlaylist(playlistId)
-        // Navigate back to home
-        window.history.back()
-      } catch (error) {
-        console.error("Failed to delete playlist:", error)
-      }
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deletePlaylist(playlistId)
+      setShowDeleteDialog(false)
+      // Navigate back to home
+      window.history.back()
+    } catch (error) {
+      console.error("Failed to delete playlist:", error)
+      alert("플레이리스트 삭제에 실패했습니다. 다시 시도해주세요.")
     }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false)
   }
 
   const handleRemoveSong = async (songId: string, e: React.MouseEvent) => {
@@ -143,42 +164,37 @@ export default function PlaylistPage() {
           <div className="md:sticky md:top-8">
             {/* Mobile Horizontal Layout */}
             <div className="flex md:block gap-3 mb-4 md:mb-0">
-              {/* Cover Image */}
-              <div className="w-24 md:w-full aspect-square rounded-lg shadow-2xl overflow-hidden md:mb-6 relative flex-shrink-0">
-              {playlist!.coverImage ? (
-                playlist!.coverImage.startsWith('bg-') ? (
-                  // Gradient background
-                  <div className={`w-full h-full ${playlist!.coverImage} flex items-center justify-center`}>
-                    <Music className="w-16 h-16 text-white/80" />
-                  </div>
-                ) : (
-                  // Image background
-                  <ImageWithFallback
-                    src={playlist!.coverImage}
-                    alt={playlist!.name}
-                    width={320}
-                    height={320}
-                    className="w-full h-full object-cover"
-                  />
-                )
-              ) : (
-                // Default background
-                <div className="w-full h-full bg-muted flex items-center justify-center">
-                  <Music className="w-16 h-16 text-muted-foreground/50" />
+              {/* Cover Image with Play Button */}
+              <PlaylistCover
+                coverImage={playlist!.coverImage}
+                playlistName={playlist!.name}
+                size="xl"
+                showHoverEffect={true}
+                onClick={handlePlayAll}
+                className="w-24 md:w-full aspect-square shadow-2xl md:mb-6"
+              >
+                {/* Hover Overlay */}
+                <div className="absolute inset-0 bg-black/0 group-hover/cover:bg-black/40 transition-colors duration-300" />
+                
+                {/* Play Button on Hover */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cover:opacity-100 transition-opacity duration-300">
+                  {isPlaying ? (
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                      <Pause className="w-5 h-5 md:w-7 md:h-7 text-black" fill="currentColor" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                      <Play className="w-5 h-5 md:w-7 md:h-7 text-black ml-0.5" fill="currentColor" />
+                    </div>
+                  )}
                 </div>
-              )}
-              </div>
+              </PlaylistCover>
 
               {/* Right Content for Mobile */}
               <div className="flex-1 md:w-full pl-1 md:pl-0 min-w-0">
                 {/* Playlist Title */}
                 <div className="text-left mb-2 md:mb-4">
                   <h1 className="text-base md:text-2xl font-bold line-clamp-2 leading-tight">{playlist!.name}</h1>
-                </div>
-                
-                {/* Platform Label */}
-                <div className="text-left mb-1 md:mb-4">
-                  <p className="text-xs md:text-sm text-muted-foreground">YouTube Music</p>
                 </div>
                 
                 {/* Artists */}
@@ -209,18 +225,18 @@ export default function PlaylistPage() {
                   >
                     <Edit className="w-3 h-3" />
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="ghost"
                     size="icon"
                     className="w-6 h-6"
                   >
                     <Share2 className="w-3 h-3" />
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="ghost"
                     size="icon"
                     className="w-6 h-6"
-                    onClick={handleDelete}
+                    onClick={handleDeleteClick}
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -260,48 +276,23 @@ export default function PlaylistPage() {
               >
                 <Edit className="w-4 h-4" />
               </Button>
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="icon"
                 className="w-8 h-8"
               >
                 <Share2 className="w-4 h-4" />
-              </Button>
+              </Button> */}
               <Button
                 variant="ghost"
                 size="icon"
                 className="w-8 h-8"
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
 
-            {/* Large Play Button */}
-            <div className="relative mb-4 flex justify-start">
-              <Button
-                size="icon"
-                className="w-12 h-12 md:w-14 md:h-14 rounded-full shadow-lg hover:scale-105 transition-transform"
-                onClick={handlePlayAll}
-                disabled={playlistSongs.length === 0}
-              >
-                {isPlaying ? (
-                  <Pause className="w-5 h-5 md:w-6 md:h-6" />
-                ) : (
-                  <Play className="w-5 h-5 md:w-6 md:h-6" />
-                )}
-              </Button>
-              
-              {/* <Button
-                variant="ghost"
-                size="icon"
-                className="w-7 h-7 md:w-8 md:h-8 ml-3 md:ml-4"
-                onClick={handleShufflePlay}
-                disabled={playlistSongs.length === 0}
-              >
-                <Shuffle className="w-3 h-3 md:w-4 md:h-4" />
-              </Button> */}
-            </div>
           </div>
         </div>
 
@@ -402,6 +393,31 @@ export default function PlaylistPage() {
           coverImage: playlist.coverImage
         } : undefined}
       />
+
+      {/* Delete Playlist Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>플레이리스트 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{playlist?.name}&quot; 플레이리스트를 정말 삭제하시겠습니까?
+              <br />
+              이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDeleteCancel}>
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

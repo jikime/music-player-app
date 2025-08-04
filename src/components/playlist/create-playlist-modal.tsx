@@ -20,9 +20,11 @@ import {
   Camera,
   Sparkles,
   Loader2,
-  X
+  X,
+  AlertCircle
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
+import { validateImageFile, compressImageToBase64, formatFileSize, getBase64Size } from "@/lib/image-utils"
 
 interface CreatePlaylistModalProps {
   open: boolean
@@ -55,6 +57,8 @@ export function CreatePlaylistModal({ open, onOpenChange, editMode = false, play
   const [selectedGradient, setSelectedGradient] = useState(gradientOptions[0])
   const [isLoading, setIsLoading] = useState(false)
   const [useGradient, setUseGradient] = useState(true)
+  const [imageError, setImageError] = useState<string | null>(null)
+  const [isProcessingImage, setIsProcessingImage] = useState(false)
   const isMobile = useIsMobile()
   
   const { addPlaylist, updatePlaylist } = useMusicStore()
@@ -82,6 +86,8 @@ export function CreatePlaylistModal({ open, onOpenChange, editMode = false, play
       setCoverImage(null)
       setSelectedGradient(gradientOptions[0])
       setUseGradient(true)
+      setImageError(null)
+      setIsProcessingImage(false)
     }
   }, [editMode, playlistToEdit, open])
 
@@ -113,6 +119,8 @@ export function CreatePlaylistModal({ open, onOpenChange, editMode = false, play
       setCoverImage(null)
       setSelectedGradient(gradientOptions[0])
       setUseGradient(true)
+      setImageError(null)
+      setIsProcessingImage(false)
       onOpenChange(false)
     } catch (error) {
       console.error(`Failed to ${editMode ? 'update' : 'create'} playlist:`, error)
@@ -122,21 +130,53 @@ export function CreatePlaylistModal({ open, onOpenChange, editMode = false, play
     }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setCoverImage(reader.result as string)
-        setUseGradient(false)
+    if (!file) return
+
+    // 기존 에러 초기화
+    setImageError(null)
+    setIsProcessingImage(true)
+
+    try {
+      // 파일 검증
+      const validation = validateImageFile(file)
+      if (!validation.isValid) {
+        setImageError(validation.error || '유효하지 않은 이미지 파일입니다.')
+        return
       }
-      reader.readAsDataURL(file)
+
+      // 이미지 압축 및 base64 변환
+      const compressedBase64 = await compressImageToBase64(file, 512, 512, 0.8)
+      
+      // 압축된 이미지 크기 확인
+      const compressedSize = getBase64Size(compressedBase64)
+      console.log(`Image compressed: ${formatFileSize(file.size)} → ${formatFileSize(compressedSize)}`)
+
+      // 1MB 이상이면 추가 압축
+      if (compressedSize > 1024 * 1024) {
+        const furtherCompressed = await compressImageToBase64(file, 400, 400, 0.6)
+        setCoverImage(furtherCompressed)
+        console.log(`Further compressed: ${formatFileSize(getBase64Size(furtherCompressed))}`)
+      } else {
+        setCoverImage(compressedBase64)
+      }
+      
+      setUseGradient(false)
+    } catch (error) {
+      console.error('Image processing error:', error)
+      setImageError('이미지 처리 중 오류가 발생했습니다. 다른 이미지를 시도해주세요.')
+    } finally {
+      setIsProcessingImage(false)
+      // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
+      e.target.value = ''
     }
   }
 
   const handleRemoveImage = () => {
     setCoverImage(null)
     setUseGradient(true)
+    setImageError(null)
   }
 
   return (
@@ -191,23 +231,33 @@ export function CreatePlaylistModal({ open, onOpenChange, editMode = false, play
               <div className={`absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center transition-opacity ${
                 isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
               }`}>
-                <label htmlFor="cover-upload" className="cursor-pointer">
-                  <div className={`flex flex-col items-center text-white ${
-                    isMobile ? 'gap-1' : 'gap-2'
-                  }`}>
-                    <Camera className={isMobile ? 'w-6 h-6' : 'w-8 h-8'} />
-                    <span className={`font-medium ${
-                      isMobile ? 'text-xs' : 'text-sm'
-                    }`}>Choose photo</span>
+                {isProcessingImage ? (
+                  <div className="flex flex-col items-center text-white gap-2">
+                    <Loader2 className={`animate-spin ${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />
+                    <span className={`font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                      처리 중...
+                    </span>
                   </div>
-                  <input
-                    id="cover-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                </label>
+                ) : (
+                  <label htmlFor="cover-upload" className="cursor-pointer">
+                    <div className={`flex flex-col items-center text-white ${
+                      isMobile ? 'gap-1' : 'gap-2'
+                    }`}>
+                      <Camera className={isMobile ? 'w-6 h-6' : 'w-8 h-8'} />
+                      <span className={`font-medium ${
+                        isMobile ? 'text-xs' : 'text-sm'
+                      }`}>Choose photo</span>
+                    </div>
+                    <input
+                      id="cover-upload"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={isProcessingImage}
+                    />
+                  </label>
+                )}
               </div>
 
               {/* Remove Image Button */}
@@ -230,6 +280,14 @@ export function CreatePlaylistModal({ open, onOpenChange, editMode = false, play
             <div className={`${
               isMobile ? 'w-full space-y-3' : 'flex-1 space-y-4'
             }`}>
+              {/* Image Error Message */}
+              {imageError && (
+                <div className="flex items-center gap-2 p-2 bg-destructive/10 text-destructive rounded-md">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span className={isMobile ? 'text-xs' : 'text-sm'}>{imageError}</span>
+                </div>
+              )}
+
               <div className={isMobile ? 'space-y-1' : 'space-y-2'}>
                 <Label htmlFor="name" className={isMobile ? 'text-sm' : ''}>
                   Name
@@ -312,7 +370,7 @@ export function CreatePlaylistModal({ open, onOpenChange, editMode = false, play
             <Button 
               type="submit" 
               size={isMobile ? "sm" : "default"}
-              disabled={!name.trim() || isLoading}
+              disabled={!name.trim() || isLoading || isProcessingImage}
               className={isMobile ? 'min-w-[80px]' : 'min-w-[100px]'}
             >
               {isLoading ? (
@@ -320,7 +378,14 @@ export function CreatePlaylistModal({ open, onOpenChange, editMode = false, play
                   <Loader2 className={`animate-spin mr-2 ${
                     isMobile ? 'w-3 h-3' : 'w-4 h-4'
                   }`} />
-                  {isMobile ? 'Creating...' : 'Creating...'}
+                  {editMode ? 'Updating...' : 'Creating...'}
+                </>
+              ) : isProcessingImage ? (
+                <>
+                  <Loader2 className={`animate-spin mr-2 ${
+                    isMobile ? 'w-3 h-3' : 'w-4 h-4'
+                  }`} />
+                  Processing...
                 </>
               ) : (
                 editMode ? 'Update' : 'Create'
