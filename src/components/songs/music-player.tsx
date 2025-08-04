@@ -27,6 +27,10 @@ export function MusicPlayer() {
   const [seekTime, setSeekTime] = useState<number | null>(null)
   const [hasEnded, setHasEnded] = useState(false)
   const [internalPlaying, setInternalPlaying] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const {
     playerState,
@@ -53,9 +57,64 @@ export function MusicPlayer() {
     repeat
   } = playerState
 
+  // YouTube URL validation
+  const isValidYouTubeUrl = (url: string): boolean => {
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)[a-zA-Z0-9_-]{11}/
+    return youtubeRegex.test(url)
+  }
+
+  // Clear loading timeout
+  const clearLoadingTimeout = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current)
+      loadingTimeoutRef.current = null
+    }
+  }
+
+  // Start loading timeout (30 seconds)
+  const startLoadingTimeout = () => {
+    clearLoadingTimeout()
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.warn('Player loading timeout after 30 seconds')
+      setError('Loading timeout. Please try again.')
+      setIsLoading(false)
+    }, 30000)
+  }
+
+  // Retry loading current song
+  const retryLoading = () => {
+    if (!currentSong || retryCount >= 3) return
+    
+    console.log(`Retrying to load song (attempt ${retryCount + 1}/3):`, currentSong.title)
+    setRetryCount(prev => prev + 1)
+    setError(null)
+    setIsLoading(true)
+    setPlayerReady(false)
+    startLoadingTimeout()
+  }
+
   // Reset hasEnded when currentSong changes
   useEffect(() => {
     setHasEnded(false)
+    setError(null)
+    setRetryCount(0)
+    clearLoadingTimeout()
+    
+    // Validate YouTube URL when song changes
+    if (currentSong && !isValidYouTubeUrl(currentSong.url)) {
+      setError('Invalid YouTube URL format')
+      setIsLoading(false)
+      return
+    }
+    
+    // Only set loading if we have a song and player is not ready yet
+    if (currentSong) {
+      setIsLoading(true)
+      setPlayerReady(false)
+      startLoadingTimeout()
+    } else {
+      setIsLoading(false)
+    }
   }, [currentSong?.id])
 
 
@@ -65,12 +124,17 @@ export function MusicPlayer() {
       console.log('Player ready')
       setPlayerReady(true)
       setHasEnded(false)
+      setIsLoading(false)
+      setError(null)
+      clearLoadingTimeout()
       // Sync internal playing state with store state
       if (isPlaying && !internalPlaying) {
         setInternalPlaying(true)
       }
     } catch (error) {
       console.warn('Error in handleReady:', error)
+      setError('Player initialization failed')
+      setIsLoading(false)
     }
   }
 
@@ -110,17 +174,30 @@ export function MusicPlayer() {
 
     console.log('Duration set:', player.duration)
     setDuration(player.duration)
+    
+    // Duration is set means the video is loaded
+    if (player.duration > 0) {
+      setIsLoading(false)
+      setError(null)
+      clearLoadingTimeout()
+    }
   }
 
   const handleStart = () => {
     console.log('Playback started')
     setPlayerReady(true)
     setHasEnded(false) // Reset ended flag for new song
+    setIsLoading(false)
+    setError(null)
+    clearLoadingTimeout()
   }
 
   const handlePlay = () => {
     console.log('Player: onPlay event')
     setInternalPlaying(true)
+    setIsLoading(false)
+    setError(null)
+    clearLoadingTimeout()
     if (!isPlaying) {
       setIsPlaying(true)
     }
@@ -165,6 +242,35 @@ export function MusicPlayer() {
 
   const handleLoadStart = () => {
     console.log('Loading started')
+    setIsLoading(true)
+    setError(null)
+    startLoadingTimeout()
+  }
+
+  const handleError = (error: any) => {
+    console.error('YouTube Player Error:', error)
+    clearLoadingTimeout()
+    setIsLoading(false)
+    
+    // Determine error type and set appropriate message
+    let errorMessage = 'Playback failed'
+    if (error?.code === 2) {
+      errorMessage = 'Invalid video ID'
+    } else if (error?.code === 5) {
+      errorMessage = 'Video not supported on HTML5 player'
+    } else if (error?.code === 100) {
+      errorMessage = 'Video not found or private'
+    } else if (error?.code === 101 || error?.code === 150) {
+      errorMessage = 'Video not allowed to be played in embedded players'
+    }
+    
+    setError(errorMessage)
+    
+    // Attempt retry for recoverable errors (not for video not found/private)
+    if (retryCount < 3 && error?.code !== 100 && error?.code !== 101 && error?.code !== 150) {
+      console.log('Attempting retry due to recoverable error')
+      setTimeout(retryLoading, 2000) // Retry after 2 seconds
+    }
   }
 
   // const handleBuffer = () => {
@@ -245,6 +351,11 @@ export function MusicPlayer() {
     setSeekTime(null)
     setHasEnded(false)
     setInternalPlaying(false)
+    
+    // Cleanup on unmount
+    return () => {
+      clearLoadingTimeout()
+    }
   }, [currentSong])
 
   // Sync internal playing state with store state
@@ -253,6 +364,13 @@ export function MusicPlayer() {
       setInternalPlaying(isPlaying)
     }
   }, [isPlaying, playerReady, internalPlaying])
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      clearLoadingTimeout()
+    }
+  }, [])
 
   // setPlayerRef callback like in demo
   const setPlayerRef = useCallback((player: HTMLVideoElement) => {
@@ -311,10 +429,7 @@ export function MusicPlayer() {
           onPause={handlePause}
           onRateChange={handleRateChange}
           onEnded={handleEnded}
-          onError={(e) => {
-            console.warn('YouTube Player Error (this is usually safe to ignore):', e)
-            // Don't throw or break the app for YouTube API errors
-          }}
+          onError={handleError}
           onTimeUpdate={handleTimeUpdate}
           onProgress={handleProgress}
           onDurationChange={handleDurationChange}
@@ -336,7 +451,25 @@ export function MusicPlayer() {
               />
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-foreground truncate text-sm">{currentSong.title}</h4>
-                <p className="text-xs text-muted-foreground truncate">{currentSong.artist}</p>
+                {error ? (
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-destructive truncate">{error}</p>
+                    {retryCount < 3 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 px-1 text-xs text-destructive hover:text-destructive/80"
+                        onClick={retryLoading}
+                      >
+                        Retry
+                      </Button>
+                    )}
+                  </div>
+                ) : isLoading ? (
+                  <p className="text-xs text-muted-foreground truncate">Loading...</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground truncate">{currentSong.artist}</p>
+                )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <Button 
@@ -352,9 +485,15 @@ export function MusicPlayer() {
                   size="icon"
                   className="w-10 h-10 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   onClick={() => setIsPlaying(!isPlaying)}
-                  disabled={!currentSong || !playerReady}
+                  disabled={!currentSong || !playerReady || isLoading || !!error}
                 >
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  {isLoading ? (
+                    <div className="w-5 h-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : isPlaying ? (
+                    <Pause className="w-5 h-5" />
+                  ) : (
+                    <Play className="w-5 h-5" />
+                  )}
                 </Button>
               </div>
             </>
@@ -383,7 +522,7 @@ export function MusicPlayer() {
             onValueChange={handleSeekChange}
             onValueCommit={handleSeekCommit}
             className="flex-1" 
-            disabled={!currentSong || !playerReady}
+            disabled={!currentSong || !playerReady || isLoading || !!error}
           />
           <span className="text-xs text-muted-foreground w-10">{formatTime(duration)}</span>
         </div>
@@ -445,7 +584,25 @@ export function MusicPlayer() {
               />
               <div className="min-w-0">
                 <h4 className="font-medium text-foreground truncate">{currentSong.title}</h4>
-                <p className="text-sm text-muted-foreground truncate">{currentSong.artist}</p>
+                {error ? (
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-destructive truncate">{error}</p>
+                    {retryCount < 3 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 px-2 text-xs text-destructive hover:text-destructive/80"
+                        onClick={retryLoading}
+                      >
+                        Retry
+                      </Button>
+                    )}
+                  </div>
+                ) : isLoading ? (
+                  <p className="text-sm text-muted-foreground truncate">Loading...</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground truncate">{currentSong.artist}</p>
+                )}
               </div>
               <Button 
                 variant="ghost" 
@@ -494,9 +651,15 @@ export function MusicPlayer() {
               size="icon"
               className="w-10 h-10 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               onClick={() => setIsPlaying(!isPlaying)}
-              disabled={!currentSong || !playerReady}
+              disabled={!currentSong || !playerReady || isLoading || !!error}
             >
-              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              {isLoading ? (
+                <div className="w-5 h-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : isPlaying ? (
+                <Pause className="w-5 h-5" />
+              ) : (
+                <Play className="w-5 h-5" />
+              )}
             </Button>
             <Button 
               variant="ghost" 
@@ -530,7 +693,7 @@ export function MusicPlayer() {
               onValueChange={handleSeekChange}
               onValueCommit={handleSeekCommit}
               className="flex-1" 
-              disabled={!currentSong || !playerReady}
+              disabled={!currentSong || !playerReady || isLoading || !!error}
             />
             <span className="text-xs text-muted-foreground">{formatTime(duration)}</span>
           </div>
