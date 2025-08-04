@@ -6,8 +6,10 @@ import Image from "next/image"
 interface ImageWithFallbackProps {
   src: string
   alt: string
-  width: number
-  height: number
+  width?: number
+  height?: number
+  fill?: boolean
+  sizes?: string
   className?: string
   fallbackSrc?: string
   timeout?: number
@@ -18,6 +20,8 @@ export function ImageWithFallback({
   alt,
   width,
   height,
+  fill,
+  sizes,
   className,
   fallbackSrc = "/placeholder.svg",
   timeout = 1000,
@@ -85,6 +89,8 @@ export function ImageWithFallback({
       alt={alt}
       width={width}
       height={height}
+      fill={fill}
+      sizes={sizes}
       className={className}
       onLoad={handleLoad}
       onError={handleError}

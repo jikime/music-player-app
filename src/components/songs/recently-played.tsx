@@ -211,7 +211,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
-          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4 lg:gap-5' : 'flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide'} mb-4`}>
+          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4 lg:gap-5' : 'flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide'} mb-4`}>
             {currentSongs.map((song) => (
               <div
                 key={song.id}
@@ -223,7 +223,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
                 src={song.thumbnail || "/placeholder.svg"}
                 alt={song.title}
                 fill
-                sizes="(max-width: 640px) 144px, (max-width: 768px) 176px, (max-width: 1024px) 208px, 224px"
+                sizes="(max-width: 640px) 145px, (max-width: 768px) 176px, (max-width: 1024px) 208px, 224px"
                 className="object-cover"
               />
             </div>
