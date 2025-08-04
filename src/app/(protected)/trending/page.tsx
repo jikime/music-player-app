@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useMusicStore } from "@/lib/store"
 import { MusicPlayer } from "@/components/songs/music-player"
 import { LoadingScreen } from "@/components/layout/loading-screen"
-import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { Button } from "@/components/ui/button"
 import {
   Play,
@@ -17,7 +17,8 @@ import {
   Plus,
   MoreHorizontal,
   Users,
-  Headphones
+  Headphones,
+  Minus
 } from "lucide-react"
 import { formatDuration } from "@/lib/music-utils"
 import { trendingApi } from "@/lib/trending-api"
@@ -30,7 +31,8 @@ export default function TrendingPage() {
     setIsPlaying,
     isBookmarked,
     addBookmark,
-    removeBookmark
+    removeBookmark,
+    initializeData
   } = useMusicStore()
 
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
@@ -43,6 +45,11 @@ export default function TrendingPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Initialize data on mount
+  useEffect(() => {
+    initializeData()
+  }, [initializeData])
 
   // Fetch trending data when period changes
   useEffect(() => {
@@ -158,7 +165,7 @@ export default function TrendingPage() {
       <div className="py-4 md:py-6">
         <div className="grid grid-cols-3 gap-2 md:gap-6 mb-6 md:mb-8">
           {/* Total Plays Card */}
-          <div className="bg-card rounded-lg p-3 md:p-6 border border-border">
+          <div className="p-3 md:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:gap-3">
               <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0 mb-2 md:mb-0">
                 <Headphones className="w-4 h-4 md:w-6 md:h-6 text-blue-500" />
@@ -175,7 +182,7 @@ export default function TrendingPage() {
           </div>
           
           {/* Trending Songs Card */}
-          <div className="bg-card rounded-lg p-3 md:p-6 border border-border">
+          <div className="p-3 md:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:gap-3">
               <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0 mb-2 md:mb-0">
                 <Music className="w-4 h-4 md:w-6 md:h-6 text-green-500" />
@@ -191,7 +198,7 @@ export default function TrendingPage() {
           </div>
           
           {/* Active Listeners Card */}
-          <div className="bg-card rounded-lg p-3 md:p-6 border border-border">
+          <div className="p-3 md:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:gap-3">
               <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0 mb-2 md:mb-0">
                 <Users className="w-4 h-4 md:w-6 md:h-6 text-purple-500" />
@@ -209,15 +216,15 @@ export default function TrendingPage() {
         </div>
 
         {/* Trending Songs List */}
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <div className="p-4 md:p-6 border-b border-border">
+        <div className="overflow-hidden">
+          <div className="p-4 md:p-6 mb-4">
             <h2 className="text-lg md:text-xl font-semibold">Top Trending Songs</h2>
             <p className="text-xs md:text-sm text-muted-foreground mt-1">
               Based on plays, engagement, and growth over the past {selectedPeriod.replace('ly', '')}
             </p>
           </div>
           
-          <div className="divide-y divide-border">
+          <div className="space-y-1">
             {trendingSongs.map((song) => {
               const rankingChange = getRankingChange(song)
               const isCurrentSong = playerState.currentSong?.id === song.id
@@ -235,15 +242,31 @@ export default function TrendingPage() {
                         </span>
                       </div>
 
-                      {/* Thumbnail */}
-                      <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted">
+                      {/* Thumbnail - Clickable */}
+                      <div 
+                        className="w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-muted group/thumb relative cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handlePlaySong(song)
+                        }}
+                      >
                         <ImageWithFallback
                           src={song.thumbnail || ''}
                           alt={song.title}
                           width={48}
                           height={48}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-110"
                         />
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+                        {/* Play Icon on Hover */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
+                          {isCurrentSong && isPlaying ? (
+                            <Pause className="w-4 h-4 text-white" fill="currentColor" />
+                          ) : (
+                            <Play className="w-4 h-4 text-white" fill="currentColor" />
+                          )}
+                        </div>
                       </div>
 
                       {/* Song Info */}
@@ -253,13 +276,18 @@ export default function TrendingPage() {
                           <span className="truncate">{song.artist}</span>
                           <span className="flex-shrink-0">•</span>
                           <span className="flex-shrink-0">{formatDuration(song.duration)}</span>
-                          <div className={`flex items-center gap-0.5 flex-shrink-0 ${song.playIncrease > 0 ? 'text-green-500' : song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                        </div>
+                        {/* Trend Indicator */}
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <div className={`flex items-center gap-0.5 text-xs ${song.playIncrease > 0 ? 'text-green-500' : song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
                             {song.playIncrease > 0 ? (
-                              <TrendingUp className="w-2 h-2" />
+                              <TrendingUp className="w-2.5 h-2.5" />
                             ) : song.playIncrease < 0 ? (
-                              <TrendingDown className="w-2 h-2" />
-                            ) : null}
-                            <span>{Math.abs(Number(song.playIncrease)).toFixed(0)}%</span>
+                              <TrendingDown className="w-2.5 h-2.5" />
+                            ) : (
+                              <Minus className="w-2.5 h-2.5" />
+                            )}
+                            <span className="font-medium">{Math.abs(Number(song.playIncrease)).toFixed(0)}%</span>
                           </div>
                         </div>
                       </div>
@@ -270,19 +298,10 @@ export default function TrendingPage() {
                           size="icon"
                           variant="ghost"
                           className="w-8 h-8"
-                          onClick={() => handlePlaySong(song)}
-                        >
-                          {isPlaying ? (
-                            <Pause className="w-4 h-4" />
-                          ) : (
-                            <Play className="w-4 h-4" />
-                          )}
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="w-8 h-8"
-                          onClick={() => toggleBookmark(song)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleBookmark(song)
+                          }}
                         >
                           <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
                         </Button>
@@ -291,7 +310,7 @@ export default function TrendingPage() {
                   </div>
 
                   {/* Desktop Layout - Grid 기반 */}
-                  <div className="hidden md:grid md:grid-cols-[4rem_2.5rem_3rem_1fr_8rem] lg:grid-cols-[4rem_2.5rem_3rem_1fr_6rem_4rem_8rem] gap-4 items-center p-4 hover:bg-muted/50 transition-colors group">
+                  <div className="hidden md:grid md:grid-cols-[4rem_3rem_1fr_6rem_6rem_4rem_8rem] lg:grid-cols-[4rem_3rem_1fr_6rem_6rem_4rem_8rem] gap-4 items-center p-4 hover:bg-muted/50 transition-colors group">
                     {/* Ranking */}
                     <div className="flex items-center justify-center">
                       <span className="text-2xl font-bold text-muted-foreground text-center">
@@ -299,31 +318,32 @@ export default function TrendingPage() {
                       </span>
                     </div>
 
-                    {/* Play Button */}
-                    <div className="flex justify-center">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="w-8 h-8 rounded-full opacity-100 transition-opacity"
-                        onClick={() => handlePlaySong(song)}
-                      >
-                        {isPlaying ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
 
-                    {/* Thumbnail */}
-                    <div className="w-12 h-12 rounded overflow-hidden bg-muted">
+                    {/* Thumbnail - Clickable */}
+                    <div 
+                      className="w-12 h-12 rounded overflow-hidden bg-muted group/thumb relative cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handlePlaySong(song)
+                      }}
+                    >
                       <ImageWithFallback
                         src={song.thumbnail || ''}
                         alt={song.title}
                         width={48}
                         height={48}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-110"
                       />
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+                      {/* Play Icon on Hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
+                        {isCurrentSong && isPlaying ? (
+                          <Pause className="w-4 h-4 text-white" fill="currentColor" />
+                        ) : (
+                          <Play className="w-4 h-4 text-white" fill="currentColor" />
+                        )}
+                      </div>
                     </div>
 
                     {/* Song Info - 유연한 컬럼 (1fr) */}
@@ -335,15 +355,32 @@ export default function TrendingPage() {
                     </div>
 
                     {/* Plays */}
-                    <div className="hidden lg:flex items-center gap-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Headphones className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">{song.plays.toLocaleString()}</span>
                     </div>
                     
                     {/* Duration */}
-                    <div className="hidden lg:flex items-center gap-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Clock className="w-4 h-4 flex-shrink-0" />
                       <span>{formatDuration(song.duration)}</span>
+                    </div>
+                    
+                    {/* Trend Indicator */}
+                    <div className="flex items-center gap-1.5">
+                      <div className={`flex items-center gap-1.5 text-sm font-medium ${
+                        song.playIncrease > 0 ? 'text-green-500' : 
+                        song.playIncrease < 0 ? 'text-red-500' : 'text-muted-foreground'
+                      }`}>
+                        {song.playIncrease > 0 ? (
+                          <TrendingUp className="w-4 h-4" />
+                        ) : song.playIncrease < 0 ? (
+                          <TrendingDown className="w-4 h-4" />
+                        ) : (
+                          <Minus className="w-4 h-4" />
+                        )}
+                        <span>{Math.abs(Number(song.playIncrease)).toFixed(0)}%</span>
+                      </div>
                     </div>
 
                     {/* Actions */}
@@ -352,7 +389,10 @@ export default function TrendingPage() {
                         size="icon"
                         variant="ghost"
                         className="w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => toggleBookmark(song)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleBookmark(song)
+                        }}
                       >
                         <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
                       </Button>
@@ -361,6 +401,7 @@ export default function TrendingPage() {
                         size="icon"
                         variant="ghost"
                         className="w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -369,6 +410,7 @@ export default function TrendingPage() {
                         size="icon"
                         variant="ghost"
                         className="w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>

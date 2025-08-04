@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,6 +10,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Play,
 } from "lucide-react"
 import { formatDuration, formatPlays } from "@/lib/music-utils"
 import { useMusicStore } from "@/lib/store"
@@ -179,14 +180,20 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                     <span className="text-muted-foreground text-xs font-mono w-5 flex-shrink-0">
                       #{currentPage * ITEMS_PER_PAGE + index + 1}
                     </span>
-                    <div className="w-9 h-9 rounded overflow-hidden relative flex-shrink-0 bg-muted">
+                    <div className="w-9 h-9 rounded overflow-hidden relative flex-shrink-0 bg-muted group/thumb">
                       <ImageWithFallback
                         src={song.thumbnail || "/placeholder.svg"}
                         alt={song.title}
                         fill
                         sizes="36px"
-                        className="object-cover"
+                        className="object-cover transition-transform duration-300 group-hover/thumb:scale-110"
                       />
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+                      {/* Play Icon on Hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
+                        <Play className="w-3 h-3 text-white" fill="currentColor" />
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-foreground text-sm leading-tight line-clamp-1">{song.title}</h3>
@@ -230,14 +237,20 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                 onClick={() => onPlaySong(song)}
               >
                 <span className="text-muted-foreground w-8 text-sm">#{currentPage * ITEMS_PER_PAGE + index + 1}</span>
-                <div className="w-12 h-12 rounded overflow-hidden relative bg-muted">
+                <div className="w-12 h-12 rounded overflow-hidden relative bg-muted group/thumb">
                   <ImageWithFallback
                     src={song.thumbnail || "/placeholder.svg"}
                     alt={song.title}
                     fill
                     sizes="48px"
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 group-hover/thumb:scale-110"
                   />
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+                  {/* Play Icon on Hover */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
+                    <Play className="w-4 h-4 text-white" fill="currentColor" />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium text-foreground truncate">{song.title}</h3>

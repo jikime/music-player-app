@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Search,

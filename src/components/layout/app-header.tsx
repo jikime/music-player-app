@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Plus, LogOut, User, Settings } from "lucide-react"
 import { AddLinkModal } from "@/components/songs/add-link-modal"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { ThemeToggle } from "@/components/layout/theme-toggle"
 
 export function AppHeader() {
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)

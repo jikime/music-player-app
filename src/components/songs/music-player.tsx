@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -263,7 +263,7 @@ export function MusicPlayer() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background backdrop-blur-md z-50 safe-area-inset-bottom">
+    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-background backdrop-blur-md z-50 safe-area-inset-bottom">
       {/* Hidden React Player */}
       {currentSong && (
         <ReactPlayer

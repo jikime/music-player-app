@@ -1,6 +1,6 @@
 "use client"
 
-import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 
 import {
   SidebarGroup,

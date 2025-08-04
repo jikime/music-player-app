@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
-import { ChevronRight, ChevronLeft } from "lucide-react"
+import { ChevronRight, ChevronLeft, Play } from "lucide-react"
 import { formatDuration } from "@/lib/music-utils"
 import type { Song } from "@/types/music"
 
@@ -218,14 +218,22 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
                 className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-28 sm:w-32 md:w-52 lg:w-56 flex-shrink-0'}`}
                 onClick={() => onPlaySong(song)}
           >
-            <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative">
+            <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative group">
               <ImageWithFallback
                 src={song.thumbnail || "/placeholder.svg"}
                 alt={song.title}
                 fill
                 sizes="(max-width: 640px) 145px, (max-width: 768px) 176px, (max-width: 1024px) 208px, 224px"
-                className="object-cover"
+                className="object-cover transition-transform duration-300 group-hover:scale-110"
               />
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300" />
+              {/* Play Button on Hover */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-110 transition-transform flex items-center justify-center">
+                  <Play className="w-5 h-5 ml-0.5" fill="currentColor" />
+                </div>
+              </div>
             </div>
             <div className="p-1.5 md:p-4 flex flex-col flex-1">
               <h3 className="font-semibold mb-1 line-clamp-2 leading-tight min-h-[1.5rem] md:min-h-[2.5rem] text-xs md:text-base" title={song.title}>{song.title}</h3>

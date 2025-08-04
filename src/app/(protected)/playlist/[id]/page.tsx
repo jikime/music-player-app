@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LoadingScreen } from "@/components/layout/loading-screen"
-import { ImageWithFallback } from "@/components/ui/image-with-fallback"
+import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { MusicPlayer } from "@/components/songs/music-player"
 import { AddSongModal } from "@/components/songs/add-song-modal"
 import {
@@ -430,14 +430,20 @@ export default function PlaylistPage() {
                   }}
                 >
                   {/* Thumbnail */}
-                  <div className="w-9 h-9 md:w-12 md:h-12 rounded overflow-hidden flex-shrink-0 bg-muted">
+                  <div className="w-9 h-9 md:w-12 md:h-12 rounded overflow-hidden flex-shrink-0 bg-muted group/thumb relative">
                     <ImageWithFallback
                       src={song.thumbnail || ''}
                       alt={song.title}
                       width={36}
                       height={36}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-110"
                     />
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+                    {/* Play Icon on Hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
+                      <Play className="w-3 h-3 md:w-4 md:h-4 text-white" fill="currentColor" />
+                    </div>
                   </div>
 
                   {/* Song Info */}
