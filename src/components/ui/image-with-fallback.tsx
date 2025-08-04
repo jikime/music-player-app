@@ -24,7 +24,7 @@ export function ImageWithFallback({
   sizes,
   className,
   fallbackSrc = "/placeholder.svg",
-  timeout = 1000,
+  timeout = 3000,
   ...props
 }: ImageWithFallbackProps) {
   const [currentSrc, setCurrentSrc] = useState(src || fallbackSrc)
