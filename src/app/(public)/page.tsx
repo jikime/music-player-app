@@ -18,6 +18,8 @@ export default function Component() {
     setIsPlaying,
     loadAllSongs,
     getRecentlyPlayed,
+    getPlaylists,
+    getBookmarks,
     isLoading,
   } = useMusicStore()
 
@@ -27,9 +29,13 @@ export default function Component() {
       try {
         const loadPromises = [loadAllSongs()] // 모든 노래 로드 (공용 + 공유된 노래 + 내 노래)
         
-        // 인증된 사용자에게만 최근 재생 기록 로드
+        // 인증된 사용자에게만 최근 재생 기록, 플레이리스트, 북마크 로드
         if (session) {
-          loadPromises.push(getRecentlyPlayed())
+          loadPromises.push(
+            getRecentlyPlayed(),
+            getPlaylists(), // 플레이리스트 로드 추가
+            getBookmarks() // 북마크 로드 추가
+          )
         }
         
         await Promise.all(loadPromises)
@@ -39,7 +45,7 @@ export default function Component() {
     }
     
     loadData()
-  }, [loadAllSongs, getRecentlyPlayed, session])
+  }, [loadAllSongs, getRecentlyPlayed, getPlaylists, getBookmarks, session])
 
   // Get all recently played songs from store
   const recentSongs = recentlyPlayed

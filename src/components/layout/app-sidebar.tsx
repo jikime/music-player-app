@@ -8,6 +8,7 @@ import {
   User,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
+import { useEffect } from "react"
 
 import { NavMain } from "@/components/layout/nav-main"
 import { NavPlaylists } from "@/components/layout/nav-playlists"
@@ -26,16 +27,44 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar>
 
 export function AppSidebar({ ...props }: AppSidebarProps) {
   const { data: session } = useSession()
-  const { playlists, bookmarks, getSong } = useMusicStore()
+  const { playlists, bookmarks, getSong, getPlaylists, getBookmarks, loadAllSongs } = useMusicStore()
 
   // Check if user is authenticated
   const isAuthenticated = !!session
 
-  // Get bookmarked songs
-  const bookmarkedSongs = bookmarks
-    .map(bookmark => getSong(bookmark.songId))
-    .filter(Boolean)
-    .slice(0, 6) // Show more bookmarks in sidebar
+  // Load sidebar data when session is available
+  useEffect(() => {
+    const loadSidebarData = async () => {
+      if (!session) return
+      
+      console.log('Loading sidebar data...')
+      try {
+        // Load essential data for sidebar
+        const promises = [
+          loadAllSongs().catch(err => console.error('Failed to load songs for sidebar:', err)),
+          getPlaylists().catch(err => console.error('Failed to load playlists for sidebar:', err)),
+          getBookmarks().catch(err => console.error('Failed to load bookmarks for sidebar:', err))
+        ]
+        
+        await Promise.allSettled(promises)
+        console.log('Sidebar data loading completed')
+      } catch (error) {
+        console.error('Failed to load sidebar data:', error)
+      }
+    }
+    
+    loadSidebarData()
+  }, [session, loadAllSongs, getPlaylists, getBookmarks])
+
+  // Get bookmarked songs - safely handle when data is loading
+  const bookmarkedSongs = React.useMemo(() => {
+    if (!bookmarks || bookmarks.length === 0) return []
+    
+    return bookmarks
+      .map(bookmark => getSong(bookmark.songId))
+      .filter(Boolean)
+      .slice(0, 6) // Show more bookmarks in sidebar
+  }, [bookmarks, getSong])
 
   const navMainItems = [
     {
@@ -73,7 +102,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainItems} />
-        {isAuthenticated && <NavPlaylists playlists={playlists} />}
+        {isAuthenticated && <NavPlaylists playlists={playlists || []} />}
         {isAuthenticated && <NavBookmarks bookmarkedSongs={bookmarkedSongs as Song[]} onPlaySong={() => {}} />}
       </SidebarContent>
       <SidebarRail />

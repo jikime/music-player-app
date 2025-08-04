@@ -38,7 +38,9 @@ export default function MySongsPage() {
     setIsPlaying,
     getMySongs,
     deleteSong,
-    playSong
+    playSong,
+    getPlaylists,
+    getBookmarks
   } = useMusicStore()
 
   const [searchQuery, setSearchQuery] = useState("")
@@ -49,9 +51,20 @@ export default function MySongsPage() {
 
   const { currentSong, isPlaying } = playerState
 
-  // Load my songs on mount
+  // Load my songs on mount (playlists and bookmarks are loaded by sidebar)
   useEffect(() => {
-    getMySongs().catch(console.error)
+    const loadData = async () => {
+      console.log('Loading My Songs page data...')
+      try {
+        // Only load my songs specifically, sidebar handles playlists and bookmarks
+        await getMySongs()
+        console.log('My Songs page data loading completed')
+      } catch (error) {
+        console.error('Failed to load my songs page data:', error)
+      }
+    }
+    
+    loadData()
   }, [getMySongs])
 
   // Filter songs based on search query

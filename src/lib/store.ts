@@ -33,6 +33,7 @@ interface MusicStore {
   
   // Bookmarks
   bookmarks: Bookmark[]
+  getBookmarks: () => Promise<void>
   addBookmark: (songId: string) => Promise<void>
   removeBookmark: (songId: string) => Promise<void>
   isBookmarked: (songId: string) => boolean
@@ -130,7 +131,9 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   loadAllSongs: async () => {
     try {
+      console.log('Loading all songs...')
       const allSongs = await songsApi.getAllSongs()
+      console.log('All songs loaded:', allSongs.length)
       set({ songs: allSongs })
     } catch (error) {
       console.error('Failed to fetch all songs:', error)
@@ -185,14 +188,17 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     try {
       const session = await getSession()
       if (!session) {
-        throw new Error('Authentication required')
+        console.log('No session found, skipping playlist loading')
+        return
       }
       
+      console.log('Loading playlists...')
       const playlists = await playlistsApi.getAll()
+      console.log('Playlists loaded:', playlists.length)
       set({ playlists })
     } catch (error) {
       console.error('Failed to fetch playlists:', error)
-      throw error
+      // Don't throw error to prevent breaking other data loading
     }
   },
   addPlaylist: async (playlistData) => {
@@ -314,6 +320,23 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   
   // Bookmarks
   bookmarks: [],
+  getBookmarks: async () => {
+    try {
+      const session = await getSession()
+      if (!session) {
+        console.log('No session found, skipping bookmark loading')
+        return
+      }
+      
+      console.log('Loading bookmarks...')
+      const bookmarks = await bookmarksApi.getAll()
+      console.log('Bookmarks loaded:', bookmarks.length)
+      set({ bookmarks })
+    } catch (error) {
+      console.error('Failed to fetch bookmarks:', error)
+      // Don't throw error to prevent breaking other data loading
+    }
+  },
   addBookmark: async (songId) => {
     try {
       const session = await getSession()

@@ -5,11 +5,14 @@ import { getCurrentUser } from '@/lib/server-auth'
 // GET - 현재 사용자의 북마크 조회
 export async function GET() {
   try {
+    console.log('GET /api/bookmarks called')
     // 현재 로그인된 사용자 확인
     const currentUser = await getCurrentUser()
     if (!currentUser) {
+      console.log('No current user found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    console.log('Current user:', currentUser.id)
 
     const { data: bookmarks, error } = await supabase
       .from('bookmarks')
@@ -25,6 +28,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch bookmarks' }, { status: 500 })
     }
 
+    console.log('Bookmarks fetched from DB:', bookmarks?.length || 0)
+
     // Database 형식을 클라이언트 형식으로 변환
     const transformedBookmarks = bookmarks.map((bookmark: { id: string; song_id: string; created_at: string }) => ({
       id: bookmark.id,
@@ -32,6 +37,7 @@ export async function GET() {
       createdAt: bookmark.created_at ? new Date(bookmark.created_at) : new Date()
     }))
 
+    console.log('Transformed bookmarks:', transformedBookmarks.length)
     return NextResponse.json({ bookmarks: transformedBookmarks })
   } catch (error) {
     console.error('Error in GET /api/bookmarks:', error)
