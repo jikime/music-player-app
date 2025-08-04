@@ -2,13 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase, DatabaseSong } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/server-auth'
 
-// GET - 모든 노래 조회 (사용자와 무관)
-export async function GET() {
+// GET - 모든 노래 조회 또는 검색
+export async function GET(request: NextRequest) {
   try {
-    const { data: songs, error } = await supabase
+    const { searchParams } = new URL(request.url)
+    const query = searchParams.get('q')
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+    
+    let supabaseQuery = supabase
       .from('songs')
       .select('*')
-      .order('uploaded_at', { ascending: false })
+    
+    // 검색 쿼리가 있으면 필터링
+    if (query) {
+      supabaseQuery = supabaseQuery.or(
+        `title.ilike.%${query}%,artist.ilike.%${query}%,album.ilike.%${query}%`
+      )
+    }
+    
+    // 결과 제한
+    if (limit) {
+      supabaseQuery = supabaseQuery.limit(limit)
+    }
+    
+    const { data: songs, error } = await supabaseQuery.order('uploaded_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching songs:', error)

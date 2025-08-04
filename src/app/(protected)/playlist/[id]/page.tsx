@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
-import { AddSongModal } from "@/components/songs/add-song-modal"
+import { AddSongModal } from "@/components/playlist/add-song-modal"
 import {
   Play,
   Pause,
@@ -202,16 +202,7 @@ export default function PlaylistPage() {
                 </div>
 
                 {/* Mobile Control Buttons - Right in horizontal layout */}
-                <div className="flex md:hidden items-center justify-start gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-6 h-6"
-                    onClick={() => setAddSongModalOpen(true)}
-                  >
-                    <Download className="w-3 h-3" />
-                  </Button>
-                  
+                <div className="flex md:hidden items-center justify-start gap-1">                  
                   <Button
                     variant="ghost"
                     size="icon"
@@ -265,13 +256,6 @@ export default function PlaylistPage() {
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-6 h-6"
-                      >
-                        <MoreHorizontal className="w-3 h-3" />
-                      </Button>
                     </>
                   )}
                 </div>
@@ -282,13 +266,13 @@ export default function PlaylistPage() {
                     <textarea
                       value={playlistDescription}
                       onChange={(e) => setPlaylistDescription(e.target.value)}
-                      placeholder="곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."
+                      placeholder=""
                       className="text-sm text-muted-foreground bg-transparent border rounded p-2 w-full resize-none mb-4"
                       rows={3}
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-4 leading-relaxed">
-                      {playlist!.description || "곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."}
+                      {playlist!.description || ""}
                     </p>
                   )}
                 </div>
@@ -301,28 +285,19 @@ export default function PlaylistPage() {
                 <textarea
                   value={playlistDescription}
                   onChange={(e) => setPlaylistDescription(e.target.value)}
-                  placeholder="곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."
+                  placeholder=""
                   className="text-sm text-muted-foreground bg-transparent border rounded p-2 w-full resize-none"
                   rows={2}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                  {playlist!.description || "곡없이 재즈하는 나만을 위한 릿음설성 음악입니다. 항상 시술에 업데이트합니다."}
+                  {playlist!.description || ""}
                 </p>
               )}
             </div>
 
             {/* Desktop Control Buttons Row */}
             <div className="hidden md:flex items-center justify-start gap-3 mb-6 px-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-8 h-8"
-                onClick={() => setAddSongModalOpen(true)}
-              >
-                <Download className="w-4 h-4" />
-              </Button>
-              
               <Button
                 variant="ghost"
                 size="icon"
@@ -376,13 +351,6 @@ export default function PlaylistPage() {
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
                 </>
               )}
             </div>
@@ -402,7 +370,7 @@ export default function PlaylistPage() {
                 )}
               </Button>
               
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="icon"
                 className="w-7 h-7 md:w-8 md:h-8 ml-3 md:ml-4"
@@ -410,7 +378,7 @@ export default function PlaylistPage() {
                 disabled={playlistSongs.length === 0}
               >
                 <Shuffle className="w-3 h-3 md:w-4 md:h-4" />
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>

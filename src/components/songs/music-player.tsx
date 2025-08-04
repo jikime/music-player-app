@@ -455,9 +455,6 @@ export function MusicPlayer() {
               >
                 <Heart className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
               </Button>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                <Download className="w-4 h-4" />
-              </Button>
             </>
           ) : (
             <div className="flex items-center gap-3">

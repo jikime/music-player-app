@@ -195,8 +195,7 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={isMobile ? "Playlist name" : "My Awesome Playlist"}
-                  className="bg-background"
-                  size={isMobile ? "sm" : "default"}
+                  className={`bg-background ${isMobile ? "text-sm h-8 px-2" : ""}`}
                   required
                   maxLength={100}
                 />

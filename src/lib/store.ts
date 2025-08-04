@@ -23,6 +23,7 @@ interface MusicStore {
   updatePlaylist: (id: string, updates: Partial<Playlist>) => Promise<void>
   deletePlaylist: (id: string) => Promise<void>
   addSongToPlaylist: (playlistId: string, songId: string) => Promise<void>
+  addMultipleSongsToPlaylist: (playlistId: string, songIds: string[]) => Promise<void>
   removeSongFromPlaylist: (playlistId: string, songId: string) => Promise<void>
   
   // Bookmarks
@@ -182,6 +183,24 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       }))
     } catch (error) {
       console.error('Failed to add song to playlist:', error)
+      throw error
+    }
+  },
+  addMultipleSongsToPlaylist: async (playlistId, songIds) => {
+    try {
+      // 여러 곡을 순차적으로 추가
+      for (const songId of songIds) {
+        await playlistsApi.addSong(playlistId, songId)
+      }
+      // 플레이리스트 데이터 새로고침
+      const updatedPlaylist = await playlistsApi.getById(playlistId)
+      set((state) => ({
+        playlists: state.playlists.map((playlist) =>
+          playlist.id === playlistId ? updatedPlaylist : playlist
+        )
+      }))
+    } catch (error) {
+      console.error('Failed to add multiple songs to playlist:', error)
       throw error
     }
   },
