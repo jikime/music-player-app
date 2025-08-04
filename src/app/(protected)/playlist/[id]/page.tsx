@@ -18,7 +18,8 @@ import {
   Trash2,
   Plus,
   X,
-  Check
+  Check,
+  Loader2
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { formatDuration } from "@/lib/music-utils"
@@ -36,6 +37,7 @@ export default function PlaylistPage() {
     setIsPlaying,
     updatePlaylist,
     deletePlaylist,
+    removeSongFromPlaylist,
     initializeData,
     playPlaylist,
     shufflePlaylist
@@ -45,6 +47,7 @@ export default function PlaylistPage() {
   const [playlistName, setPlaylistName] = useState("")
   const [playlistDescription, setPlaylistDescription] = useState("")
   const [addSongModalOpen, setAddSongModalOpen] = useState(false)
+  const [deletingSongId, setDeletingSongId] = useState<string | null>(null)
   
   // Find the playlist
   const playlist = playlists.find(p => p.id === playlistId)
@@ -133,6 +136,20 @@ export default function PlaylistPage() {
       } catch (error) {
         console.error("Failed to delete playlist:", error)
       }
+    }
+  }
+
+  const handleRemoveSong = async (songId: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering play
+    
+    try {
+      setDeletingSongId(songId)
+      await removeSongFromPlaylist(playlistId, songId)
+    } catch (error) {
+      console.error("Failed to remove song from playlist:", error)
+      alert("Failed to remove song. Please try again.")
+    } finally {
+      setDeletingSongId(null)
     }
   }
 
@@ -425,6 +442,21 @@ export default function PlaylistPage() {
                   <div className="text-xs md:text-sm text-muted-foreground flex-shrink-0 w-9 md:w-12 text-right">
                     {song.duration ? formatDuration(song.duration) : "--:--"}
                   </div>
+
+                  {/* Delete Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    onClick={(e) => handleRemoveSong(song.id, e)}
+                    disabled={deletingSongId === song.id}
+                  >
+                    {deletingSongId === song.id ? (
+                      <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin" />
+                    ) : (
+                      <X className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    )}
+                  </Button>
                 </div>
               ))}
             </div>
