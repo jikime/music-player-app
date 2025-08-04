@@ -2,7 +2,6 @@
 
 import { useEffect } from "react"
 import { useMusicStore } from "@/lib/store"
-import { MusicPlayer } from "@/components/songs/music-player"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { RecentlyPlayed } from "@/components/songs/recently-played"
 import { AllSongs } from "@/components/songs/all-songs"
@@ -50,7 +49,6 @@ export default function Component() {
         isLoading={isLoading}
       />
       
-      <MusicPlayer />  
     </div>
   )
 }

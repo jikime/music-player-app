@@ -26,6 +26,7 @@ export function MusicPlayer() {
   const [seeking, setSeeking] = useState(false)
   const [seekTime, setSeekTime] = useState<number | null>(null)
   const [hasEnded, setHasEnded] = useState(false)
+  const [internalPlaying, setInternalPlaying] = useState(false)
   
   const {
     playerState,
@@ -63,6 +64,11 @@ export function MusicPlayer() {
     try {
       console.log('Player ready')
       setPlayerReady(true)
+      setHasEnded(false)
+      // Sync internal playing state with store state
+      if (isPlaying && !internalPlaying) {
+        setInternalPlaying(true)
+      }
     } catch (error) {
       console.warn('Error in handleReady:', error)
     }
@@ -113,11 +119,19 @@ export function MusicPlayer() {
   }
 
   const handlePlay = () => {
-    setIsPlaying(true)
+    console.log('Player: onPlay event')
+    setInternalPlaying(true)
+    if (!isPlaying) {
+      setIsPlaying(true)
+    }
   }
 
   const handlePause = () => {
-    setIsPlaying(false)
+    console.log('Player: onPause event')
+    setInternalPlaying(false)
+    if (isPlaying) {
+      setIsPlaying(false)
+    }
   }
 
   // const handleSeeking = (seconds: number) => {
@@ -229,7 +243,16 @@ export function MusicPlayer() {
     setSeeking(false)
     setIsDragging(false)
     setSeekTime(null)
+    setHasEnded(false)
+    setInternalPlaying(false)
   }, [currentSong])
+
+  // Sync internal playing state with store state
+  useEffect(() => {
+    if (playerReady && isPlaying !== internalPlaying) {
+      setInternalPlaying(isPlaying)
+    }
+  }, [isPlaying, playerReady, internalPlaying])
 
   // setPlayerRef callback like in demo
   const setPlayerRef = useCallback((player: HTMLVideoElement) => {
@@ -270,7 +293,7 @@ export function MusicPlayer() {
           ref={setPlayerRef}
           className="react-player"
           src={currentSong.url}
-          playing={isPlaying}
+          playing={internalPlaying}
           volume={volume}
           muted={volume === 0}
           width="1px"

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useMusicStore } from "@/lib/store"
-import { MusicPlayer } from "@/components/songs/music-player"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { Button } from "@/components/ui/button"
@@ -423,7 +422,6 @@ export default function TrendingPage() {
         </div>
       </div>
 
-      <MusicPlayer />
     </div>
   )
 }

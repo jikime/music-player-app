@@ -5,7 +5,6 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
-import { MusicPlayer } from "@/components/songs/music-player"
 import { AddSongModal } from "@/components/songs/add-song-modal"
 import {
   Play,
@@ -479,7 +478,6 @@ export default function PlaylistPage() {
         </div>
       </div>
 
-      <MusicPlayer />
       
       <AddSongModal
         playlistId={playlistId}
