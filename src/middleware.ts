@@ -3,18 +3,13 @@ import { getToken } from "next-auth/jwt"
 
 // 보호할 페이지 경로 목록 (인증 필요)
 const protectedPageRoutes = [
-  "/",
   "/playlist",
-  "/trending",
 ]
 
 // 보호할 API 경로 목록 (인증 필요)
 const protectedApiRoutes = [
   "/api/playlists",
-  "/api/songs",
   "/api/bookmarks",
-  "/api/trending",
-  "/api/recently-played",
 ]
 
 // 인증 페이지 경로 (로그인한 사용자는 접근 불가)
@@ -27,7 +22,8 @@ const authPages = [
 // 공개 API 경로 (인증 불필요)
 const publicApiRoutes = [
   "/api/auth",
-  "/api/health", // 헬스체크용
+  "/api/songs",
+  "/api/recently-played",
 ]
 
 export async function middleware(request: NextRequest) {

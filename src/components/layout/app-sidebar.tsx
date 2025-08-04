@@ -6,6 +6,7 @@ import {
   TrendingUp,
   Music,
 } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 import { NavMain } from "@/components/layout/nav-main"
 import { NavPlaylists } from "@/components/layout/nav-playlists"
@@ -23,8 +24,11 @@ import type { Song } from "@/types/music"
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>
 
 export function AppSidebar({ ...props }: AppSidebarProps) {
+  const { data: session } = useSession()
   const { playlists, bookmarks, getSong } = useMusicStore()
 
+  // Check if user is authenticated
+  const isAuthenticated = !!session
 
   // Get bookmarked songs
   const bookmarkedSongs = bookmarks
@@ -61,8 +65,8 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainItems} />
-        <NavPlaylists playlists={playlists} />
-        <NavBookmarks bookmarkedSongs={bookmarkedSongs as Song[]} onPlaySong={() => {}} />
+        {isAuthenticated && <NavPlaylists playlists={playlists} />}
+        {isAuthenticated && <NavBookmarks bookmarkedSongs={bookmarkedSongs as Song[]} onPlaySong={() => {}} />}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

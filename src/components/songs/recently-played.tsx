@@ -211,7 +211,7 @@ export function RecentlyPlayed({ songs, onPlaySong, isLoading = false }: Recentl
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
-          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4 lg:gap-5' : 'flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide'} mb-4`}>
+          <div className={`${showAll ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4 lg:gap-5' : 'flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide justify-center'} mb-4`}>
             {currentSongs.map((song) => (
               <div
                 key={song.id}

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { Song, Playlist, Bookmark, PlayerState } from '@/types/music'
 import { songsApi, playlistsApi, bookmarksApi, recentlyPlayedApi } from './api'
+import { getSession } from 'next-auth/react'
 
 interface MusicStore {
   // Loading states
@@ -69,7 +70,25 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     try {
       set({ isLoading: true })
       
-      // Load all data in parallel
+      // Check authentication status
+      const session = await getSession()
+      if (!session) {
+        // If not authenticated, load public data (songs and recently played)
+        const [songs, recentlyPlayed] = await Promise.all([
+          songsApi.getAll(),
+          recentlyPlayedApi.getRecentlyPlayed()
+        ])
+        set({ 
+          songs, 
+          playlists: [],
+          bookmarks: [],
+          recentlyPlayed,
+          isLoading: false 
+        })
+        return
+      }
+      
+      // Load all data in parallel for authenticated users
       const [songs, playlists, bookmarks, recentlyPlayed] = await Promise.all([
         songsApi.getAll(),
         playlistsApi.getAll(),
@@ -135,6 +154,11 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   playlists: [],
   addPlaylist: async (playlistData) => {
     try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
       set({ isLoading: true })
       const newPlaylist = await playlistsApi.create(playlistData)
       set((state) => ({ 
@@ -149,6 +173,11 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   updatePlaylist: async (id, updates) => {
     try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
       const updatedPlaylist = await playlistsApi.update(id, updates)
       set((state) => ({
         playlists: state.playlists.map((playlist) => 
@@ -162,6 +191,11 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   deletePlaylist: async (id) => {
     try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
       await playlistsApi.delete(id)
       set((state) => ({
         playlists: state.playlists.filter((playlist) => playlist.id !== id)
@@ -173,6 +207,11 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   addSongToPlaylist: async (playlistId, songId) => {
     try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
       await playlistsApi.addSong(playlistId, songId)
       // Refresh playlist data
       const updatedPlaylist = await playlistsApi.getById(playlistId)
@@ -188,6 +227,11 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   addMultipleSongsToPlaylist: async (playlistId, songIds) => {
     try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
       // 여러 곡을 순차적으로 추가
       for (const songId of songIds) {
         await playlistsApi.addSong(playlistId, songId)
@@ -206,6 +250,11 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   removeSongFromPlaylist: async (playlistId, songId) => {
     try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
       await playlistsApi.removeSong(playlistId, songId)
       // Refresh playlist data
       const updatedPlaylist = await playlistsApi.getById(playlistId)
@@ -224,6 +273,11 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   bookmarks: [],
   addBookmark: async (songId) => {
     try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
       const newBookmark = await bookmarksApi.create(songId)
       set((state) => ({
         bookmarks: [...state.bookmarks, newBookmark]
@@ -235,6 +289,11 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   removeBookmark: async (songId) => {
     try {
+      const session = await getSession()
+      if (!session) {
+        throw new Error('Authentication required')
+      }
+      
       await bookmarksApi.delete(songId)
       set((state) => ({
         bookmarks: state.bookmarks.filter((bookmark) => bookmark.songId !== songId)
