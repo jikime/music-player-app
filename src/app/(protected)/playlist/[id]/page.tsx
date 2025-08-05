@@ -343,7 +343,7 @@ export default function PlaylistPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="w-8 h-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    className="w-8 h-8 text-muted-foreground hover:text-destructive opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0"
                     onClick={(e) => handleRemoveSong(song.id, e)}
                     disabled={deletingSongId === song.id}
                   >

@@ -109,9 +109,9 @@ export function AppHeader() {
       breadcrumbs.push({ label: 'Profile', href: '/profile', isCurrent: true })
     } else if (pathname.startsWith('/playlist/')) {
       breadcrumbs.push({ label: 'Playlists', href: '/playlist', isLink: true })
-      // playlist ID가 있는 경우
+      // playlist ID가 있는 경우에도 ID는 표시하지 않음
       if (segments.length > 1) {
-        breadcrumbs.push({ label: `Playlist ${segments[1]}`, href: pathname, isCurrent: true })
+        breadcrumbs.push({ label: 'Playlist', href: pathname, isCurrent: true })
       }
     } else {
       // 기본적으로 현재 경로의 마지막 segment를 사용
