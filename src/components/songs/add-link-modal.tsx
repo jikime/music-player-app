@@ -48,6 +48,7 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
   const [isLoading, setIsLoading] = useState(false)
   const [urlValid, setUrlValid] = useState<boolean | null>(null)
   const [isFetchingInfo, setIsFetchingInfo] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const { addSong, updateSong, getMySongs } = useMusicStore()
 
@@ -57,15 +58,27 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
     if (!videoId) return
 
     setIsFetchingInfo(true)
+    setFetchError(null) // Clear previous errors
+    
     try {
       const videoInfo = await getYouTubeVideoInfo(videoId)
       if (videoInfo) {
         // Only auto-fill if fields are empty
         if (!title.trim()) setTitle(videoInfo.title)
         if (!artist.trim()) setArtist(videoInfo.author)
+        setFetchError(null) // Clear error on success
+      } else {
+        // Video info is null - could be private, deleted, or unavailable
+        setFetchError('이 YouTube 동영상의 정보를 가져올 수 없습니다. 동영상이 비공개이거나 삭제되었을 수 있습니다.')
+        setUrlValid(false)
       }
     } catch (error) {
       console.warn('Failed to fetch video info:', error)
+      const errorMessage = error instanceof Error && error.message.includes('not found') 
+        ? '동영상을 찾을 수 없습니다. URL을 다시 확인해주세요.'
+        : '동영상 정보를 가져오는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.'
+      setFetchError(errorMessage)
+      setUrlValid(false)
     } finally {
       setIsFetchingInfo(false)
     }
@@ -75,16 +88,21 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
   useEffect(() => {
     if (!url.trim()) {
       setUrlValid(null)
+      setFetchError(null)
       return
     }
 
     const videoId = extractVideoId(url)
     const isValid = videoId !== null
-    setUrlValid(isValid)
     
-    // Auto-fetch video info when URL becomes valid
     if (isValid) {
+      setUrlValid(true) // Initially valid format
+      setFetchError(null)
+      // Auto-fetch video info when URL becomes valid
       fetchVideoInfo(url)
+    } else {
+      setUrlValid(false)
+      setFetchError('올바른 YouTube URL 형식이 아닙니다.')
     }
   }, [url, fetchVideoInfo])
 
@@ -104,6 +122,7 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
       setAlbum("")
       setShared(false)
       setUrlValid(null)
+      setFetchError(null)
       setIsLoading(false)
     }
   }, [editMode, songToEdit, open])
@@ -115,12 +134,17 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
     // 이미 로딩 중이면 중복 제출 방지
     if (isLoading) return
 
+    // URL이 유효하지 않거나 fetch 에러가 있으면 제출 방지
+    if (!urlValid || fetchError) {
+      return
+    }
+
     setIsLoading(true)
     
     try {
       const videoId = extractVideoId(url)
       if (!videoId) {
-        alert("Please enter a valid YouTube URL")
+        alert("올바른 YouTube URL을 입력해주세요.")
         return
       }
 
@@ -223,15 +247,16 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
               />
               {url && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {urlValid === true && <CheckCircle className="w-4 h-4 text-green-500" />}
-                  {urlValid === false && <AlertCircle className="w-4 h-4 text-red-500" />}
+                  {isFetchingInfo && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
+                  {!isFetchingInfo && urlValid === true && !fetchError && <CheckCircle className="w-4 h-4 text-green-500" />}
+                  {!isFetchingInfo && (urlValid === false || fetchError) && <AlertCircle className="w-4 h-4 text-red-500" />}
                 </div>
               )}
             </div>
-            {urlValid === false && (
+            {(urlValid === false || fetchError) && (
               <p className="text-red-400 text-xs flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                Please enter a valid YouTube URL
+                {fetchError || 'Please enter a valid YouTube URL'}
               </p>
             )}
           </div>
@@ -308,7 +333,7 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || isFetchingInfo || !urlValid || !title.trim() || !artist.trim()}
+              disabled={isLoading || isFetchingInfo || !urlValid || fetchError !== null || !title.trim() || !artist.trim()}
               className="bg-purple-600 hover:bg-purple-700 min-w-[100px]"
             >
               {isLoading ? (
