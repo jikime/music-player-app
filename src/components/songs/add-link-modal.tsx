@@ -94,9 +94,9 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
     try {
       const videoInfo = await getYouTubeVideoInfo(videoId)
       if (videoInfo) {
-        // Only auto-fill if fields are empty
-        if (!title.trim()) setTitle(videoInfo.title)
-        if (!artist.trim()) setArtist(videoInfo.author)
+        // Only auto-fill if fields are empty (check current values at time of fetch)
+        setTitle(prevTitle => prevTitle.trim() ? prevTitle : videoInfo.title)
+        setArtist(prevArtist => prevArtist.trim() ? prevArtist : videoInfo.author)
         setFetchError(null) // Clear error on success
       } else {
         // Video info is null - could be private, deleted, or unavailable
@@ -113,7 +113,7 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
     } finally {
       setIsFetchingInfo(false)
     }
-  }, [artist, title])
+  }, []) // Remove title and artist from dependencies
 
   // Validate URL and fetch video info
   useEffect(() => {
