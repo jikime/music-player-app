@@ -26,33 +26,28 @@ export default function Component() {
     isLoading,
   } = useMusicStore()
 
-  // Memoize session-dependent data loading promises
-  const dataLoadingPromises = useMemo(() => {
-    const basePromises = [loadAllSongs()]
-    
-    if (session) {
-      basePromises.push(
-        getRecentlyPlayed(),
-        getPlaylists(),
-        getBookmarks()
-      )
-    }
-    
-    return basePromises
-  }, [session, loadAllSongs, getRecentlyPlayed, getPlaylists, getBookmarks])
-
-  // Initialize data when component mounts
+  // Initialize data when component mounts or session changes
   useEffect(() => {
     const loadData = async () => {
       try {
-        await Promise.all(dataLoadingPromises)
+        const loadPromises = [loadAllSongs()]
+        
+        if (session) {
+          loadPromises.push(
+            getRecentlyPlayed(),
+            getPlaylists(),
+            getBookmarks()
+          )
+        }
+        
+        await Promise.all(loadPromises)
       } catch (error) {
         console.error('Failed to load discover page data:', error)
       }
     }
     
     loadData()
-  }, [dataLoadingPromises])
+  }, [session, loadAllSongs, getRecentlyPlayed, getPlaylists, getBookmarks])
 
   // Memoized play handler to prevent unnecessary re-renders
   const handlePlaySong = useCallback((song: Song) => {
