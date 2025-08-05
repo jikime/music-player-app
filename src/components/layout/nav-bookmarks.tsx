@@ -1,6 +1,7 @@
 "use client"
 
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
+import { useMusicStore } from "@/lib/store"
 
 import {
   SidebarGroup,
@@ -8,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { formatDuration } from "@/lib/music-utils"
 import type { Song } from "@/types/music"
@@ -18,6 +20,17 @@ interface NavBookmarksProps {
 }
 
 export function NavBookmarks({ bookmarkedSongs, onPlaySong }: NavBookmarksProps) {
+  const { playSong } = useMusicStore()
+  const { setOpenMobile, isMobile } = useSidebar()
+  
+  const handleSongClick = (song: Song) => {
+    playSong(song)
+    // Close sidebar on mobile
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
+  
   return (
     <SidebarGroup>
       <SidebarGroupLabel>BOOKMARKS</SidebarGroupLabel>
@@ -27,7 +40,7 @@ export function NavBookmarks({ bookmarkedSongs, onPlaySong }: NavBookmarksProps)
             <SidebarMenuButton
               tooltip={`${song.title} - ${song.artist}`}
               className="h-auto p-2"
-              onClick={() => onPlaySong(song)}
+              onClick={() => handleSongClick(song)}
             >
               <div className="flex items-center gap-3 w-full">
                 <ImageWithFallback

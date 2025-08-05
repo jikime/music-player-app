@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { CreatePlaylistModal } from "@/components/playlist/create-playlist-modal"
 import { PlaylistCover } from "@/components/playlist/playlist-cover"
@@ -17,6 +18,15 @@ import type { Playlist } from "@/types/music"
 export function NavPlaylists({ playlists }: { playlists: Playlist[] }) {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const router = useRouter()
+  const { setOpenMobile, isMobile } = useSidebar()
+  
+  const handlePlaylistClick = (playlistId: string) => {
+    router.push(`/playlist/${playlistId}`)
+    // Close sidebar on mobile
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
   
   return (
     <SidebarGroup>
@@ -27,7 +37,7 @@ export function NavPlaylists({ playlists }: { playlists: Playlist[] }) {
             <SidebarMenuButton 
               tooltip={playlist.name} 
               className="relative flex items-center gap-2"
-              onClick={() => router.push(`/playlist/${playlist.id}`)}
+              onClick={() => handlePlaylistClick(playlist.id)}
             >
               <PlaylistCover
                 coverImage={playlist.coverImage}

@@ -171,9 +171,9 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
         >
           {currentSongs.map((song, index) => (
             <div key={song.id}>
-              {/* Mobile Layout: Card Style */}
+              {/* Mobile Layout: Clean Style */}
               <div 
-                className="md:hidden bg-card rounded-lg p-2 border hover:bg-card/70 group cursor-pointer"
+                className="md:hidden p-2 hover:scale-105 transition-transform group cursor-pointer"
                 onClick={() => onPlaySong(song)}
               >
                 <div className="flex items-center gap-2">
@@ -181,7 +181,7 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                     <span className="text-muted-foreground text-xs font-mono w-5 flex-shrink-0">
                       #{currentPage * ITEMS_PER_PAGE + index + 1}
                     </span>
-                    <div className="w-9 h-9 rounded overflow-hidden relative flex-shrink-0 bg-muted group/thumb">
+                    <div className="w-9 h-9 rounded-lg overflow-hidden relative flex-shrink-0 bg-muted group/thumb">
                       <ImageWithFallback
                         src={song.thumbnail || "/placeholder.svg"}
                         alt={song.title}

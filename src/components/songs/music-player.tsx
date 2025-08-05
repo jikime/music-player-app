@@ -141,10 +141,7 @@ export function MusicPlayer() {
     }
   }, [clearLoadingTimeout])
   
-  // /profile 경로에서는 빈값 리턴
-  if (pathname === '/profile') {
-    return null
-  }
+  // 프로필은 이제 모달이므로 pathname 체크 제거
 
 
   // Retry loading current song

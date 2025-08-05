@@ -4,7 +4,6 @@ import { AppHeader } from "@/components/layout/app-header"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { MusicPlayer } from "@/components/songs/music-player"
 
 export default function ProtectedLayout({
   children,
@@ -21,7 +20,6 @@ export default function ProtectedLayout({
             {children}
           </ScrollArea>
         </main>
-        <MusicPlayer />
       </SidebarInset>
     </SidebarProvider>
   )

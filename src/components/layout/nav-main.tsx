@@ -17,6 +17,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function NavMain({
@@ -34,6 +35,15 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const { setOpenMobile, isMobile } = useSidebar()
+  
+  const handleItemClick = () => {
+    // Close sidebar on mobile when clicking menu item
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>MENU</SidebarGroupLabel>
@@ -57,7 +67,7 @@ export function NavMain({
                   </SidebarMenuButton>
                 ) : (
                   <SidebarMenuButton tooltip={item.title} asChild>
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleItemClick}>
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
                       {item.items && (
@@ -73,7 +83,7 @@ export function NavMain({
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton asChild>
-                          <Link href={subItem.url}>
+                          <Link href={subItem.url} onClick={handleItemClick}>
                             <span>{subItem.title}</span>
                           </Link>
                         </SidebarMenuSubButton>

@@ -153,8 +153,8 @@ export function RecentlyPlayed({ songs: rawSongs, onPlaySong, isLoading = false 
   const skeletonCards = (
     <div className="flex justify-center gap-3 sm:gap-4 overflow-x-auto mb-4">
       {Array.from({ length: itemsPerPage }).map((_, index) => (
-        <div key={index} className="bg-card/50 border-border rounded-xl border shadow-sm flex flex-col w-36 sm:w-44 md:w-52 lg:w-56 flex-shrink-0">
-          <Skeleton className="w-full aspect-square rounded-t-xl" />
+        <div key={index} className="md:bg-card/50 md:border-border md:rounded-xl md:border md:shadow-sm flex flex-col w-36 sm:w-44 md:w-52 lg:w-56 flex-shrink-0">
+          <Skeleton className="w-full aspect-square md:rounded-t-xl rounded-xl" />
           <div className="p-3 md:p-4 flex flex-col flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/2" />
@@ -226,10 +226,10 @@ export function RecentlyPlayed({ songs: rawSongs, onPlaySong, isLoading = false 
             {currentSongs.map((song) => (
               <div
                 key={song.id}
-                className={`bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer rounded-xl border shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-28 sm:w-32 md:w-52 lg:w-56 flex-shrink-0'}`}
+                className={`md:bg-card/50 md:border-border md:hover:bg-card/80 hover:scale-105 md:hover:scale-100 transition-all cursor-pointer md:rounded-xl md:border md:shadow-sm flex flex-col ${showAll ? 'w-full' : 'w-28 sm:w-32 md:w-52 lg:w-56 flex-shrink-0'}`}
                 onClick={() => onPlaySong(song)}
           >
-            <div className="w-full aspect-square bg-muted rounded-t-xl overflow-hidden relative group">
+            <div className="w-full aspect-square bg-muted md:rounded-t-xl rounded-xl overflow-hidden relative group">
               <ImageWithFallback
                 src={song.thumbnail || "/placeholder.svg"}
                 alt={song.title}

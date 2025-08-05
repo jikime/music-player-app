@@ -39,8 +39,7 @@ export default function MySongsPage() {
     getMySongs,
     deleteSong,
     playSong,
-    getPlaylists,
-    getBookmarks
+    initializeData
   } = useMusicStore()
 
   const [searchQuery, setSearchQuery] = useState("")
@@ -51,20 +50,22 @@ export default function MySongsPage() {
 
   const { currentSong, isPlaying } = playerState
 
-  // Load my songs on mount (playlists and bookmarks are loaded by sidebar)
+  // Initialize data on mount (same as other pages)
   useEffect(() => {
-    const loadData = async () => {
-      console.log('Loading My Songs page data...')
+    initializeData()
+  }, [initializeData])
+  
+  // Load my songs specifically for this page
+  useEffect(() => {
+    const loadMySongs = async () => {
       try {
-        // Only load my songs specifically, sidebar handles playlists and bookmarks
         await getMySongs()
-        console.log('My Songs page data loading completed')
       } catch (error) {
-        console.error('Failed to load my songs page data:', error)
+        console.error('Failed to load my songs:', error)
       }
     }
     
-    loadData()
+    loadMySongs()
   }, [getMySongs])
 
   // Filter songs based on search query
@@ -219,7 +220,7 @@ export default function MySongsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="w-8 h-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="w-8 h-8 text-muted-foreground hover:text-foreground"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleEditSong(song)
@@ -232,7 +233,7 @@ export default function MySongsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="w-8 h-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="w-8 h-8 text-muted-foreground hover:text-destructive"
                         onClick={(e) => {
                           e.stopPropagation()
                           handleDeleteClick(song)
