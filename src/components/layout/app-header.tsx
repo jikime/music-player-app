@@ -301,7 +301,7 @@ export function AppHeader() {
                     <BreadcrumbItem className={breadcrumb.isHome ? "" : ""}>
                       {breadcrumb.isCurrent ? (
                         <BreadcrumbPage className="text-foreground font-semibold flex items-center gap-1.5">
-                          {breadcrumb.icon && <span className="text-sm">{breadcrumb.icon}</span>}
+                          {/* {breadcrumb.icon && <span className="text-sm">{breadcrumb.icon}</span>} */}
                           {breadcrumb.label}
                         </BreadcrumbPage>
                       ) : (
@@ -309,7 +309,7 @@ export function AppHeader() {
                           href={breadcrumb.href} 
                           className="text-muted-foreground hover:text-foreground flex items-center gap-1.5"
                         >
-                          {breadcrumb.icon && <span className="text-sm">{breadcrumb.icon}</span>}
+                          {/* {breadcrumb.icon && <span className="text-sm">{breadcrumb.icon}</span>} */}
                           {breadcrumb.label}
                         </BreadcrumbLink>
                       )}

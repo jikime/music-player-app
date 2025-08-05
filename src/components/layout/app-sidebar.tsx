@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useEffect } from "react"
+import Image from "next/image"
 
 import { NavMain } from "@/components/layout/nav-main"
 import { NavPlaylists } from "@/components/layout/nav-playlists"

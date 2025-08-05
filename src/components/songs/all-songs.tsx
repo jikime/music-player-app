@@ -190,7 +190,7 @@ const MemoizedDesktopSongRow = React.memo(({
   onToggleBookmark: (songId: string, event: React.MouseEvent) => void;
 }) => (
   <div 
-    className="hidden md:flex items-center gap-4 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
+    className="hidden md:flex items-center gap-2 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
     onClick={() => onPlaySong(song)}
   >
     <span className="text-muted-foreground w-8 text-sm">
@@ -201,14 +201,14 @@ const MemoizedDesktopSongRow = React.memo(({
       size={{ width: "w-12", height: "h-12", iconSize: "w-4 h-4" }} 
     />
     <MemoizedSongInfo song={song} showAlbum={true} />
-    <div className="flex items-center gap-4">
-      <div className="hidden lg:flex items-center gap-1 text-muted-foreground w-20 justify-start">
-        <Music className="w-4 h-4" />
-        <span className="text-sm">{formatPlays(song.plays)}</span>
+    <div className="flex items-center gap-2">
+      <div className="hidden lg:flex items-center gap-1 text-muted-foreground w-16 justify-start">
+        <Music className="w-3 h-3" />
+        <span className="text-xs">{formatPlays(song.plays)}</span>
       </div>
-      <div className="flex items-center gap-1 text-muted-foreground w-16 justify-start">
-        <Clock className="w-4 h-4" />
-        <span className="text-sm">{formatDuration(song.duration)}</span>
+      <div className="flex items-center gap-1 text-muted-foreground w-14 justify-start">
+        <Clock className="w-3 h-3" />
+        <span className="text-xs">{formatDuration(song.duration)}</span>
       </div>
       <MemoizedActionButtons
         song={song}
