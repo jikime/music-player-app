@@ -13,6 +13,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Youtube,
   Music,
   User,
@@ -49,8 +58,30 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
   const [urlValid, setUrlValid] = useState<boolean | null>(null)
   const [isFetchingInfo, setIsFetchingInfo] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [alertDialog, setAlertDialog] = useState<{
+    open: boolean
+    title: string
+    description: string
+  }>({
+    open: false,
+    title: '',
+    description: ''
+  })
 
   const { addSong, updateSong, getMySongs } = useMusicStore()
+
+  // Helper function to show alert dialog
+  const showAlert = (title: string, description: string) => {
+    setAlertDialog({
+      open: true,
+      title,
+      description
+    })
+  }
+
+  const closeAlert = () => {
+    setAlertDialog(prev => ({ ...prev, open: false }))
+  }
 
   // Auto-fill video information when URL is valid
   const fetchVideoInfo = useCallback(async (videoUrl: string) => {
@@ -124,6 +155,7 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
       setUrlValid(null)
       setFetchError(null)
       setIsLoading(false)
+      closeAlert()
     }
   }, [editMode, songToEdit, open])
 
@@ -144,7 +176,7 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
     try {
       const videoId = extractVideoId(url)
       if (!videoId) {
-        alert("올바른 YouTube URL을 입력해주세요.")
+        showAlert("올바르지 않은 URL", "올바른 YouTube URL을 입력해주세요.")
         return
       }
 
@@ -202,15 +234,20 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
       onOpenChange(false)
     } catch (error) {
       console.error(`Error ${editMode ? 'updating' : 'adding'} song:`, error)
-      alert(`Failed to ${editMode ? 'update' : 'add'} song: ${error instanceof Error ? error.message : 'Please try again.'}`)
+      const errorMessage = error instanceof Error ? error.message : '다시 시도해주세요.'
+      showAlert(
+        `노래 ${editMode ? '수정' : '추가'} 실패`, 
+        `노래를 ${editMode ? '수정' : '추가'}하는 중 오류가 발생했습니다: ${errorMessage}`
+      )
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={() => handleModalClose(isLoading, onOpenChange)}>
-      <DialogContent className="max-w-[350px] bg-card border-border text-foreground">
+    <>
+      <Dialog open={open} onOpenChange={() => handleModalClose(isLoading, onOpenChange)}>
+        <DialogContent className="max-w-[350px] bg-card border-border text-foreground">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-red-600 rounded-lg">
@@ -352,7 +389,28 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Alert Dialog */}
+      <AlertDialog open={alertDialog.open} onOpenChange={closeAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              {alertDialog.title}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertDialog.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={closeAlert}>
+              확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
