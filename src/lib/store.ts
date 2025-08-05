@@ -232,6 +232,7 @@ export const useMusicStore = create<MusicStore>()(
         const session = await getCachedSession()
         if (session) {
           requestCache.delete('songs-all')
+          requestCache.delete('songs-all-public')
           requestCache.delete(`my-songs-${session.user.id}`)
         }
       } catch (error) {

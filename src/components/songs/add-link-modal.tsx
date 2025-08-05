@@ -33,6 +33,7 @@ import {
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { extractVideoId, fetchYouTubeDuration, getYouTubeVideoInfo, getThumbnailUrl } from "@/lib/youtube"
+import { apiUtils } from "@/lib/api"
 import type { Song } from "@/types/music"
 
 interface AddLinkModalProps {
@@ -192,6 +193,9 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
 
         await updateSong(songToEdit.id, updates)
         
+        // Clear all caches to ensure fresh data
+        apiUtils.clearCache()
+        
         // Refresh all songs lists to ensure changes are reflected
         await Promise.all([
           getMySongs(),
@@ -223,6 +227,9 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
         }
 
         await addSong(songData)
+        
+        // Clear all caches to ensure fresh data
+        apiUtils.clearCache()
         
         // Refresh both my songs and all songs lists to ensure new song appears at top
         await Promise.all([
