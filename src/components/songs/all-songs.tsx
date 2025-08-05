@@ -52,14 +52,23 @@ const MemoizedThumbnail = React.memo(({ song, size, showPlayButton = true }: {
 MemoizedThumbnail.displayName = "MemoizedThumbnail"
 
 // Memoized song info component
-const MemoizedSongInfo = React.memo(({ song, showAlbum = false }: { song: Song; showAlbum?: boolean }) => (
+const MemoizedSongInfo = React.memo(({ song, showAlbum = false, showStats = false }: { song: Song; showAlbum?: boolean; showStats?: boolean }) => (
   <div className="flex-1 min-w-0">
     <h3 className="font-medium text-foreground text-sm leading-tight line-clamp-1 md:text-base md:truncate">
       {song.title}
     </h3>
-    <p className="text-xs text-muted-foreground line-clamp-1 md:text-sm md:truncate">
-      {song.artist}{showAlbum && song.album && ` • ${song.album}`}
-    </p>
+    <div className="flex items-center justify-between">
+      <p className="text-xs text-muted-foreground line-clamp-1 md:text-sm md:truncate">
+        {song.artist}{showAlbum && song.album && ` • ${song.album}`}
+      </p>
+      {showStats && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0 ml-2">
+          <span>{formatDuration(song.duration)}</span>
+          <span>•</span>
+          <span>{formatPlays(song.plays)}</span>
+        </div>
+      )}
+    </div>
   </div>
 ))
 MemoizedSongInfo.displayName = "MemoizedSongInfo"
@@ -146,14 +155,7 @@ const MemoizedMobileSongRow = React.memo(({
           song={song} 
           size={{ width: "w-9", height: "h-9", iconSize: "w-3 h-3" }} 
         />
-        <div className="flex-1 min-w-0">
-          <MemoizedSongInfo song={song} />
-          <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-            <span className="flex-shrink-0">{formatDuration(song.duration)}</span>
-            <span className="flex-shrink-0">•</span>
-            <span className="flex-shrink-0">{formatPlays(song.plays)}</span>
-          </div>
-        </div>
+        <MemoizedSongInfo song={song} showStats={true} />
       </div>
       <MemoizedActionButtons
         song={song}
