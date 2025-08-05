@@ -112,7 +112,7 @@ export default function TrendingPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold mb-2">Trending</h1>
-              <p className="text-muted-foreground">Discover what's hot right now</p>
+              <p className="text-muted-foreground">Trending songs this week</p>
             </div>
             
             {/* Period Selector */}

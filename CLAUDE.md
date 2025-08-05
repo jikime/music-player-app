@@ -115,3 +115,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 GOOGLE_CLIENT_ID=your-google-client-id (optional)
 GOOGLE_CLIENT_SECRET=your-google-client-secret (optional)
 ```
+
+## Development Workflow
+
+### Git and Issue Management
+- Always create a meaningful git commit with a clear description of changes
+- When completing a task:
+  - Create a descriptive git commit explaining the work done
+  - Generate a corresponding GitHub issue to track the work
