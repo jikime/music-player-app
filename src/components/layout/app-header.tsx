@@ -28,10 +28,12 @@ import {
 import { Plus, LogOut, User, Settings } from "lucide-react"
 import { AddLinkModal } from "@/components/songs/add-link-modal"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
+import { ProfileModal } from "@/components/layout/profile-modal"
 import Link from "next/link"
 
 export function AppHeader() {
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [profileName, setProfileName] = useState<string>('')
   const { data: session, status } = useSession()
@@ -198,15 +200,9 @@ export function AppHeader() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
+                  <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
@@ -294,11 +290,9 @@ export function AppHeader() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </Link>
+                  <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
                   </DropdownMenuItem>
                   {/* <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />
@@ -323,10 +317,16 @@ export function AppHeader() {
       </header>
       
       {session && (
-        <AddLinkModal 
-          open={addLinkModalOpen} 
-          onOpenChange={setAddLinkModalOpen} 
-        />
+        <>
+          <AddLinkModal 
+            open={addLinkModalOpen} 
+            onOpenChange={setAddLinkModalOpen} 
+          />
+          <ProfileModal
+            open={profileModalOpen}
+            onOpenChange={setProfileModalOpen}
+          />
+        </>
       )}
     </>
   )

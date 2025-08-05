@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { 
   User, 
   Mail, 
@@ -17,7 +23,12 @@ import {
   Camera
 } from "lucide-react"
 
-export default function ProfilePage() {
+interface ProfileModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const { data: session, status } = useSession()
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -68,8 +79,10 @@ export default function ProfilePage() {
       }
     }
     
-    loadProfile()
-  }, [session])
+    if (open && session) {
+      loadProfile()
+    }
+  }, [session, open])
 
   const getUserInitials = (name: string) => {
     return name
@@ -165,42 +178,52 @@ export default function ProfilePage() {
 
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-muted animate-pulse mx-auto" />
-          <div className="space-y-2">
-            <div className="h-4 bg-muted rounded w-32 mx-auto animate-pulse" />
-            <div className="h-3 bg-muted rounded w-24 mx-auto animate-pulse" />
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-muted animate-pulse mx-auto" />
+              <div className="space-y-2">
+                <div className="h-4 bg-muted rounded w-32 mx-auto animate-pulse" />
+                <div className="h-3 bg-muted rounded w-24 mx-auto animate-pulse" />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     )
   }
 
   if (!session) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-full max-w-md bg-background rounded-lg border p-6">
-          <div className="text-center">
-            <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-lg font-semibold mb-2">로그인이 필요합니다</h2>
-            <p className="text-muted-foreground text-sm">
-              프로필을 보려면 먼저 로그인해주세요.
-            </p>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <h2 className="text-lg font-semibold mb-2">로그인이 필요합니다</h2>
+              <p className="text-muted-foreground text-sm">
+                프로필을 보려면 먼저 로그인해주세요.
+              </p>
+            </div>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="bg-background rounded-lg border overflow-hidden">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>프로필</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-6">
           {/* 배경 그라데이션 */}
-          <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
+          <div className="h-20 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 -mx-6 -mt-6 rounded-t-lg" />
           
-          <div className="relative -mt-16 p-6">
+          <div className="relative -mt-10">
             {/* 아바타 섹션 */}
             <div className="flex flex-col items-center text-center mb-6">
               <div className="relative mb-4">
@@ -216,26 +239,26 @@ export default function ProfilePage() {
                   disabled={uploadingImage}
                   className="relative group cursor-pointer"
                 >
-                  <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
+                  <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
                     <AvatarImage 
                       src={profileImage || undefined} 
                       alt={session.user?.name || "User"} 
                     />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
                       {profileName ? getUserInitials(profileName) : "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                     {uploadingImage ? (
-                      <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <Camera className="w-8 h-8 text-white" />
+                      <Camera className="w-6 h-6 text-white" />
                     )}
                   </div>
                 </button>
               </div>
 
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">
+              <h1 className="text-xl font-bold mb-2">
                 {profileName || "사용자"}
               </h1>
               
@@ -243,7 +266,6 @@ export default function ProfilePage() {
                 <Mail className="w-4 h-4" />
                 <span className="text-sm">{session.user?.email}</span>
               </div>
-
             </div>
 
             {/* 프로필 정보 편집/표시 섹션 */}
@@ -276,7 +298,7 @@ export default function ProfilePage() {
                       value={formData.bio}
                       onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                       placeholder="자신을 소개해보세요"
-                      rows={4}
+                      rows={3}
                     />
                   </div>
                   <div className="flex gap-2 pt-4">
@@ -312,7 +334,7 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
