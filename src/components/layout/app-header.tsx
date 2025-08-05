@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSession, signIn, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
+import { useMusicStore } from "@/lib/store"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,6 +39,7 @@ export function AppHeader() {
   const [profileName, setProfileName] = useState<string>('')
   const { data: session, status } = useSession()
   const pathname = usePathname()
+  const { playlists } = useMusicStore()
 
   // 프로필 이미지 로드
   useEffect(() => {
@@ -89,7 +91,21 @@ export function AppHeader() {
       .toUpperCase()
   }
 
-  // 경로에 따른 breadcrumb 생성
+  // 라우터별 사용자 친화적 제목 매핑
+  const routeLabels: Record<string, { title: string; parent?: string; icon?: string }> = {
+    '/': { title: 'Home', icon: '🏠' },
+    '/trending': { title: 'Trending', icon: '🔥' },
+    '/my-songs': { title: 'My Songs', icon: '🎵' },
+    '/recently-played': { title: 'Recently Played', icon: '⏰' },
+    '/playlist': { title: 'Playlists', icon: '📋' },
+    '/signin': { title: 'Sign In', icon: '🔐' },
+    '/signup': { title: 'Sign Up', icon: '✍️' },
+    '/error': { title: 'Error', icon: '⚠️' },
+    // 동적 라우트 패턴
+    '/playlist/[id]': { title: 'Playlist', parent: '/playlist', icon: '🎼' }
+  }
+
+  // 경로에 따른 breadcrumb 생성 (개선된 버전)
   const getBreadcrumbs = () => {
     const segments = pathname.split('/').filter(Boolean)
     const breadcrumbs: Array<{
@@ -97,33 +113,81 @@ export function AppHeader() {
       href: string;
       isHome?: boolean;
       isCurrent?: boolean;
-      isLink?: boolean;
-    }> = [
-      { label: 'VIBE Music', href: '/', isHome: true }
-    ]
+      icon?: string;
+    }> = []
 
-    // 현재 경로에 따른 breadcrumb 매핑
-    if (pathname === '/') {
-      breadcrumbs.push({ label: 'Discover', href: '/', isCurrent: true })
-    } else if (pathname === '/trending') {
-      breadcrumbs.push({ label: 'Trending', href: '/trending', isCurrent: true })
-    } else if (pathname === '/profile') {
-      breadcrumbs.push({ label: 'Profile', href: '/profile', isCurrent: true })
-    } else if (pathname.startsWith('/playlist/')) {
-      breadcrumbs.push({ label: 'Playlists', href: '/playlist', isLink: true })
-      // playlist ID가 있는 경우에도 ID는 표시하지 않음
-      if (segments.length > 1) {
-        breadcrumbs.push({ label: 'Playlist', href: pathname, isCurrent: true })
-      }
-    } else {
-      // 기본적으로 현재 경로의 마지막 segment를 사용
-      const currentSegment = segments[segments.length - 1]
-      if (currentSegment) {
-        breadcrumbs.push({ 
-          label: currentSegment.charAt(0).toUpperCase() + currentSegment.slice(1), 
-          href: pathname, 
-          isCurrent: true 
+    // 홈은 항상 첫 번째 (모바일에서는 현재 페이지가 홈일 때만 표시)
+    const homeLabel = routeLabels['/']
+    breadcrumbs.push({ 
+      label: homeLabel.title, 
+      href: '/', 
+      isHome: true,
+      icon: homeLabel.icon,
+      isCurrent: pathname === '/'
+    })
+
+    // 현재 경로가 홈이 아닌 경우 처리
+    if (pathname !== '/') {
+      // 정확한 경로 매치 시도
+      const exactMatch = routeLabels[pathname]
+      if (exactMatch) {
+        // 부모 경로가 있는 경우 추가
+        if (exactMatch.parent && pathname !== exactMatch.parent) {
+          const parentMatch = routeLabels[exactMatch.parent]
+          if (parentMatch) {
+            breadcrumbs.push({
+              label: parentMatch.title,
+              href: exactMatch.parent,
+              icon: parentMatch.icon
+            })
+          }
+        }
+        
+        breadcrumbs.push({
+          label: exactMatch.title,
+          href: pathname,
+          isCurrent: true,
+          icon: exactMatch.icon
         })
+      } else {
+        // 동적 라우트 처리
+        if (pathname.startsWith('/playlist/') && segments.length === 2) {
+          // /playlist/[id] 패턴
+          const playlistId = segments[1]
+          const playlistRoute = routeLabels['/playlist']
+          const playlistDetailRoute = routeLabels['/playlist/[id]']
+          
+          if (playlistRoute) {
+            breadcrumbs.push({
+              label: playlistRoute.title,
+              href: '/playlist',
+              icon: playlistRoute.icon
+            })
+          }
+          
+          // 실제 플레이리스트 이름 찾기
+          const currentPlaylist = playlists.find(p => p.id === playlistId)
+          const playlistName = currentPlaylist?.name || playlistDetailRoute?.title || '플레이리스트'
+          
+          breadcrumbs.push({
+            label: playlistName,
+            href: pathname,
+            isCurrent: true,
+            icon: currentPlaylist ? '🎼' : playlistDetailRoute?.icon
+          })
+        } else {
+          // 알 수 없는 라우트의 경우 기본 처리
+          const lastSegment = segments[segments.length - 1]
+          const friendlyName = lastSegment
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, l => l.toUpperCase())
+          
+          breadcrumbs.push({
+            label: friendlyName,
+            href: pathname,
+            isCurrent: true
+          })
+        }
       }
     }
 
@@ -144,14 +208,16 @@ export function AppHeader() {
                     {index > 0 && <BreadcrumbSeparator />}
                     <BreadcrumbItem className="min-w-0">
                       {breadcrumb.isCurrent ? (
-                        <BreadcrumbPage className="text-foreground font-semibold text-sm truncate">
+                        <BreadcrumbPage className="text-foreground font-semibold text-sm truncate flex items-center gap-1">
+                          {/* {breadcrumb.icon && <span className="text-xs">{breadcrumb.icon}</span>} */}
                           {breadcrumb.label}
                         </BreadcrumbPage>
                       ) : (
                         <BreadcrumbLink 
                           href={breadcrumb.href} 
-                          className="text-muted-foreground hover:text-foreground text-sm truncate"
+                          className="text-muted-foreground hover:text-foreground text-sm truncate flex items-center gap-1"
                         >
+                          {/* {breadcrumb.icon && <span className="text-xs">{breadcrumb.icon}</span>} */}
                           {breadcrumb.label}
                         </BreadcrumbLink>
                       )}
@@ -234,14 +300,16 @@ export function AppHeader() {
                     {index > 0 && <BreadcrumbSeparator />}
                     <BreadcrumbItem className={breadcrumb.isHome ? "" : ""}>
                       {breadcrumb.isCurrent ? (
-                        <BreadcrumbPage className="text-foreground font-semibold">
+                        <BreadcrumbPage className="text-foreground font-semibold flex items-center gap-1.5">
+                          {breadcrumb.icon && <span className="text-sm">{breadcrumb.icon}</span>}
                           {breadcrumb.label}
                         </BreadcrumbPage>
                       ) : (
                         <BreadcrumbLink 
                           href={breadcrumb.href} 
-                          className="text-muted-foreground hover:text-foreground"
+                          className="text-muted-foreground hover:text-foreground flex items-center gap-1.5"
                         >
+                          {breadcrumb.icon && <span className="text-sm">{breadcrumb.icon}</span>}
                           {breadcrumb.label}
                         </BreadcrumbLink>
                       )}

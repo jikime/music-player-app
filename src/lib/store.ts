@@ -3,13 +3,14 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { Song, Playlist, Bookmark, PlayerState } from '@/types/music'
 import { songsApi, playlistsApi, bookmarksApi, recentlyPlayedApi } from './api'
 import { getSession } from 'next-auth/react'
+import type { Session } from 'next-auth'
 
 // Cache for session and user data to avoid repeated calls
-let sessionCache: { user: unknown; timestamp: number } | null = null
+let sessionCache: { user: Session | null; timestamp: number } | null = null
 const SESSION_CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 // Optimized session getter with caching
-const getCachedSession = async () => {
+const getCachedSession = async (): Promise<Session | null> => {
   const now = Date.now()
   
   // Return cached session if valid
@@ -36,7 +37,7 @@ const getCachedRequest = <T>(key: string, fetcher: () => Promise<T>, ttl = CACHE
   const now = Date.now()
   
   if (cached && (now - cached.timestamp) < ttl) {
-    return Promise.resolve(cached.data)
+    return Promise.resolve(cached.data as T)
   }
   
   return fetcher().then(data => {
@@ -156,20 +157,21 @@ export const useMusicStore = create<MusicStore>()(
         }
         
         // Parallel loading for authenticated users with selective caching
+        const userId = session.user?.id || 'unknown'
         const loadTasks = [
           getCachedRequest('songs-all', () => songsApi.getAll()),
-          getCachedRequest(`playlists-${session.user.id}`, () => playlistsApi.getAll()),
-          getCachedRequest(`bookmarks-${session.user.id}`, () => bookmarksApi.getAll()),
-          getCachedRequest(`recently-played-${session.user.id}`, () => recentlyPlayedApi.getRecentlyPlayed(), 60000) // 1min cache
+          getCachedRequest(`playlists-${userId}`, () => playlistsApi.getAll()),
+          getCachedRequest(`bookmarks-${userId}`, () => bookmarksApi.getAll()),
+          getCachedRequest(`recently-played-${userId}`, () => recentlyPlayedApi.getRecentlyPlayed(), 60000) // 1min cache
         ]
         
-        const [songs, playlists, bookmarks, recentlyPlayed] = await Promise.all(loadTasks)
+        const [songsResult, playlistsResult, bookmarksResult, recentlyPlayedResult] = await Promise.all(loadTasks)
         
         set({ 
-          songs, 
-          playlists, 
-          bookmarks,
-          recentlyPlayed,
+          songs: songsResult as Song[], 
+          playlists: playlistsResult as Playlist[], 
+          bookmarks: bookmarksResult as Bookmark[],
+          recentlyPlayed: recentlyPlayedResult as Song[],
           isLoading: false 
         })
       } catch (error) {
@@ -936,7 +938,7 @@ export const useMusicStore = create<MusicStore>()(
     },
     
     // Optimized search with memoization
-    searchSongs: (query) => {
+    searchSongs: (query): Song[] => {
       const lowerQuery = query.toLowerCase()
       const songs = get().songs
       
@@ -945,7 +947,7 @@ export const useMusicStore = create<MusicStore>()(
       const cached = requestCache.get(cacheKey)
       
       if (cached && (Date.now() - cached.timestamp) < 30000) { // 30sec cache
-        return cached.data
+        return cached.data as Song[]
       }
       
       const results = songs.filter((song) =>

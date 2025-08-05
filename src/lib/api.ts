@@ -16,7 +16,7 @@ class RequestCache {
       return null
     }
     
-    return cached.data
+    return cached.data as T
   }
   
   set<T>(key: string, data: T, ttl = 2 * 60 * 1000): void {
@@ -39,6 +39,16 @@ class RequestCache {
         this.cache.delete(key)
       }
     }
+  }
+  
+  // Get cache keys for utility functions
+  getKeys(): string[] {
+    return Array.from(this.cache.keys())
+  }
+  
+  // Get cache size for utility functions
+  getSize(): number {
+    return this.cache.size
   }
 }
 
@@ -68,7 +78,7 @@ async function enhancedFetch<T>(
   
   // Check for pending identical request
   if (pendingRequests.has(cacheKey)) {
-    return pendingRequests.get(cacheKey)
+    return pendingRequests.get(cacheKey) as Promise<T>
   }
   
   // Create request with retry logic
@@ -137,8 +147,13 @@ class RequestQueue {
   private readonly batchDelay = 50 // ms
   
   async add<T>(id: string, request: () => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      this.queue.push({ id, request, resolve, reject })
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push({ 
+        id, 
+        request: request as () => Promise<unknown>, 
+        resolve: resolve as (value: unknown) => void, 
+        reject 
+      })
       this.scheduleProcess()
     })
   }
@@ -520,9 +535,9 @@ export const apiUtils = {
   // Clear specific cache by pattern
   clearCacheByPattern: (pattern: string) => {
     const regex = new RegExp(pattern)
-    const cacheMap = (cache as { cache: Map<string, unknown> }).cache
+    const keys = cache.getKeys()
     
-    for (const key of cacheMap.keys()) {
+    for (const key of keys) {
       if (regex.test(key)) {
         cache.delete(key)
       }
@@ -531,11 +546,10 @@ export const apiUtils = {
   
   // Get cache statistics
   getCacheStats: () => {
-    const cacheMap = (cache as { cache: Map<string, unknown> }).cache
     return {
-      size: cacheMap.size,
+      size: cache.getSize(),
       pendingRequests: pendingRequests.size,
-      keys: Array.from(cacheMap.keys())
+      keys: cache.getKeys()
     }
   },
   
