@@ -68,7 +68,7 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
     description: ''
   })
 
-  const { addSong, updateSong, getMySongs } = useMusicStore()
+  const { addSong, updateSong, getMySongs, loadAllSongs } = useMusicStore()
 
   // Helper function to show alert dialog
   const showAlert = (title: string, description: string) => {
@@ -192,8 +192,11 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
 
         await updateSong(songToEdit.id, updates)
         
-        // Refresh my songs list
-        await getMySongs()
+        // Refresh all songs lists to ensure changes are reflected
+        await Promise.all([
+          getMySongs(),
+          loadAllSongs()
+        ])
       } else {
         // Add new song
         // Fetch video duration for new songs
@@ -221,8 +224,11 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
 
         await addSong(songData)
         
-        // Refresh my songs list
-        await getMySongs()
+        // Refresh both my songs and all songs lists to ensure new song appears at top
+        await Promise.all([
+          getMySongs(),
+          loadAllSongs()
+        ])
       }
       
       // Reset form and close modal

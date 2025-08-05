@@ -221,10 +221,10 @@ export const useMusicStore = create<MusicStore>()(
         set((state) => ({ loadingStates: { ...state.loadingStates, songs: true } }))
         const newSong = await songsApi.create(songData)
         
-        // Optimistic update with cache invalidation
+        // Optimistic update with cache invalidation - add to beginning for latest-first order
         set((state) => ({ 
-          songs: [...state.songs, newSong],
-          mySongs: [...state.mySongs, newSong],
+          songs: [newSong, ...state.songs],
+          mySongs: [newSong, ...state.mySongs],
           loadingStates: { ...state.loadingStates, songs: false }
         }))
         
