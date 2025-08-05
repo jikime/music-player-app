@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Toaster } from "sonner";
+import { MusicPlayer } from "@/components/songs/music-player";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,7 +54,7 @@ export default function RootLayout({
           src="https://www.youtube.com/iframe_api" 
           strategy="afterInteractive"
         />
-
+        <MusicPlayer />
       </body>
     </html>
   );
