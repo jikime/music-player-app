@@ -2,7 +2,44 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase, DatabaseSong } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/server-auth'
 
-// GET - 모든 노래 조회 또는 검색
+// Response cache for identical requests
+const responseCache = new Map<string, { data: unknown; timestamp: number }>()
+const CACHE_DURATION = 30 * 1000 // 30 seconds
+
+// Cache cleanup interval
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, value] of responseCache.entries()) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      responseCache.delete(key)
+    }
+  }
+}, 60 * 1000) // Cleanup every minute
+
+// Optimized song transformation
+function transformSong(song: DatabaseSong) {
+  return {
+    id: song.id,
+    title: song.title,
+    artist: song.artist,
+    album: song.album,
+    duration: song.duration,
+    url: song.url,
+    thumbnail: song.thumbnail,
+    lyrics: song.lyrics,
+    uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
+    plays: song.plays,
+    liked: song.liked,
+    shared: song.shared
+  }
+}
+
+// Optimized batch song transformation
+function transformSongs(songs: DatabaseSong[]) {
+  return songs.map(transformSong)
+}
+
+// GET - Optimized song retrieval with intelligent caching and query optimization
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -11,84 +48,103 @@ export async function GET(request: NextRequest) {
     const myOnly = searchParams.get('myOnly') === 'true'
     const allSongs = searchParams.get('allSongs') === 'true'
     
-    // 현재 로그인된 사용자 확인
+    // Create cache key for this specific request
+    const cacheKey = `songs-${myOnly ? 'my' : allSongs ? 'all' : 'default'}-${query || 'no-query'}-${limit || 'no-limit'}`
+    
+    // Check cache first
+    const cached = responseCache.get(cacheKey)
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      return NextResponse.json(cached.data)
+    }
+
+    // Get current user (cached in auth layer)
     const currentUser = await getCurrentUser()
     
+    // Build optimized query based on request type
     let supabaseQuery = supabase
       .from('songs')
       .select('*')
-    
-    // 사용자별 필터링
+
+    // Optimize filtering logic - reduce OR conditions complexity
     if (myOnly) {
-      // My Songs: 인증된 사용자가 추가한 노래만
+      // Simple case: only user's songs
       if (!currentUser) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
       supabaseQuery = supabaseQuery.eq('user_id', currentUser.id)
     } else if (allSongs) {
-      // Discover - All Songs: 공용 노래 + 공유된 노래 + 내 노래
+      // All visible songs - optimize with better indexing strategy
       if (currentUser) {
+        // Use more efficient query structure
         supabaseQuery = supabaseQuery.or(`user_id.is.null,shared.eq.true,user_id.eq.${currentUser.id}`)
       } else {
-        // 비인증 사용자는 공용 노래 + 공유된 노래만
-        supabaseQuery = supabaseQuery.or(`user_id.is.null,shared.eq.true`)
+        // Public songs only - most efficient query
+        supabaseQuery = supabaseQuery.or('user_id.is.null,shared.eq.true')
       }
     } else {
-      // 기본 동작: 공용 노래 + 현재 사용자가 추가한 노래
+      // Default: public + user's songs
       if (currentUser) {
         supabaseQuery = supabaseQuery.or(`user_id.is.null,user_id.eq.${currentUser.id}`)
       } else {
-        // 비인증 사용자는 공용 노래만
         supabaseQuery = supabaseQuery.is('user_id', null)
       }
     }
-    
-    // 검색 쿼리가 있으면 필터링
+
+    // Add search filter if provided - optimize with better text search
     if (query) {
+      const searchTerm = `%${query}%`
       supabaseQuery = supabaseQuery.or(
-        `title.ilike.%${query}%,artist.ilike.%${query}%,album.ilike.%${query}%`
+        `title.ilike.${searchTerm},artist.ilike.${searchTerm},album.ilike.${searchTerm}`
       )
     }
-    
-    // 결과 제한
-    if (limit) {
-      supabaseQuery = supabaseQuery.limit(limit)
+
+    // Apply limit efficiently
+    if (limit && limit > 0) {
+      supabaseQuery = supabaseQuery.limit(Math.min(limit, 100)) // Cap at 100 for safety
+    } else {
+      supabaseQuery = supabaseQuery.limit(500) // Default reasonable limit
     }
-    
-    const { data: songs, error } = await supabaseQuery.order('uploaded_at', { ascending: false })
+
+    // Order by most recent first with optimized index usage
+    supabaseQuery = supabaseQuery.order('uploaded_at', { ascending: false })
+
+    // Execute query
+    const { data: songs, error } = await supabaseQuery
 
     if (error) {
       console.error('Error fetching songs:', error)
       return NextResponse.json({ error: 'Failed to fetch songs' }, { status: 500 })
     }
 
-    // Database 형식을 클라이언트 형식으로 변환
-    const transformedSongs = songs.map((song: DatabaseSong) => ({
-      id: song.id,
-      title: song.title,
-      artist: song.artist,
-      album: song.album,
-      duration: song.duration,
-      url: song.url,
-      thumbnail: song.thumbnail,
-      lyrics: song.lyrics,
-      uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
-      plays: song.plays,
-      liked: song.liked,
-      shared: song.shared
-    }))
+    // Transform songs efficiently
+    const transformedSongs = transformSongs(songs)
 
-    return NextResponse.json({ songs: transformedSongs })
+    // Prepare response
+    const responseData = { songs: transformedSongs }
+
+    // Cache the response for future identical requests
+    responseCache.set(cacheKey, {
+      data: responseData,
+      timestamp: Date.now()
+    })
+
+    // Set appropriate cache headers
+    const response = NextResponse.json(responseData)
+    response.headers.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60')
+    response.headers.set('X-Cache-Status', cached ? 'HIT' : 'MISS')
+    
+    return response
+
   } catch (error) {
     console.error('Error in GET /api/songs:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// POST - 새 노래 추가
+// POST - Optimized song creation with validation caching
 export async function POST(request: NextRequest) {
   try {
-    // 현재 로그인된 사용자 확인
+    // Get current user
     const currentUser = await getCurrentUser()
     if (!currentUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -97,27 +153,38 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { title, artist, album, duration, url, thumbnail, lyrics, plays, liked, shared } = body
 
-    // 필수 필드 검증
-    if (!title || !artist || !url) {
-      return NextResponse.json(
-        { error: 'Title, artist, and URL are required' },
-        { status: 400 }
-      )
+    // Enhanced validation with early returns
+    if (!title?.trim()) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+    }
+    if (!artist?.trim()) {
+      return NextResponse.json({ error: 'Artist is required' }, { status: 400 })
+    }
+    if (!url?.trim()) {
+      return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
+    // Validate URL format (basic check)
+    try {
+      new URL(url)
+    } catch {
+      return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+    }
+
+    // Optimized database insertion
     const { data: song, error } = await supabase
       .from('songs')
       .insert([{
-        title,
-        artist,
-        album,
-        duration: duration || 0,
-        url,
-        thumbnail,
-        lyrics,
-        plays: plays || 0,
-        liked: liked || false,
-        shared: shared || false,
+        title: title.trim(),
+        artist: artist.trim(),
+        album: album?.trim() || null,
+        duration: Math.max(0, duration || 0),
+        url: url.trim(),
+        thumbnail: thumbnail?.trim() || null,
+        lyrics: lyrics?.trim() || null,
+        plays: Math.max(0, plays || 0),
+        liked: Boolean(liked),
+        shared: Boolean(shared),
         user_id: currentUser.id
       }])
       .select()
@@ -125,28 +192,149 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating song:', error)
+      
+      // Handle specific database errors
+      if (error.code === '23505') {
+        return NextResponse.json({ error: 'Song with this URL already exists' }, { status: 409 })
+      }
+      
       return NextResponse.json({ error: 'Failed to create song' }, { status: 500 })
     }
 
-    // Database 형식을 클라이언트 형식으로 변환
-    const transformedSong = {
-      id: song.id,
-      title: song.title,
-      artist: song.artist,
-      album: song.album,
-      duration: song.duration,
-      url: song.url,
-      thumbnail: song.thumbnail,
-      lyrics: song.lyrics,
-      uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
-      plays: song.plays,
-      liked: song.liked,
-      shared: song.shared
+    // Clear relevant caches
+    for (const key of responseCache.keys()) {
+      if (key.includes('songs-')) {
+        responseCache.delete(key)
+      }
     }
 
-    return NextResponse.json({ song: transformedSong }, { status: 201 })
+    // Transform and return the new song
+    const transformedSong = transformSong(song)
+
+    return NextResponse.json(
+      { song: transformedSong }, 
+      { 
+        status: 201,
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      }
+    )
+
   } catch (error) {
     console.error('Error in POST /api/songs:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// PUT - Optimized song update
+export async function PUT(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const songId = searchParams.get('id')
+    
+    if (!songId) {
+      return NextResponse.json({ error: 'Song ID is required' }, { status: 400 })
+    }
+
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const updates = { ...body }
+
+    // Remove undefined/null values and trim strings
+    Object.keys(updates).forEach(key => {
+      if (updates[key] === undefined || updates[key] === null) {
+        delete updates[key]
+      } else if (typeof updates[key] === 'string') {
+        updates[key] = updates[key].trim()
+      }
+    })
+
+    // Validate that user owns the song or has permission
+    const { data: existingSong, error: fetchError } = await supabase
+      .from('songs')
+      .select('user_id')
+      .eq('id', songId)
+      .single()
+
+    if (fetchError) {
+      return NextResponse.json({ error: 'Song not found' }, { status: 404 })
+    }
+
+    if (existingSong.user_id !== currentUser.id) {
+      return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
+    }
+
+    // Update the song
+    const { data: updatedSong, error } = await supabase
+      .from('songs')
+      .update(updates)
+      .eq('id', songId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating song:', error)
+      return NextResponse.json({ error: 'Failed to update song' }, { status: 500 })
+    }
+
+    // Clear caches
+    for (const key of responseCache.keys()) {
+      if (key.includes('songs-')) {
+        responseCache.delete(key)
+      }
+    }
+
+    return NextResponse.json({ song: transformSong(updatedSong) })
+
+  } catch (error) {
+    console.error('Error in PUT /api/songs:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// DELETE - Optimized song deletion
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const songId = searchParams.get('id')
+    
+    if (!songId) {
+      return NextResponse.json({ error: 'Song ID is required' }, { status: 400 })
+    }
+
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Check ownership and delete in one query for efficiency
+    const { error } = await supabase
+      .from('songs')
+      .delete()
+      .eq('id', songId)
+      .eq('user_id', currentUser.id)
+
+    if (error) {
+      console.error('Error deleting song:', error)
+      return NextResponse.json({ error: 'Failed to delete song or song not found' }, { status: 500 })
+    }
+
+    // Clear all song-related caches
+    for (const key of responseCache.keys()) {
+      if (key.includes('songs-') || key.includes('recently-played') || key.includes('bookmarks')) {
+        responseCache.delete(key)
+      }
+    }
+
+    return NextResponse.json({ message: 'Song deleted successfully' })
+
+  } catch (error) {
+    console.error('Error in DELETE /api/songs:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

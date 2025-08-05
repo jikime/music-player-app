@@ -2,14 +2,185 @@ import { Song, Playlist, Bookmark } from '@/types/music'
 
 const API_BASE_URL = '/api'
 
-// API Response Types (commented out as unused)
-// interface ApiResponse<T> {
-//   success?: boolean
-//   error?: string
-//   message?: string
-//   data?: T
-// }
+// Enhanced request cache with TTL
+class RequestCache {
+  private cache = new Map<string, { data: unknown; timestamp: number; ttl: number }>()
+  
+  get<T>(key: string): T | null {
+    const cached = this.cache.get(key)
+    if (!cached) return null
+    
+    const now = Date.now()
+    if (now - cached.timestamp > cached.ttl) {
+      this.cache.delete(key)
+      return null
+    }
+    
+    return cached.data
+  }
+  
+  set<T>(key: string, data: T, ttl = 2 * 60 * 1000): void {
+    this.cache.set(key, { data, timestamp: Date.now(), ttl })
+  }
+  
+  delete(key: string): void {
+    this.cache.delete(key)
+  }
+  
+  clear(): void {
+    this.cache.clear()
+  }
+  
+  // Cleanup expired entries
+  cleanup(): void {
+    const now = Date.now()
+    for (const [key, value] of this.cache.entries()) {
+      if (now - value.timestamp > value.ttl) {
+        this.cache.delete(key)
+      }
+    }
+  }
+}
 
+const cache = new RequestCache()
+
+// Cleanup cache every 5 minutes
+setInterval(() => cache.cleanup(), 5 * 60 * 1000)
+
+// Request deduplication - prevent multiple identical requests
+const pendingRequests = new Map<string, Promise<unknown>>()
+
+// Enhanced fetch with caching, deduplication, and retry logic
+async function enhancedFetch<T>(
+  url: string, 
+  options: RequestInit = {},
+  cacheConfig?: { key?: string; ttl?: number; skipCache?: boolean }
+): Promise<T> {
+  const cacheKey = cacheConfig?.key || `${options.method || 'GET'}-${url}-${JSON.stringify(options.body || {})}`
+  
+  // Check cache first (for GET requests)
+  if (!cacheConfig?.skipCache && (!options.method || options.method === 'GET')) {
+    const cached = cache.get<T>(cacheKey)
+    if (cached) {
+      return cached
+    }
+  }
+  
+  // Check for pending identical request
+  if (pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey)
+  }
+  
+  // Create request with retry logic
+  const requestPromise = retryFetch(url, options, 3)
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      
+      // Cache successful GET responses
+      if (!cacheConfig?.skipCache && (!options.method || options.method === 'GET')) {
+        cache.set(cacheKey, data, cacheConfig?.ttl)
+      }
+      
+      return data
+    })
+    .finally(() => {
+      pendingRequests.delete(cacheKey)
+    })
+  
+  pendingRequests.set(cacheKey, requestPromise)
+  return requestPromise
+}
+
+// Retry logic with exponential backoff
+async function retryFetch(url: string, options: RequestInit, maxRetries: number): Promise<Response> {
+  let lastError: Error
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      })
+      
+      // Don't retry on client errors (4xx), only server errors (5xx) and network errors
+      if (response.ok || (response.status >= 400 && response.status < 500)) {
+        return response
+      }
+      
+      throw new Error(`Server error: ${response.status}`)
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+      
+      if (attempt === maxRetries) break
+      
+      // Exponential backoff: 100ms, 200ms, 400ms
+      const delay = Math.min(100 * Math.pow(2, attempt), 1000)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  
+  throw lastError!
+}
+
+// Request queue for batch operations
+class RequestQueue {
+  private queue: Array<{ id: string; request: () => Promise<unknown>; resolve: (value: unknown) => void; reject: (error: unknown) => void }> = []
+  private processing = false
+  private readonly maxConcurrency = 3
+  private readonly batchDelay = 50 // ms
+  
+  async add<T>(id: string, request: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ id, request, resolve, reject })
+      this.scheduleProcess()
+    })
+  }
+  
+  private scheduleProcess() {
+    if (this.processing) return
+    
+    setTimeout(() => this.process(), this.batchDelay)
+  }
+  
+  private async process() {
+    if (this.processing || this.queue.length === 0) return
+    
+    this.processing = true
+    
+    try {
+      const batch = this.queue.splice(0, this.maxConcurrency)
+      
+      await Promise.allSettled(
+        batch.map(async ({ request, resolve, reject }) => {
+          try {
+            const result = await request()
+            resolve(result)
+          } catch (error) {
+            reject(error)
+          }
+        })
+      )
+    } finally {
+      this.processing = false
+      
+      // Continue processing if there are more items
+      if (this.queue.length > 0) {
+        this.scheduleProcess()
+      }
+    }
+  }
+}
+
+const requestQueue = new RequestQueue()
+
+// API Response Types
 interface SongsResponse {
   songs: Song[]
 }
@@ -34,252 +205,354 @@ interface BookmarkResponse {
   bookmark: Bookmark
 }
 
-// Songs API
+// Optimized Songs API
 export const songsApi = {
-  // 모든 노래 조회 (공용 + 내가 추가한 노래)
+  // Optimized: Get all songs with caching
   getAll: async (): Promise<Song[]> => {
-    const response = await fetch(`${API_BASE_URL}/songs`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch songs')
-    }
-    const data: SongsResponse = await response.json()
+    const data = await enhancedFetch<SongsResponse>(
+      `${API_BASE_URL}/songs`,
+      {},
+      { key: 'songs-all', ttl: 2 * 60 * 1000 } // 2 min cache
+    )
     return data.songs
   },
 
-  // 내가 추가한 노래만 조회
+  // Optimized: Get user's songs with caching
   getMySongs: async (): Promise<Song[]> => {
-    const response = await fetch(`${API_BASE_URL}/songs?myOnly=true`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch my songs')
-    }
-    const data: SongsResponse = await response.json()
+    const data = await enhancedFetch<SongsResponse>(
+      `${API_BASE_URL}/songs?myOnly=true`,
+      {},
+      { key: 'songs-my', ttl: 1 * 60 * 1000 } // 1 min cache
+    )
     return data.songs
   },
 
-  // 모든 노래 조회 (Discover - All Songs용)
+  // Optimized: Get all public songs with longer cache
   getAllSongs: async (): Promise<Song[]> => {
-    const response = await fetch(`${API_BASE_URL}/songs?allSongs=true`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch all songs')
-    }
-    const data: SongsResponse = await response.json()
+    const data = await enhancedFetch<SongsResponse>(
+      `${API_BASE_URL}/songs?allSongs=true`,
+      {},
+      { key: 'songs-all-public', ttl: 5 * 60 * 1000 } // 5 min cache for public data
+    )
     return data.songs
   },
 
-  // 특정 노래 조회
+  // Get specific song with caching
   getById: async (id: string): Promise<Song> => {
-    const response = await fetch(`${API_BASE_URL}/songs/${id}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch song')
-    }
-    const data: SongResponse = await response.json()
+    const data = await enhancedFetch<SongResponse>(
+      `${API_BASE_URL}/songs/${id}`,
+      {},
+      { key: `song-${id}`, ttl: 10 * 60 * 1000 } // 10 min cache for individual songs
+    )
     return data.song
   },
 
-  // 노래 생성
+  // Create song (skip cache, invalidate related caches)
   create: async (songData: Omit<Song, 'id' | 'uploadedAt'>): Promise<Song> => {
-    const response = await fetch(`${API_BASE_URL}/songs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const data = await enhancedFetch<SongResponse>(
+      `${API_BASE_URL}/songs`,
+      {
+        method: 'POST',
+        body: JSON.stringify(songData),
       },
-      body: JSON.stringify(songData),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to create song')
-    }
-    const data: SongResponse = await response.json()
+      { skipCache: true }
+    )
+    
+    // Invalidate related caches
+    cache.delete('songs-all')
+    cache.delete('songs-my')
+    cache.delete('songs-all-public')
+    
     return data.song
   },
 
-  // 노래 업데이트
+  // Update song (skip cache, invalidate related caches)
   update: async (id: string, updates: Partial<Song>): Promise<Song> => {
-    const response = await fetch(`${API_BASE_URL}/songs/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
+    const data = await enhancedFetch<SongResponse>(
+      `${API_BASE_URL}/songs/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(updates),
       },
-      body: JSON.stringify(updates),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to update song')
-    }
-    const data: SongResponse = await response.json()
+      { skipCache: true }
+    )
+    
+    // Invalidate specific song cache and related caches
+    cache.delete(`song-${id}`)
+    cache.delete('songs-all')
+    cache.delete('songs-my')
+    cache.delete('songs-all-public')
+    
     return data.song
   },
 
-  // 노래 삭제
+  // Delete song (skip cache, invalidate related caches)
   delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/songs/${id}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to delete song')
-    }
+    await enhancedFetch<void>(
+      `${API_BASE_URL}/songs/${id}`,
+      { method: 'DELETE' },
+      { skipCache: true }
+    )
+    
+    // Invalidate all song-related caches
+    cache.delete(`song-${id}`)
+    cache.delete('songs-all')
+    cache.delete('songs-my')
+    cache.delete('songs-all-public')
+  },
+
+  // Batch search with caching
+  search: async (query: string, limit?: number): Promise<Song[]> => {
+    const params = new URLSearchParams({ q: query })
+    if (limit) params.set('limit', limit.toString())
+    
+    const data = await enhancedFetch<SongsResponse>(
+      `${API_BASE_URL}/songs?${params}`,
+      {},
+      { key: `search-${query}-${limit || 'all'}`, ttl: 30 * 1000 } // 30s cache for searches
+    )
+    return data.songs
   }
 }
 
-// Playlists API
+// Optimized Playlists API
 export const playlistsApi = {
-  // 모든 플레이리스트 조회
+  // Get all playlists with caching
   getAll: async (): Promise<Playlist[]> => {
-    const response = await fetch(`${API_BASE_URL}/playlists`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch playlists')
-    }
-    const data: PlaylistsResponse = await response.json()
+    const data = await enhancedFetch<PlaylistsResponse>(
+      `${API_BASE_URL}/playlists`,
+      {},
+      { key: 'playlists-all', ttl: 1 * 60 * 1000 } // 1 min cache
+    )
     return data.playlists
   },
 
-  // 특정 플레이리스트 조회
+  // Get specific playlist with caching
   getById: async (id: string): Promise<Playlist> => {
-    const response = await fetch(`${API_BASE_URL}/playlists/${id}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch playlist')
-    }
-    const data: PlaylistResponse = await response.json()
+    const data = await enhancedFetch<PlaylistResponse>(
+      `${API_BASE_URL}/playlists/${id}`,
+      {},
+      { key: `playlist-${id}`, ttl: 2 * 60 * 1000 } // 2 min cache
+    )
     return data.playlist
   },
 
-  // 플레이리스트 생성
+  // Create playlist (skip cache, invalidate related caches)
   create: async (playlistData: Omit<Playlist, 'id' | 'createdAt' | 'updatedAt' | 'songs'>): Promise<Playlist> => {
-    const response = await fetch(`${API_BASE_URL}/playlists`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const data = await enhancedFetch<PlaylistResponse>(
+      `${API_BASE_URL}/playlists`,
+      {
+        method: 'POST',
+        body: JSON.stringify(playlistData),
       },
-      body: JSON.stringify(playlistData),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to create playlist')
-    }
-    const data: PlaylistResponse = await response.json()
+      { skipCache: true }
+    )
+    
+    // Invalidate playlists cache
+    cache.delete('playlists-all')
+    
     return data.playlist
   },
 
-  // 플레이리스트 업데이트
+  // Update playlist (skip cache, invalidate related caches)
   update: async (id: string, updates: Partial<Playlist>): Promise<Playlist> => {
-    const response = await fetch(`${API_BASE_URL}/playlists/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
+    const data = await enhancedFetch<PlaylistResponse>(
+      `${API_BASE_URL}/playlists/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(updates),
       },
-      body: JSON.stringify(updates),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to update playlist')
-    }
-    const data: PlaylistResponse = await response.json()
+      { skipCache: true }
+    )
+    
+    // Invalidate specific playlist cache and general cache
+    cache.delete(`playlist-${id}`)
+    cache.delete('playlists-all')
+    
     return data.playlist
   },
 
-  // 플레이리스트 삭제
+  // Delete playlist (skip cache, invalidate related caches)
   delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/playlists/${id}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to delete playlist')
-    }
+    await enhancedFetch<void>(
+      `${API_BASE_URL}/playlists/${id}`,
+      { method: 'DELETE' },
+      { skipCache: true }
+    )
+    
+    // Invalidate all playlist-related caches
+    cache.delete(`playlist-${id}`)
+    cache.delete('playlists-all')
   },
 
-  // 플레이리스트에 노래 추가
+  // Add song to playlist (batched and optimized)
   addSong: async (playlistId: string, songId: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/songs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ songId }),
+    return requestQueue.add(`add-song-${playlistId}-${songId}`, async () => {
+      await enhancedFetch<void>(
+        `${API_BASE_URL}/playlists/${playlistId}/songs`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ songId }),
+        },
+        { skipCache: true }
+      )
+      
+      // Invalidate playlist caches
+      cache.delete(`playlist-${playlistId}`)
+      cache.delete('playlists-all')
     })
-    if (!response.ok) {
-      throw new Error('Failed to add song to playlist')
-    }
   },
 
-  // 플레이리스트에서 노래 제거
+  // Remove song from playlist (batched and optimized)
   removeSong: async (playlistId: string, songId: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/songs?songId=${songId}`, {
-      method: 'DELETE',
+    return requestQueue.add(`remove-song-${playlistId}-${songId}`, async () => {
+      await enhancedFetch<void>(
+        `${API_BASE_URL}/playlists/${playlistId}/songs?songId=${songId}`,
+        { method: 'DELETE' },
+        { skipCache: true }
+      )
+      
+      // Invalidate playlist caches
+      cache.delete(`playlist-${playlistId}`)
+      cache.delete('playlists-all')
     })
-    if (!response.ok) {
-      throw new Error('Failed to remove song from playlist')
+  },
+
+  // Batch add multiple songs to playlist
+  addMultipleSongs: async (playlistId: string, songIds: string[]): Promise<void> => {
+    const batchSize = 3
+    const batches = []
+    
+    for (let i = 0; i < songIds.length; i += batchSize) {
+      batches.push(songIds.slice(i, i + batchSize))
+    }
+    
+    for (const batch of batches) {
+      await Promise.all(
+        batch.map(songId => playlistsApi.addSong(playlistId, songId))
+      )
     }
   }
 }
 
-// Recently Played API
+// Optimized Recently Played API
 export const recentlyPlayedApi = {
-  // 최근 재생된 노래들 조회
+  // Get recently played with short cache
   getRecentlyPlayed: async (): Promise<Song[]> => {
-    const response = await fetch(`${API_BASE_URL}/recently-played`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch recently played songs')
-    }
-    const data: SongsResponse = await response.json()
+    const data = await enhancedFetch<SongsResponse>(
+      `${API_BASE_URL}/recently-played`,
+      {},
+      { key: 'recently-played', ttl: 30 * 1000 } // 30s cache for recent data
+    )
     return data.songs
   },
 
-  // 재생 기록 업데이트 (plays 카운트 증가)
+  // Update play count (skip cache, invalidate related caches)
   updatePlayCount: async (songId: string): Promise<Song> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/recently-played`, {
+    const data = await enhancedFetch<SongResponse>(
+      `${API_BASE_URL}/recently-played`,
+      {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ songId }),
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(`Failed to update play count: ${response.status} ${response.statusText} - ${errorData.error || 'Unknown error'}`)
-      }
-      
-      const data: SongResponse = await response.json()
-      return data.song
-    } catch (error) {
-      console.error('Error in updatePlayCount:', error)
-      throw error
-    }
+      },
+      { skipCache: true }
+    )
+    
+    // Invalidate related caches
+    cache.delete('recently-played')
+    cache.delete(`song-${songId}`)
+    cache.delete('songs-all')
+    
+    return data.song
   }
 }
 
-// Bookmarks API
+// Optimized Bookmarks API
 export const bookmarksApi = {
-  // 모든 북마크 조회
+  // Get all bookmarks with caching
   getAll: async (): Promise<Bookmark[]> => {
-    const response = await fetch(`${API_BASE_URL}/bookmarks`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch bookmarks')
-    }
-    const data: BookmarksResponse = await response.json()
+    const data = await enhancedFetch<BookmarksResponse>(
+      `${API_BASE_URL}/bookmarks`,
+      {},
+      { key: 'bookmarks-all', ttl: 1 * 60 * 1000 } // 1 min cache
+    )
     return data.bookmarks
   },
 
-  // 북마크 추가
+  // Create bookmark (skip cache, invalidate related caches)
   create: async (songId: string): Promise<Bookmark> => {
-    const response = await fetch(`${API_BASE_URL}/bookmarks`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const data = await enhancedFetch<BookmarkResponse>(
+      `${API_BASE_URL}/bookmarks`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ songId }),
       },
-      body: JSON.stringify({ songId }),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to create bookmark')
-    }
-    const data: BookmarkResponse = await response.json()
+      { skipCache: true }
+    )
+    
+    // Invalidate bookmarks cache
+    cache.delete('bookmarks-all')
+    
     return data.bookmark
   },
 
-  // 북마크 삭제
+  // Delete bookmark (skip cache, invalidate related caches)
   delete: async (songId: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/bookmarks?songId=${songId}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to delete bookmark')
+    await enhancedFetch<void>(
+      `${API_BASE_URL}/bookmarks?songId=${songId}`,
+      { method: 'DELETE' },
+      { skipCache: true }
+    )
+    
+    // Invalidate bookmarks cache
+    cache.delete('bookmarks-all')
+  }
+}
+
+// Utility functions
+export const apiUtils = {
+  // Clear all caches
+  clearCache: () => {
+    cache.clear()
+    pendingRequests.clear()
+  },
+  
+  // Clear specific cache by pattern
+  clearCacheByPattern: (pattern: string) => {
+    const regex = new RegExp(pattern)
+    const cacheMap = (cache as { cache: Map<string, unknown> }).cache
+    
+    for (const key of cacheMap.keys()) {
+      if (regex.test(key)) {
+        cache.delete(key)
+      }
+    }
+  },
+  
+  // Get cache statistics
+  getCacheStats: () => {
+    const cacheMap = (cache as { cache: Map<string, unknown> }).cache
+    return {
+      size: cacheMap.size,
+      pendingRequests: pendingRequests.size,
+      keys: Array.from(cacheMap.keys())
+    }
+  },
+  
+  // Preload commonly used data
+  preloadData: async () => {
+    try {
+      await Promise.allSettled([
+        songsApi.getAllSongs(),
+        playlistsApi.getAll(),
+        bookmarksApi.getAll(),
+        recentlyPlayedApi.getRecentlyPlayed()
+      ])
+    } catch (error) {
+      console.warn('Failed to preload some data:', error)
     }
   }
 }
+
+// Export cache instance for external management
+export { cache as apiCache }
