@@ -251,15 +251,8 @@ export function MusicPlayer() {
   // Separate event handler for when playback is actively running
   const handlePlaying = () => {
     console.log('🎵 Music Player: onPlaying event - actively playing!')
-    
-    // Auto-unmute after playback is actively running
-    if (isMuted && !hasUnmuted) {
-      console.log('🔊 Auto-unmuting after playback is actively running')
-      setTimeout(() => {
-        setIsMuted(false)
-        setHasUnmuted(true)
-      }, 500) // Shorter delay when actively playing
-    }
+    // Note: Auto-unmuting removed to comply with Chrome 66+ autoplay policy
+    // Users must manually interact with volume controls to unmute
   }
 
   const handlePause = () => {
@@ -438,6 +431,7 @@ export function MusicPlayer() {
       {currentSong && (
         <ReactPlayer
           ref={setPlayerRef}
+          key={currentSong.url}
           className="react-player"
           src={currentSong.url}
           playing={playerReady && isPlaying && !isLoading}
@@ -455,7 +449,7 @@ export function MusicPlayer() {
                 playsinline: 1,
                 rel: 0,
                 showinfo: 0,
-                mute: 1  // YouTube requires mute for autoplay
+                mute: isMuted ? 1 : 0  // Dynamic mute based on state
               }
             }
           }}
@@ -752,10 +746,24 @@ export function MusicPlayer() {
             size="icon" 
             className="text-muted-foreground hover:text-foreground"
             onClick={() => {
-              if (isMuted || volume === 0) {
+              // User interaction to unmute (Chrome 66+ compliance)
+              if (isMuted) {
+                console.log('🔊 User clicked to unmute - Chrome 66+ compliance')
                 setIsMuted(false)
                 setHasUnmuted(true)
                 setVolume(volume === 0 ? 0.7 : volume)
+                
+                // Also try to unmute via player ref
+                if (playerRef.current && playerRef.current.muted !== undefined) {
+                  try {
+                    playerRef.current.muted = false
+                    console.log('🔊 Directly unmuted player via ref')
+                  } catch (e) {
+                    console.log('⚠️ Could not directly unmute player:', e)
+                  }
+                }
+              } else if (volume === 0) {
+                setVolume(0.7)
               } else {
                 setVolume(0)
               }
@@ -769,10 +777,22 @@ export function MusicPlayer() {
             step={1}
             onValueChange={(value) => {
               const newVolume = value[0] / 100
+              console.log('🔊 User interacted with volume slider - Chrome 66+ compliance')
               setVolume(newVolume)
+              // User interaction with slider unmutes (Chrome 66+ compliance)
               if (newVolume > 0 && isMuted) {
                 setIsMuted(false)
                 setHasUnmuted(true)
+                
+                // Also try to unmute via player ref
+                if (playerRef.current && playerRef.current.muted !== undefined) {
+                  try {
+                    playerRef.current.muted = false
+                    console.log('🔊 Directly unmuted player via ref (slider)')
+                  } catch (e) {
+                    console.log('⚠️ Could not directly unmute player via slider:', e)
+                  }
+                }
               }
             }}
             className="w-24" 

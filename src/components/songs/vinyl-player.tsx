@@ -292,15 +292,8 @@ export function VinylPlayer({
   // Separate event handler for when playback actually starts playing (not just buffering)
   const handlePlaying = () => {
     console.log('🎵 YouTube Player: onPlaying event - actively playing!')
-    
-    // Auto-unmute after playback is actively running (shorter delay)
-    if (isMuted && !hasUnmuted) {
-      console.log('🔊 Auto-unmuting after playback is actively running')
-      setTimeout(() => {
-        setIsMuted(false)
-        setHasUnmuted(true)
-      }, 500) // Shorter delay when actively playing
-    }
+    // Note: Auto-unmuting removed to comply with Chrome 66+ autoplay policy
+    // Users must manually interact with volume controls to unmute
   }
 
   const handlePause = () => {
@@ -471,6 +464,7 @@ export function VinylPlayer({
         {src && (
           <ReactPlayer
             ref={setPlayerRef}
+            key={src}
             className="react-player"
             src={src}
             playing={playerReady && isPlaying && !isLoading && duration > 0}
@@ -488,7 +482,7 @@ export function VinylPlayer({
                   playsinline: 1,
                   rel: 0,
                   showinfo: 0,
-                  mute: 1  // YouTube requires mute for autoplay
+                  mute: isMuted ? 1 : 0  // Dynamic mute based on state
                 }
               }
             }}
@@ -596,6 +590,16 @@ export function VinylPlayer({
         {song.album && (
           <p className="text-sm text-muted-foreground/70 truncate">{song.album}</p>
         )}
+        
+        {/* Muted Status Indicator */}
+        {isMuted && isPlaying && (
+          <div className="flex items-center justify-center space-x-2 mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <VolumeX className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+              Video is muted. Use volume controls to unmute.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Error Display */}
@@ -687,15 +691,30 @@ export function VinylPlayer({
               variant="ghost"
               size="icon"
               onClick={() => {
-                if (isMuted || volume === 0) {
+                // User interaction to unmute (Chrome 66+ compliance)
+                if (isMuted) {
+                  console.log('🔊 User clicked to unmute - Chrome 66+ compliance')
                   setIsMuted(false)
                   setHasUnmuted(true)
                   setVolume(volume === 0 ? 0.7 : volume)
+                  
+                  // Also try to unmute via player ref
+                  if (playerRef.current && playerRef.current.muted !== undefined) {
+                    try {
+                      playerRef.current.muted = false
+                      console.log('🔊 Directly unmuted player via ref')
+                    } catch (e) {
+                      console.log('⚠️ Could not directly unmute player:', e)
+                    }
+                  }
+                } else if (volume === 0) {
+                  setVolume(0.7)
                 } else {
                   setVolume(0)
                 }
               }}
               className="text-muted-foreground hover:text-foreground"
+              title={isMuted ? "Click to unmute (required for autoplay)" : volume === 0 ? "Unmute" : "Mute"}
             >
               {(isMuted || volume === 0) ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </Button>
@@ -710,13 +729,26 @@ export function VinylPlayer({
               step={1}
               onValueChange={(value) => {
                 const newVolume = value[0] / 100
+                console.log('🔊 User interacted with volume slider - Chrome 66+ compliance')
                 setVolume(newVolume)
+                // User interaction with slider unmutes (Chrome 66+ compliance)
                 if (newVolume > 0 && isMuted) {
                   setIsMuted(false)
                   setHasUnmuted(true)
+                  
+                  // Also try to unmute via player ref
+                  if (playerRef.current && playerRef.current.muted !== undefined) {
+                    try {
+                      playerRef.current.muted = false
+                      console.log('🔊 Directly unmuted player via ref (slider)')
+                    } catch (e) {
+                      console.log('⚠️ Could not directly unmute player via slider:', e)
+                    }
+                  }
                 }
               }}
               className="flex-1"
+              disabled={false}
             />
             <Volume2 className="w-4 h-4 text-muted-foreground" />
           </div>
