@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { AddToPlaylistPopover } from "@/components/songs/add-to-playlist-popover"
+import { QuickShareButton } from "@/components/songs/quick-share-button"
 import { Button } from "@/components/ui/button"
 import {
   Play,
@@ -237,34 +238,42 @@ export default function TrendingPage() {
                       </div>
 
                       {/* Mobile Actions */}
-                      {session && (
-                        <div 
-                          className="flex items-start flex-shrink-0 pt-1 gap-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleBookmark(song)
-                            }}
-                          >
-                            <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
-                          </Button>
-                          <AddToPlaylistPopover song={song}>
+                      <div 
+                        className="flex items-start flex-shrink-0 pt-1 gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {session && (
+                          <>
                             <Button
                               size="icon"
                               variant="ghost"
                               className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleBookmark(song)
+                              }}
                             >
-                              <Plus className="w-4 h-4" />
+                              <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
                             </Button>
-                          </AddToPlaylistPopover>
-                        </div>
-                      )}
+                            <AddToPlaylistPopover song={song}>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="w-8 h-8 text-muted-foreground hover:text-foreground"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </AddToPlaylistPopover>
+                          </>
+                        )}
+                        <QuickShareButton
+                          song={song}
+                          size="icon"
+                          variant="ghost"
+                          className="w-8 h-8"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -349,34 +358,42 @@ export default function TrendingPage() {
                   </div>
 
                   {/* Actions */}
-                  {session && (
-                    <div 
-                      className="flex items-center gap-1 flex-shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleBookmark(song)
-                        }}
-                      >
-                        <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
-                      </Button>
-                      <AddToPlaylistPopover song={song}>
+                  <div 
+                    className="flex items-center gap-1 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {session && (
+                      <>
                         <Button
                           size="icon"
                           variant="ghost"
                           className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleBookmark(song)
+                          }}
                         >
-                          <Plus className="w-4 h-4" />
+                          <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
                         </Button>
-                      </AddToPlaylistPopover>
-                    </div>
-                  )}
+                        <AddToPlaylistPopover song={song}>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="w-8 h-8 text-muted-foreground hover:text-foreground"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </AddToPlaylistPopover>
+                      </>
+                    )}
+                    <QuickShareButton
+                      song={song}
+                      size="icon"
+                      variant="ghost"
+                      className="w-8 h-8"
+                    />
+                  </div>
                 </div>
               </div>
               </div>
@@ -385,6 +402,6 @@ export default function TrendingPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }

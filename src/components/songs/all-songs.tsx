@@ -11,12 +11,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
-  Share2,
 } from "lucide-react"
 import { formatDuration, formatPlays } from "@/lib/music-utils"
 import { useMusicStore } from "@/lib/store"
 import { AddToPlaylistPopover } from "@/components/songs/add-to-playlist-popover"
 import { ShareModal } from "@/components/songs/share-modal"
+import { QuickShareButton } from "@/components/songs/quick-share-button"
 import type { Song } from "@/types/music"
 
 interface AllSongsProps {
@@ -81,14 +81,12 @@ const MemoizedActionButtons = React.memo(({
   isBookmarked, 
   isBookmarking, 
   onToggleBookmark,
-  onShare, 
   isMobile = false 
 }: { 
   song: Song; 
   isBookmarked: boolean; 
   isBookmarking: boolean; 
   onToggleBookmark: (songId: string, event: React.MouseEvent) => void;
-  onShare?: (song: Song, event: React.MouseEvent) => void;
   isMobile?: boolean;
 }) => {
   const buttonSize = isMobile ? "w-7 h-7" : "w-8 h-8"
@@ -121,18 +119,14 @@ const MemoizedActionButtons = React.memo(({
           <Plus className={iconSize} />
         </Button>
       </AddToPlaylistPopover>
-      {onShare && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`${buttonSize} text-muted-foreground hover:text-primary ${
-            isMobile ? '' : 'opacity-0 group-hover:opacity-100'
-          }`}
-          onClick={(e) => onShare(song, e)}
-        >
-          <Share2 className={iconSize} />
-        </Button>
-      )}
+      <QuickShareButton
+        song={song}
+        variant="ghost"
+        size="icon"
+        className={`${buttonSize} ${
+          isMobile ? '' : 'opacity-0 group-hover:opacity-100'
+        }`}
+      />
     </div>
   )
 })
@@ -147,8 +141,7 @@ const MemoizedMobileSongRow = React.memo(({
   onPlaySong, 
   isBookmarked, 
   isBookmarking, 
-  onToggleBookmark,
-  onShare 
+  onToggleBookmark
 }: {
   song: Song;
   index: number;
@@ -158,7 +151,6 @@ const MemoizedMobileSongRow = React.memo(({
   isBookmarked: boolean;
   isBookmarking: boolean;
   onToggleBookmark: (songId: string, event: React.MouseEvent) => void;
-  onShare: (song: Song, event: React.MouseEvent) => void;
 }) => (
   <div 
     className="md:hidden p-2 hover:scale-105 transition-transform group cursor-pointer"
@@ -180,7 +172,6 @@ const MemoizedMobileSongRow = React.memo(({
         isBookmarked={isBookmarked}
         isBookmarking={isBookmarking}
         onToggleBookmark={onToggleBookmark}
-        onShare={onShare}
         isMobile={true}
       />
     </div>
@@ -197,8 +188,7 @@ const MemoizedDesktopSongRow = React.memo(({
   onPlaySong, 
   isBookmarked, 
   isBookmarking, 
-  onToggleBookmark,
-  onShare 
+  onToggleBookmark
 }: {
   song: Song;
   index: number;
@@ -208,7 +198,6 @@ const MemoizedDesktopSongRow = React.memo(({
   isBookmarked: boolean;
   isBookmarking: boolean;
   onToggleBookmark: (songId: string, event: React.MouseEvent) => void;
-  onShare: (song: Song, event: React.MouseEvent) => void;
 }) => (
   <div 
     className="hidden md:flex items-center gap-2 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
@@ -236,7 +225,6 @@ const MemoizedDesktopSongRow = React.memo(({
         isBookmarked={isBookmarked}
         isBookmarking={isBookmarking}
         onToggleBookmark={onToggleBookmark}
-        onShare={onShare}
         isMobile={false}
       />
     </div>
@@ -290,12 +278,6 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
       handlePageChange(currentPage + 1)
     }
   }, [paginationData.canGoNext, currentPage, handlePageChange])
-
-  const handleShare = useCallback((song: Song, event: React.MouseEvent) => {
-    event.stopPropagation()
-    setSelectedSong(song)
-    setShareModalOpen(true)
-  }, [])
 
   const handleToggleBookmark = useCallback(async (songId: string, event: React.MouseEvent) => {
     event.stopPropagation()
@@ -413,7 +395,6 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
                   isBookmarked={isBookmarkedSong}
                   isBookmarking={isBookmarkingSong}
                   onToggleBookmark={handleToggleBookmark}
-                  onShare={handleShare}
                 />
                 <MemoizedDesktopSongRow
                   song={song}
@@ -424,7 +405,6 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
                   isBookmarked={isBookmarkedSong}
                   isBookmarking={isBookmarkingSong}
                   onToggleBookmark={handleToggleBookmark}
-                  onShare={handleShare}
                 />
               </div>
             )

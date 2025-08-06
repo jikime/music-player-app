@@ -10,6 +10,8 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { shareApi } from '@/lib/api'
 import { Song } from '@/types/music'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { MobileShareSheet } from './mobile-share-sheet'
 import { 
   Copy, 
   Share2, 
@@ -29,6 +31,7 @@ interface ShareModalProps {
 }
 
 export function ShareModal({ song, isOpen, onClose }: ShareModalProps) {
+  const isMobile = useIsMobile()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isPublic, setIsPublic] = useState(true)
@@ -37,6 +40,17 @@ export function ShareModal({ song, isOpen, onClose }: ShareModalProps) {
   const [isCreating, setIsCreating] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Use mobile sheet on mobile devices
+  if (isMobile) {
+    return (
+      <MobileShareSheet
+        song={song}
+        isOpen={isOpen}
+        onClose={onClose}
+      />
+    )
+  }
 
   const handleCreateShare = async () => {
     try {
