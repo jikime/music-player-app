@@ -1,4 +1,4 @@
-import { Song, Playlist, Bookmark } from '@/types/music'
+import { Song, Playlist, Bookmark, SharedSong } from '@/types/music'
 
 const API_BASE_URL = '/api'
 
@@ -84,11 +84,24 @@ async function enhancedFetch<T>(
   // Create request with retry logic
   const requestPromise = retryFetch(url, options, 3)
     .then(async (response) => {
+      console.log(`🌐 API Response (${url}):`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        const errorText = await response.text()
+        console.error(`❌ API Error (${url}):`, {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        })
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`)
       }
       
       const data = await response.json()
+      console.log(`✅ API Success (${url}):`, data)
       
       // Cache successful GET responses
       if (!cacheConfig?.skipCache && (!options.method || options.method === 'GET')) {
@@ -218,6 +231,19 @@ interface BookmarksResponse {
 
 interface BookmarkResponse {
   bookmark: Bookmark
+}
+
+interface SharedSongResponse {
+  sharedSong: SharedSong
+  song: Song
+}
+
+interface SharedSongsResponse {
+  sharedSongs: (SharedSong & { song: Song; shareUrl: string })[]
+}
+
+interface CreateShareResponse extends SharedSong {
+  shareUrl: string
 }
 
 // Optimized Songs API
@@ -565,6 +591,88 @@ export const apiUtils = {
     } catch (error) {
       console.warn('Failed to preload some data:', error)
     }
+  }
+}
+
+// Optimized Share API
+export const shareApi = {
+  // Create a new share link
+  create: async (data: {
+    songId: string
+    title?: string
+    description?: string
+    isPublic?: boolean
+    expiresAt?: Date
+  }): Promise<CreateShareResponse> => {
+    const response = await enhancedFetch<CreateShareResponse>(
+      `${API_BASE_URL}/share`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+      { skipCache: true }
+    )
+    
+    // Invalidate share-related caches
+    cache.delete('shares-all')
+    
+    return response
+  },
+
+  // Get user's share links
+  getAll: async (): Promise<(SharedSong & { song: Song; shareUrl: string })[]> => {
+    const data = await enhancedFetch<(SharedSong & { song: Song; shareUrl: string })[]>(
+      `${API_BASE_URL}/share`,
+      {},
+      { key: 'shares-all', ttl: 2 * 60 * 1000 } // 2 min cache
+    )
+    return data
+  },
+
+  // Get shared song by share ID (public access)
+  getByShareId: async (shareId: string): Promise<{ sharedSong: SharedSong; song: Song }> => {
+    const data = await enhancedFetch<{ sharedSong: SharedSong; song: Song }>(
+      `${API_BASE_URL}/share/${shareId}`,
+      {},
+      { key: `share-${shareId}`, ttl: 5 * 60 * 1000 } // 5 min cache for shared content
+    )
+    return data
+  },
+
+  // Update share settings
+  update: async (shareId: string, data: {
+    title?: string
+    description?: string
+    isPublic?: boolean
+    expiresAt?: Date
+  }): Promise<SharedSong> => {
+    const response = await enhancedFetch<SharedSong>(
+      `${API_BASE_URL}/share/${shareId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      },
+      { skipCache: true }
+    )
+    
+    // Invalidate related caches
+    cache.delete('shares-all')
+    cache.delete(`share-${shareId}`)
+    
+    return response
+  },
+
+  // Delete share link
+  delete: async (shareId: string): Promise<void> => {
+    await enhancedFetch<void>(
+      `${API_BASE_URL}/share/${shareId}`,
+      { method: 'DELETE' },
+      { skipCache: true }
+    )
+    
+    // Invalidate related caches
+    cache.delete('shares-all')
+    cache.delete(`share-${shareId}`)
   }
 }
 

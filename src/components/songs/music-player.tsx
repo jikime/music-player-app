@@ -407,6 +407,11 @@ export function MusicPlayer() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  // Hide music player on share pages
+  if (pathname.startsWith('/share/')) {
+    return null
+  }
+
   return (
     <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-background backdrop-blur-md z-50 safe-area-inset-bottom">
       {/* Hidden React Player */}

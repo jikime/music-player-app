@@ -47,3 +47,17 @@ export interface DatabaseBookmark {
   song_id: string
   created_at: string
 }
+
+export interface DatabaseSharedSong {
+  id: string
+  song_id: string
+  user_id: number
+  share_id: string
+  title?: string
+  description?: string
+  is_public: boolean
+  expires_at?: string
+  view_count: number
+  created_at: string
+  updated_at: string
+}

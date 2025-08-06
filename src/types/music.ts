@@ -92,3 +92,17 @@ export interface TrendingStats {
   activeListeners: number
   periodGrowthPercent: number
 }
+
+export interface SharedSong {
+  id: string
+  songId: string
+  userId: string
+  shareId: string
+  title?: string
+  description?: string
+  isPublic: boolean
+  expiresAt?: Date
+  viewCount: number
+  createdAt: Date
+  updatedAt: Date
+}
