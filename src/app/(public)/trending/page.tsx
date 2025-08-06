@@ -106,14 +106,14 @@ export default function TrendingPage() {
   }
 
   return (
-    <div className="min-h-screen pb-32 md:pb-28 p-4 md:p-6">
+    <main className="min-h-screen pb-32 md:pb-28 p-4 md:p-6" role="main">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <header className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">Trending</h1>
-              <p className="text-muted-foreground">Trending songs this week</p>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">트렌딩 차트</h1>
+              <p className="text-muted-foreground">실시간 인기 음악 순위</p>
             </div>
             
             {/* Period Selector */}
@@ -135,7 +135,7 @@ export default function TrendingPage() {
               ))}
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Trending Songs List */}
         {trendingSongs.length === 0 ? (

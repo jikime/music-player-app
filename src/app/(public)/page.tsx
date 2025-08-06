@@ -66,22 +66,25 @@ export default function Component() {
   }
 
   return (
-    <div className="min-h-screen p-1 md:p-6 pb-32 md:pb-28">
+    <main className="min-h-screen p-1 md:p-6 pb-32 md:pb-28" role="main">
       {/* 인증된 사용자에게만 Recently Played 표시 */}
       {shouldShowRecentlyPlayed && (
-        <MemoizedRecentlyPlayed 
-          songs={recentSongs}
+        <section aria-label="최근 재생 목록">
+          <MemoizedRecentlyPlayed 
+            songs={recentSongs}
+            onPlaySong={handlePlaySong}
+            isLoading={isLoading}
+          />
+        </section>
+      )}
+      
+      <section aria-label="모든 음악">
+        <MemoizedAllSongs 
+          songs={songs}
           onPlaySong={handlePlaySong}
           isLoading={isLoading}
         />
-      )}
-      
-      <MemoizedAllSongs 
-        songs={songs}
-        onPlaySong={handlePlaySong}
-        isLoading={isLoading}
-      />
-      
-    </div>
+      </section>
+    </main>
   )
 }

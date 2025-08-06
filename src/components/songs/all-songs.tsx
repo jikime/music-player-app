@@ -369,7 +369,7 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
         }
       >
         <div className="flex items-center justify-between mb-4 px-1 md:px-6">
-          <h2 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider">ALL SONGS</h2>
+          <h2 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider">전체 음악</h2>
           {paginationData.totalPages > 1 && (
             <div className="flex items-center gap-2">
               <Button
