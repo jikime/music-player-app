@@ -205,128 +205,115 @@ export default function SharePage() {
           <div className="space-y-8">
             {/* Custom Share Title/Description */}
             {(sharedSong.title || sharedSong.description) && (
-              <div className="relative">
-                {/* Vinyl-inspired background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-900/40 to-gray-800/60 rounded-2xl blur-xl" />
-                <div className="relative bg-gradient-to-br from-black/20 via-gray-900/30 to-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-6 shadow-2xl">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/40 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-primary-foreground" />
-                      </div>
-                      <span className="text-sm font-medium text-white/80 tracking-wide">Shared Message</span>
+              <div className="bg-muted/20 border border-border/50 rounded-lg p-6 shadow-sm backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-primary" />
                     </div>
-                    
-                    {sharedSong.title && (
-                      <h3 className="text-xl font-bold text-white leading-tight">
-                        {sharedSong.title}
-                      </h3>
-                    )}
-                    
-                    {sharedSong.description && (
-                      <p className="text-white/70 leading-relaxed">
-                        {sharedSong.description}
-                      </p>
-                    )}
+                    <span className="text-sm font-medium text-muted-foreground">Shared Message</span>
                   </div>
+                  
+                  {sharedSong.title && (
+                    <h3 className="text-xl font-bold text-foreground leading-tight">
+                      {sharedSong.title}
+                    </h3>
+                  )}
+                  
+                  {sharedSong.description && (
+                    <p className="text-muted-foreground leading-relaxed">
+                      {sharedSong.description}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Song Details */}
-            <div className="relative">
-              {/* Vinyl-inspired background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-900/40 to-gray-800/60 rounded-2xl blur-xl" />
-              <div className="relative bg-gradient-to-br from-black/20 via-gray-900/30 to-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-6 shadow-2xl">
-                <div className="space-y-5">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/40 rounded-full flex items-center justify-center">
-                      <Music className="w-4 h-4 text-primary-foreground" />
-                    </div>
-                    <span className="text-sm font-medium text-white/80 tracking-wide">Song Details</span>
+            <div className="bg-muted/20 border border-border/50 rounded-lg p-6 shadow-sm backdrop-blur-sm">
+              <div className="space-y-5">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Music className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Song Details</span>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-bold text-foreground text-xl leading-tight">
+                      {song.title}
+                    </h3>
+                    <p className="text-muted-foreground text-base mt-1">
+                      by {song.artist}
+                    </p>
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-bold text-white text-xl leading-tight">
-                        {song.title}
-                      </h3>
-                      <p className="text-white/70 text-base mt-1">
-                        by {song.artist}
-                      </p>
+                  {song.album && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Album: </span>
+                      <span className="text-foreground font-medium">{song.album}</span>
                     </div>
+                  )}
 
-                    {song.album && (
-                      <div className="text-sm">
-                        <span className="text-white/60">Album: </span>
-                        <span className="text-white/90 font-medium">{song.album}</span>
+                  <div className="flex items-center space-x-6 text-sm">
+                    <div className="flex items-center space-x-2 text-muted-foreground">
+                      <Clock className="w-4 h-4" />
+                      <span>{formatDuration(song.duration)}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 text-muted-foreground">
+                      <Eye className="w-4 h-4" />
+                      <span>{sharedSong.viewCount || 0} views</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    <span>Shared {formatDate(sharedSong.createdAt)}</span>
+                  </div>
+
+                  {/* Status Badges */}
+                  <div className="flex flex-wrap gap-3">
+                    {sharedSong.isPublic ? (
+                      <div className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-xs font-medium text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">
+                        Public
+                      </div>
+                    ) : (
+                      <div className="px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300">
+                        Private
                       </div>
                     )}
 
-                    <div className="flex items-center space-x-6 text-sm">
-                      <div className="flex items-center space-x-2 text-white/60">
-                        <Clock className="w-4 h-4" />
-                        <span>{formatDuration(song.duration)}</span>
+                    {sharedSong.expiresAt && new Date(sharedSong.expiresAt) > new Date() && (
+                      <div className="px-3 py-1 bg-red-50 border border-red-200 rounded-full text-xs font-medium text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+                        Expires {formatDate(sharedSong.expiresAt)}
                       </div>
-                      
-                      <div className="flex items-center space-x-2 text-white/60">
-                        <Eye className="w-4 h-4" />
-                        <span>{sharedSong.viewCount || 0} views</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2 text-sm text-white/60">
-                      <Calendar className="w-4 h-4" />
-                      <span>Shared {formatDate(sharedSong.createdAt)}</span>
-                    </div>
-
-                    {/* Status Badges */}
-                    <div className="flex flex-wrap gap-3">
-                      {sharedSong.isPublic ? (
-                        <div className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-xs font-medium text-green-300">
-                          Public
-                        </div>
-                      ) : (
-                        <div className="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-full text-xs font-medium text-amber-300">
-                          Private
-                        </div>
-                      )}
-
-                      {sharedSong.expiresAt && new Date(sharedSong.expiresAt) > new Date() && (
-                        <div className="px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-full text-xs font-medium text-red-300">
-                          Expires {formatDate(sharedSong.expiresAt)}
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Call to Action */}
-            <div className="relative">
-              {/* Vinyl-inspired background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/40 rounded-2xl blur-xl" />
-              <div className="relative bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30 backdrop-blur-sm border border-primary/30 rounded-2xl p-6 shadow-2xl text-center">
-                <div className="space-y-5">
-                  <div>
-                    <h4 className="font-bold text-white text-lg">
-                      Enjoying this music?
-                    </h4>
-                    <p className="text-white/70 mt-2">
-                      Discover more great music and create your own playlists
-                    </p>
-                  </div>
-                  
-                  <Button
-                    onClick={() => router.push('/')}
-                    className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white shadow-lg backdrop-blur-sm transition-all duration-200"
-                    variant="ghost"
-                  >
-                    <Music className="w-4 h-4 mr-2" />
-                    Explore More Music
-                  </Button>
+            <div className="bg-primary/8 border border-primary/30 rounded-lg p-6 shadow-sm backdrop-blur-sm text-center">
+              <div className="space-y-5">
+                <div>
+                  <h4 className="font-bold text-foreground text-lg">
+                    Enjoying this music?
+                  </h4>
+                  <p className="text-muted-foreground mt-2">
+                    Discover more great music and create your own playlists
+                  </p>
                 </div>
+                
+                <Button
+                  onClick={() => router.push('/')}
+                  className="w-full"
+                >
+                  <Music className="w-4 h-4 mr-2" />
+                  Explore More Music
+                </Button>
               </div>
             </div>
           </div>

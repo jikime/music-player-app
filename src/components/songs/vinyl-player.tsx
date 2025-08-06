@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { VinylRecord } from './vinyl-record'
 import ReactPlayer from 'react-player'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -53,22 +52,29 @@ export function VinylPlayer({
   size = 'lg',
   className 
 }: VinylPlayerProps) {
+  // 기존 MusicPlayer와 동일한 상태 관리
   const playerRef = useRef<HTMLVideoElement | null>(null)
   const [playerReady, setPlayerReady] = useState(false)
   const [isPlaying, setIsPlaying] = useState(autoPlay)
-  const [volume, setVolume] = useState(0.7)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
   const [seeking, setSeeking] = useState(false)
+  const [seekTime, setSeekTime] = useState<number | null>(null)
   const [hasEnded, setHasEnded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Player state
+  const [volume, setVolume] = useState(0.7)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+
+  // Track if we're currently seeking (drag in progress)
+  const [isDragging, setIsDragging] = useState(false)
 
   const config = sizeConfig[size]
 
-  // Helper functions (copied from MusicPlayer)
+  // 기존 MusicPlayer의 helper functions 복사
   const clearLoadingTimeout = useCallback(() => {
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current)
@@ -79,7 +85,7 @@ export function VinylPlayer({
   const startLoadingTimeout = useCallback(() => {
     clearLoadingTimeout()
     loadingTimeoutRef.current = setTimeout(() => {
-      console.warn('🕒 Vinyl Player loading timeout after 15 seconds')
+      console.warn('Vinyl Player loading timeout after 15 seconds')
       setError('Loading timeout. Please try again.')
       setIsLoading(false)
       setPlayerReady(false)
@@ -91,29 +97,27 @@ export function VinylPlayer({
     return youtubeRegex.test(url)
   }, [])
 
-  // setPlayerRef callback (exactly like MusicPlayer)
+  // setPlayerRef callback
   const setPlayerRef = useCallback((player: HTMLVideoElement) => {
     if (!player) return
     playerRef.current = player
-    console.log('🎵 Vinyl Player ref set:', player)
+    console.log('Vinyl Player ref set:', player)
   }, [])
 
+  // 기존 MusicPlayer useEffect들 복사
   useEffect(() => {
     setHasEnded(false)
     setError(null)
     setRetryCount(0)
     clearLoadingTimeout()
     
-    // Validate YouTube URL when song changes
     if (song && !isValidYouTubeUrl(song.url)) {
       setError('Invalid YouTube URL format')
       setIsLoading(false)
       return
     }
     
-    // Set loading state when we have a new song
     if (song) {
-      console.log('🎵 Vinyl Player: Song changed to:', song.title)
       setIsLoading(true)
       setPlayerReady(false)
       startLoadingTimeout()
@@ -123,17 +127,23 @@ export function VinylPlayer({
     }
   }, [song, startLoadingTimeout, clearLoadingTimeout, isValidYouTubeUrl])
 
-  // Reset player ready state when song changes (exactly like MusicPlayer)
   useEffect(() => {
     setPlayerReady(false)
     setSeeking(false)
+    setIsDragging(false)
+    setSeekTime(null)
     setHasEnded(false)
     
-    // Cleanup on unmount
     return () => {
       clearLoadingTimeout()
     }
   }, [song, clearLoadingTimeout])
+
+  useEffect(() => {
+    return () => {
+      clearLoadingTimeout()
+    }
+  }, [clearLoadingTimeout])
 
   // Auto play when ready
   useEffect(() => {
@@ -143,103 +153,136 @@ export function VinylPlayer({
     }
   }, [playerReady, autoPlay, hasEnded])
 
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      clearLoadingTimeout()
-    }
-  }, [clearLoadingTimeout])
-
-  // Event handlers (copied from MusicPlayer)
-  const handleLoadStart = useCallback(() => {
-    console.log('🔄 Vinyl Player: Loading started')
-    setIsLoading(true)
+  // 기존 MusicPlayer 이벤트 핸들러들 복사
+  const retryLoading = () => {
+    if (!song || retryCount >= 3) return
+    
+    console.log(`Retrying to load song (attempt ${retryCount + 1}/3):`, song.title)
+    setRetryCount(prev => prev + 1)
     setError(null)
+    setIsLoading(true)
+    setPlayerReady(false)
     startLoadingTimeout()
-  }, [startLoadingTimeout])
+  }
 
-  const handleReady = useCallback(() => {
+  const handleReady = () => {
     try {
-      console.log('✅ Vinyl Player: Ready')
+      console.log('✅ Vinyl Player ready - setting playerReady to true')
       setPlayerReady(true)
       setHasEnded(false)
       setIsLoading(false)
       setError(null)
       clearLoadingTimeout()
       
-      // Auto-play if autoPlay is true
-      console.log('Vinyl Player ready - autoPlay state:', autoPlay)
+      console.log('🎵 Vinyl Player ready - current states:', {
+        isPlaying,
+        autoPlay,
+        hasEnded,
+        songUrl: song?.url
+      })
+      
+      // Force autoPlay if enabled
+      if (autoPlay && !hasEnded) {
+        console.log('🚀 Force autoPlay after ready')
+        setIsPlaying(true)
+      }
     } catch (error) {
       console.warn('Error in handleReady:', error)
       setError('Player initialization failed')
       setIsLoading(false)
     }
-  }, [autoPlay, clearLoadingTimeout])
+  }
 
-  const handleStart = useCallback(() => {
-    console.log('🚀 Vinyl Player: Playback started')
+  const handleTimeUpdate = () => {
+    try {
+      const player = playerRef.current
+      if (!player || seeking || isDragging) return
+
+      if (!player.duration) return
+
+      setCurrentTime(player.currentTime)
+      
+      if (player.duration > 0 && player.currentTime >= player.duration - 1 && isPlaying && !hasEnded) {
+        console.log('Near end detected via timeUpdate, auto-advancing...')
+        setHasEnded(true)
+        handleEnded()
+      }
+    } catch (error) {
+      console.warn('Error in handleTimeUpdate:', error)
+    }
+  }
+
+  const handleProgress = () => {
+    const player = playerRef.current
+    if (!player || seeking || isDragging || !player.buffered?.length) return
+  }
+
+  const handleDurationChange = () => {
+    const player = playerRef.current
+    if (!player) return
+
+    console.log('Duration set:', player.duration)
+    setDuration(player.duration)
+    
+    if (player.duration > 0) {
+      setIsLoading(false)
+      setError(null)
+      clearLoadingTimeout()
+    }
+  }
+
+  const handleStart = () => {
+    console.log('Playback started')
     setPlayerReady(true)
     setHasEnded(false)
     setIsLoading(false)
     setError(null)
     clearLoadingTimeout()
-  }, [clearLoadingTimeout])
+  }
 
-  const handlePlay = useCallback(() => {
-    console.log('▶️ Vinyl Player: onPlay event')
+  const handlePlay = () => {
+    console.log('Vinyl Player: onPlay event')
     setIsLoading(false)
     setError(null)
     clearLoadingTimeout()
-    // Only update state if different to prevent loops
     if (!isPlaying) {
       setIsPlaying(true)
     }
-  }, [isPlaying, clearLoadingTimeout])
+  }
 
-  const handlePause = useCallback(() => {
-    console.log('⏸️ Vinyl Player: onPause event')
-    // Only update state if different to prevent loops
+  const handlePause = () => {
+    console.log('Vinyl Player: onPause event')
     if (isPlaying) {
       setIsPlaying(false)
     }
-  }, [isPlaying])
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleProgress = useCallback((progress: any) => {
-    if (!seeking && progress && typeof progress.playedSeconds === 'number') {
-      setCurrentTime(progress.playedSeconds)
-    }
-  }, [seeking])
+  const handleRateChange = () => {
+    const player = playerRef.current
+    if (!player) return
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleTimeUpdate = useCallback((event: any) => {
-    const player = event.target
-    if (player && player.currentTime) {
-      setCurrentTime(player.currentTime)
-      
-      // Duration is set means the video is loaded
-      if (player.duration > 0) {
-        setIsLoading(false)
-        setError(null)
-        clearLoadingTimeout()
-      }
-    }
-  }, [clearLoadingTimeout])
+  const handleEnded = () => {
+    if (hasEnded) return
+    
+    console.log('Playback ended for:', song?.title)
+    setHasEnded(true)
+    setIsPlaying(false)
+    setCurrentTime(0)
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDurationChange = useCallback((duration: any) => {
-    console.log('⏱️ Vinyl Player: Duration set to', duration)
-    if (typeof duration === 'number' && duration > 0) {
-      setDuration(duration)
-    }
-  }, [])
+  const handleLoadStart = () => {
+    console.log('Loading started')
+    setIsLoading(true)
+    setError(null)
+    startLoadingTimeout()
+  }
 
-  const handleError = useCallback((error: unknown) => {
-    console.error('❌ Vinyl Player Error:', error)
+  const handleError = (error: unknown) => {
+    console.error('YouTube Player Error:', error)
     clearLoadingTimeout()
     setIsLoading(false)
     
-    // Determine error type and set appropriate message (like MusicPlayer)
     let errorMessage = 'Playback failed'
     const errorCode = typeof error === 'object' && error !== null && 'code' in error ? (error as { code: number }).code : undefined
     
@@ -254,66 +297,96 @@ export function VinylPlayer({
     }
     
     setError(errorMessage)
-  }, [clearLoadingTimeout])
-
-  const handleEnded = useCallback(() => {
-    console.log('🔚 Vinyl Player: Playback ended')
-    setHasEnded(true)
-    setIsPlaying(false)
-    setCurrentTime(0)
-  }, [])
-
-  // Control functions
-  const togglePlayPause = useCallback(() => {
-    setIsPlaying(!isPlaying)
-  }, [isPlaying])
-
-  const handleSeek = useCallback((value: number[]) => {
-    const seekTo = (value[0] / 100) * duration
-    if (playerRef.current) {
-      playerRef.current.currentTime = seekTo
-      setCurrentTime(seekTo)
+    
+    if (retryCount < 3 && errorCode !== 100 && errorCode !== 101 && errorCode !== 150) {
+      console.log('Attempting retry due to recoverable error')
+      setTimeout(retryLoading, 2000)
     }
-  }, [duration])
+  }
 
-  const handleSeekStart = useCallback(() => {
+  const handleSeekStart = () => {
     setSeeking(true)
-  }, [])
+    setIsDragging(true)
+  }
 
-  const handleSeekEnd = useCallback(() => {
+  const handleSeekChange = (value: number[]) => {
+    if (!isDragging) {
+      handleSeekStart()
+    }
+    
+    const played = value[0] / 100
+    const newSeekTime = played * duration
+    
+    setSeekTime(newSeekTime)
+  }
+
+  const handleSeekCommit = (value: number[]) => {
     setSeeking(false)
-  }, [])
-
-  const skipBackward = useCallback(() => {
-    const newTime = Math.max(0, currentTime - 10)
-    if (playerRef.current) {
-      playerRef.current.currentTime = newTime
-      setCurrentTime(newTime)
+    setIsDragging(false)
+    
+    const played = value[0] / 100
+    const finalSeekTime = played * duration
+    
+    if (playerRef.current && duration > 0) {
+      try {
+        console.log('Seeking to:', Math.floor(finalSeekTime), 'seconds')
+        playerRef.current.currentTime = finalSeekTime
+      } catch (error) {
+        console.error('Seek error:', error)
+      }
     }
-  }, [currentTime])
+    
+    setSeekTime(null)
+  }
 
-  const skipForward = useCallback(() => {
-    const newTime = Math.min(duration, currentTime + 10)
-    if (playerRef.current) {
-      playerRef.current.currentTime = newTime
-      setCurrentTime(newTime)
-    }
-  }, [currentTime, duration])
+  const handlePrevious = () => {
+    if (!playerRef.current || duration === 0) return
+    
+    const actualCurrentTime = seeking && seekTime !== null ? seekTime : currentTime
+    const newTime = Math.max(0, actualCurrentTime - 5)
+    
+    console.log('Seeking backward 5s to:', Math.floor(newTime), 'seconds')
+    playerRef.current.currentTime = newTime
+  }
 
-  const handleVolumeChange = useCallback((value: number[]) => {
+  const handleNext = () => {
+    if (!playerRef.current || duration === 0) return
+    
+    const actualCurrentTime = seeking && seekTime !== null ? seekTime : currentTime
+    const newTime = Math.min(duration, actualCurrentTime + 5)
+    
+    console.log('Seeking forward 5s to:', Math.floor(newTime), 'seconds')
+    playerRef.current.currentTime = newTime
+  }
+
+  const handleVolumeChange = (value: number[]) => {
     setVolume(value[0] / 100)
-  }, [])
+  }
 
-  const restart = useCallback(() => {
+  const togglePlayPause = () => {
+    console.log('🎵 Toggle play/pause clicked - current state:', {
+      isPlaying,
+      playerReady,
+      isLoading,
+      duration,
+      currentTime,
+      songUrl: song?.url
+    })
+    setIsPlaying(!isPlaying)
+  }
+
+  const restart = () => {
     if (playerRef.current) {
       playerRef.current.currentTime = 0
       setCurrentTime(0)
       setIsPlaying(true)
     }
-  }, [])
+  }
 
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds) || seconds < 0) return '0:00'
+  const formatTime = (seconds: number | undefined) => {
+    if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) {
+      return '0:00'
+    }
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
@@ -321,33 +394,45 @@ export function VinylPlayer({
 
   return (
     <div className={cn('flex flex-col items-center space-y-6 p-6', className)}>
-      {/* Hidden React Player */}
-      <ReactPlayer
-        ref={setPlayerRef}
-        className="react-player"
-        src={song.url}
-        playing={playerReady && isPlaying}
-        volume={volume}
-        muted={volume === 0}
-        width="1px"
-        height="1px"
-        style={{ opacity: 0, position: 'absolute', top: '-9999px' }}
-        config={{
-          youtube: {
-            color: 'white'
-          }
-        }}
-        onLoadStart={handleLoadStart}
-        onReady={handleReady}
-        onStart={handleStart}
-        onPlay={handlePlay}
-        onPause={handlePause}
-        onProgress={handleProgress}
-        onDurationChange={handleDurationChange}
-        onTimeUpdate={handleTimeUpdate}
-        onError={handleError}
-        onEnded={handleEnded}
-      />
+      {/* Hidden React Player - 기존 MusicPlayer와 동일 */}
+      {song && (
+        <ReactPlayer
+          ref={setPlayerRef}
+          className="react-player"
+          src={song.url}
+          playing={(() => {
+            const shouldPlay = playerReady && isPlaying
+            console.log('🎮 ReactPlayer playing prop:', {
+              playerReady,
+              isPlaying,
+              shouldPlay,
+              songUrl: song?.url
+            })
+            return shouldPlay
+          })()}
+          volume={volume}
+          muted={volume === 0}
+          width="1px"
+          height="1px"
+          style={{ opacity: 0, position: 'absolute', top: '-9999px' }}
+          config={{
+            youtube: {
+              color: 'white'
+            }
+          }}
+          onLoadStart={handleLoadStart}
+          onReady={handleReady}
+          onStart={handleStart}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onRateChange={handleRateChange}
+          onEnded={handleEnded}
+          onError={handleError}
+          onTimeUpdate={handleTimeUpdate}
+          onProgress={handleProgress}
+          onDurationChange={handleDurationChange}
+        />
+      )}
 
       {/* Vinyl Record Display */}
       <div className={cn('relative', config.container)}>
@@ -443,17 +528,16 @@ export function VinylPlayer({
       {error && (
         <div className="text-center p-4 bg-destructive/10 rounded-lg border border-destructive/20">
           <p className="text-destructive font-medium">{error}</p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-2 text-destructive hover:text-destructive/80"
-            onClick={() => {
-              setError(null)
-              setIsLoading(true)
-            }}
-          >
-            Try Again
-          </Button>
+          {retryCount < 3 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2 text-destructive hover:text-destructive/80"
+              onClick={retryLoading}
+            >
+              Try Again
+            </Button>
+          )}
         </div>
       )}
 
@@ -463,17 +547,16 @@ export function VinylPlayer({
           {/* Progress Bar */}
           <div className="space-y-2">
             <Slider
-              value={[duration > 0 ? (currentTime / duration) * 100 : 0]}
+              value={[duration > 0 ? ((seeking && seekTime !== null ? seekTime : currentTime) / duration) * 100 : 0]}
               max={100}
               step={0.1}
-              onValueChange={handleSeek}
-              onPointerDown={handleSeekStart}
-              onPointerUp={handleSeekEnd}
+              onValueChange={handleSeekChange}
+              onValueCommit={handleSeekCommit}
               className="w-full"
               disabled={!playerReady || duration === 0}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(seeking && seekTime !== null ? seekTime : currentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
@@ -493,7 +576,7 @@ export function VinylPlayer({
             <Button
               variant="ghost"
               size="icon"
-              onClick={skipBackward}
+              onClick={handlePrevious}
               disabled={!playerReady}
               className="text-muted-foreground hover:text-foreground"
             >
@@ -519,7 +602,7 @@ export function VinylPlayer({
             <Button
               variant="ghost"
               size="icon"
-              onClick={skipForward}
+              onClick={handleNext}
               disabled={!playerReady}
               className="text-muted-foreground hover:text-foreground"
             >
