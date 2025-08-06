@@ -171,14 +171,14 @@ export default function RootLayout({
           integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
           crossOrigin="anonymous"
           strategy="afterInteractive"
-          onLoad={() => {
-            if (typeof window !== 'undefined' && (window as any).Kakao) {
-              if (!(window as any).Kakao.isInitialized()) {
-                (window as any).Kakao.init(process.env.NEXT_PUBLIC_KAKAO_APP_KEY)
-              }
-            }
-          }}
         />
+        <Script id="kakao-init" strategy="afterInteractive">
+          {`
+            if (typeof window !== 'undefined' && window.Kakao && !window.Kakao.isInitialized()) {
+              window.Kakao.init('${process.env.NEXT_PUBLIC_KAKAO_APP_KEY || ''}');
+            }
+          `}
+        </Script>
         <MusicPlayer />
       </body>
     </html>

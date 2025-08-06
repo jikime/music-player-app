@@ -144,28 +144,33 @@ export function useShare() {
     switch (platform) {
       case 'kakao':
         // KakaoTalk share (requires Kakao SDK)
-        if (typeof window !== 'undefined' && (window as any).Kakao) {
-          (window as any).Kakao.Share.sendDefault({
-            objectType: 'music',
-            content: {
-              title: song.title,
-              description: song.artist,
-              imageUrl: song.thumbnail || song.image_data || '',
-              link: {
-                mobileWebUrl: url,
-                webUrl: url,
-              },
-            },
-            buttons: [
-              {
-                title: '음악 듣기',
+        if (typeof window !== 'undefined' && (window as any).Kakao && (window as any).Kakao.isInitialized()) {
+          try {
+            (window as any).Kakao.Share.sendDefault({
+              objectType: 'music',
+              content: {
+                title: song.title,
+                description: song.artist,
+                imageUrl: song.thumbnail || song.image_data || '',
                 link: {
                   mobileWebUrl: url,
                   webUrl: url,
                 },
               },
-            ],
-          })
+              buttons: [
+                {
+                  title: '음악 듣기',
+                  link: {
+                    mobileWebUrl: url,
+                    webUrl: url,
+                  },
+                },
+              ],
+            })
+          } catch (error) {
+            console.error('Kakao share error:', error)
+            toast.error('카카오톡 공유에 실패했습니다')
+          }
         } else {
           toast.error('카카오톡 공유를 사용할 수 없습니다')
         }
