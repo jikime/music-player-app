@@ -458,7 +458,13 @@ export function VinylPlayer({
   })
 
   return (
-    <div className={cn('flex flex-col items-center space-y-6 p-6', className)}>
+    <div className={cn(
+      'flex flex-col items-center space-y-6 p-8',
+      'border border-border/20 rounded-3xl shadow-xl',
+      'bg-gradient-to-b from-background/80 to-muted/20',
+      'backdrop-blur-sm',
+      className
+    )}>
       {/* Hidden React Player - YouTube 전용 */}
       <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
         {src && (
