@@ -56,6 +56,9 @@ export function MusicPlayer() {
   // Muted state management for autoplay compliance
   const [isMuted, setIsMuted] = useState(true)
   const [hasUnmuted, setHasUnmuted] = useState(false)
+  
+  // Auto-unmute timer after playback starts
+  const autoUnmuteTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // All useEffect hooks must be before the early return
   const {
@@ -93,6 +96,36 @@ export function MusicPlayer() {
   }, [])
 
   // setPlayerRef callback
+  const clearAutoUnmuteTimer = useCallback(() => {
+    if (autoUnmuteTimerRef.current) {
+      clearTimeout(autoUnmuteTimerRef.current)
+      autoUnmuteTimerRef.current = null
+    }
+  }, [])
+  
+  const startAutoUnmuteTimer = useCallback(() => {
+    if (!isMuted || hasUnmuted) return
+    
+    clearAutoUnmuteTimer()
+    console.log('⏰ Starting auto-unmute timer (2 seconds after playback)')
+    
+    autoUnmuteTimerRef.current = setTimeout(() => {
+      console.log('🔊 Auto-unmuting after 2 seconds of playback')
+      setIsMuted(false)
+      setHasUnmuted(true)
+      
+      // Also try to unmute via player ref
+      if (playerRef.current && playerRef.current.muted !== undefined) {
+        try {
+          playerRef.current.muted = false
+          console.log('🔊 Directly unmuted player via ref (auto-unmute)')
+        } catch (e) {
+          console.log('⚠️ Could not directly unmute player (auto-unmute):', e)
+        }
+      }
+    }, 2000) // 2초 후 자동 음소거 해제
+  }, [isMuted, hasUnmuted, clearAutoUnmuteTimer])
+
   const setPlayerRef = useCallback((player: HTMLVideoElement) => {
     if (!player) return
     playerRef.current = player
@@ -107,6 +140,7 @@ export function MusicPlayer() {
     setIsMuted(true) // Reset to muted for next song
     setHasUnmuted(false) // Reset unmute flag
     clearLoadingTimeout()
+    clearAutoUnmuteTimer() // Clear auto-unmute timer
     
     // Validate YouTube URL when song changes
     if (currentSong && !isValidYouTubeUrl(currentSong.url)) {
@@ -124,7 +158,7 @@ export function MusicPlayer() {
       setIsLoading(false)
       setPlayerReady(false)
     }
-  }, [currentSong, startLoadingTimeout, clearLoadingTimeout, isValidYouTubeUrl])
+  }, [currentSong, startLoadingTimeout, clearLoadingTimeout, clearAutoUnmuteTimer, isValidYouTubeUrl])
 
   // Reset player ready state when song changes
   useEffect(() => {
@@ -144,8 +178,9 @@ export function MusicPlayer() {
   useEffect(() => {
     return () => {
       clearLoadingTimeout()
+      clearAutoUnmuteTimer()
     }
-  }, [clearLoadingTimeout])
+  }, [clearLoadingTimeout, clearAutoUnmuteTimer])
   
   // 프로필은 이제 모달이므로 pathname 체크 제거
 
@@ -251,8 +286,12 @@ export function MusicPlayer() {
   // Separate event handler for when playback is actively running
   const handlePlaying = () => {
     console.log('🎵 Music Player: onPlaying event - actively playing!')
-    // Note: Auto-unmuting removed to comply with Chrome 66+ autoplay policy
-    // Users must manually interact with volume controls to unmute
+    
+    // Start auto-unmute timer when playback is actively running
+    if (isMuted && !hasUnmuted) {
+      console.log('🚀 Playback actively running - starting auto-unmute timer')
+      startAutoUnmuteTimer()
+    }
   }
 
   const handlePause = () => {
@@ -449,9 +488,9 @@ export function MusicPlayer() {
                 playsinline: 1,
                 rel: 0,
                 showinfo: 0,
-                mute: isMuted ? 1 : 0  // Dynamic mute based on state
+                mute: isMuted ? 1 : 0
               }
-            }
+            } as any // eslint-disable-line @typescript-eslint/no-explicit-any
           }}
           onLoadStart={handleLoadStart}
           onReady={handleReady}
@@ -749,6 +788,7 @@ export function MusicPlayer() {
               // User interaction to unmute (Chrome 66+ compliance)
               if (isMuted) {
                 console.log('🔊 User clicked to unmute - Chrome 66+ compliance')
+                clearAutoUnmuteTimer() // Cancel auto-unmute timer on manual interaction
                 setIsMuted(false)
                 setHasUnmuted(true)
                 setVolume(volume === 0 ? 0.7 : volume)
@@ -781,6 +821,7 @@ export function MusicPlayer() {
               setVolume(newVolume)
               // User interaction with slider unmutes (Chrome 66+ compliance)
               if (newVolume > 0 && isMuted) {
+                clearAutoUnmuteTimer() // Cancel auto-unmute timer on manual interaction
                 setIsMuted(false)
                 setHasUnmuted(true)
                 

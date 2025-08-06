@@ -11,20 +11,22 @@ export function TestPlayer() {
     <div style={{ padding: '20px' }}>
       <h2>ReactPlayer Test</h2>
       
-      <div style={{ background: '#000', width: '640px', height: '360px' }}>
-        <ReactPlayer
-          url={testUrl}
-          playing={playing}
-          controls={true}
-          width="100%"
-          height="100%"
-          onReady={() => console.log('✅ Test Player Ready')}
-          onStart={() => console.log('🎬 Test Player Started')}
-          onPlay={() => console.log('▶️ Test Player Playing')}
-          onPause={() => console.log('⏸️ Test Player Paused')}
-          onError={(e) => console.error('❌ Test Player Error:', e)}
-        />
-      </div>
+{testUrl && (
+        <div style={{ background: '#000', width: '640px', height: '360px' }}>
+          <ReactPlayer
+            src={testUrl}
+            playing={playing}
+            controls={true}
+            width="100%"
+            height="100%"
+            onReady={() => console.log('✅ Test Player Ready')}
+            onStart={() => console.log('🎬 Test Player Started')}
+            onPlay={() => console.log('▶️ Test Player Playing')}
+            onPause={() => console.log('⏸️ Test Player Paused')}
+            onError={(e) => console.error('❌ Test Player Error:', e)}
+          />
+        </div>
+      )}
       
       <button 
         onClick={() => setPlaying(!playing)}
