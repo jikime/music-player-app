@@ -52,6 +52,10 @@ export function MusicPlayer() {
 
   // Track if we're currently seeking (drag in progress)
   const [isDragging, setIsDragging] = useState(false)
+  
+  // Muted state management for autoplay compliance
+  const [isMuted, setIsMuted] = useState(true)
+  const [hasUnmuted, setHasUnmuted] = useState(false)
 
   // All useEffect hooks must be before the early return
   const {
@@ -100,6 +104,8 @@ export function MusicPlayer() {
     setHasEnded(false)
     setError(null)
     setRetryCount(0)
+    setIsMuted(true) // Reset to muted for next song
+    setHasUnmuted(false) // Reset unmute flag
     clearLoadingTimeout()
     
     // Validate YouTube URL when song changes
@@ -239,6 +245,20 @@ export function MusicPlayer() {
     // Only update store state if it's different to prevent loops
     if (!isPlaying) {
       setIsPlaying(true)
+    }
+  }
+
+  // Separate event handler for when playback is actively running
+  const handlePlaying = () => {
+    console.log('🎵 Music Player: onPlaying event - actively playing!')
+    
+    // Auto-unmute after playback is actively running
+    if (isMuted && !hasUnmuted) {
+      console.log('🔊 Auto-unmuting after playback is actively running')
+      setTimeout(() => {
+        setIsMuted(false)
+        setHasUnmuted(true)
+      }, 500) // Shorter delay when actively playing
     }
   }
 
@@ -420,15 +440,23 @@ export function MusicPlayer() {
           ref={setPlayerRef}
           className="react-player"
           src={currentSong.url}
-          playing={playerReady && isPlaying}
+          playing={playerReady && isPlaying && !isLoading}
           volume={volume}
-          muted={volume === 0}
+          muted={isMuted}
           width="1px"
           height="1px"
           style={{ opacity: 0, position: 'absolute', top: '-9999px' }}
           config={{
             youtube: {
-              color: 'white'
+              playerVars: {
+                autoplay: 1,
+                controls: 0,
+                modestbranding: 1,
+                playsinline: 1,
+                rel: 0,
+                showinfo: 0,
+                mute: 1  // YouTube requires mute for autoplay
+              }
             }
           }}
           onLoadStart={handleLoadStart}
@@ -436,6 +464,7 @@ export function MusicPlayer() {
           onStart={handleStart}
           onPlay={handlePlay}
           onPause={handlePause}
+          onPlaying={handlePlaying}
           onRateChange={handleRateChange}
           onEnded={handleEnded}
           onError={handleError}
@@ -722,15 +751,30 @@ export function MusicPlayer() {
             variant="ghost" 
             size="icon" 
             className="text-muted-foreground hover:text-foreground"
-            onClick={() => setVolume(volume > 0 ? 0 : 0.7)}
+            onClick={() => {
+              if (isMuted || volume === 0) {
+                setIsMuted(false)
+                setHasUnmuted(true)
+                setVolume(volume === 0 ? 0.7 : volume)
+              } else {
+                setVolume(0)
+              }
+            }}
           >
-            {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {(isMuted || volume === 0) ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </Button>
           <Slider 
-            value={[volume * 100]} 
+            value={[isMuted ? 0 : volume * 100]} 
             max={100} 
             step={1}
-            onValueChange={(value) => handleVolumeChange([value[0] / 100])}
+            onValueChange={(value) => {
+              const newVolume = value[0] / 100
+              setVolume(newVolume)
+              if (newVolume > 0 && isMuted) {
+                setIsMuted(false)
+                setHasUnmuted(true)
+              }
+            }}
             className="w-24" 
           />
         </div>

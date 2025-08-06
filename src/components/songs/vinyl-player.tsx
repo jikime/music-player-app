@@ -55,7 +55,7 @@ export function VinylPlayer({
   // 기존 MusicPlayer와 동일한 상태 관리
   const playerRef = useRef<HTMLVideoElement | null>(null)
   const [playerReady, setPlayerReady] = useState(false)
-  const [isPlaying, setIsPlaying] = useState(autoPlay)
+  const [isPlaying, setIsPlaying] = useState(false) // Start with false, set after ready
   const [seeking, setSeeking] = useState(false)
   const [seekTime, setSeekTime] = useState<number | null>(null)
   const [hasEnded, setHasEnded] = useState(false)
@@ -68,6 +68,13 @@ export function VinylPlayer({
   const [volume, setVolume] = useState(0.7)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  
+  // URL state management - Initialize immediately with song URL if available
+  const [src, setSrc] = useState<string | undefined>(song?.url)
+  
+  // Muted state - start muted for autoplay, then unmute
+  const [isMuted, setIsMuted] = useState(true)
+  const [hasUnmuted, setHasUnmuted] = useState(false)
 
   // Track if we're currently seeking (drag in progress)
   const [isDragging, setIsDragging] = useState(false)
@@ -97,6 +104,16 @@ export function VinylPlayer({
     return youtubeRegex.test(url)
   }, [])
 
+  // Load URL function (like demo)
+  const loadSong = useCallback((songUrl?: string) => {
+    console.log('🎵 Loading song URL:', songUrl)
+    setSrc(songUrl)
+    setCurrentTime(0)
+    setDuration(0)
+    setHasEnded(false)
+    setError(null)
+  }, [])
+
   // setPlayerRef callback
   const setPlayerRef = useCallback((player: HTMLVideoElement) => {
     if (!player) return
@@ -104,92 +121,103 @@ export function VinylPlayer({
     console.log('Vinyl Player ref set:', player)
   }, [])
 
-  // 기존 MusicPlayer useEffect들 복사
+  // Update src when song prop changes
   useEffect(() => {
+    console.log('🔄 Song prop changed:', { 
+      title: song?.title,
+      url: song?.url,
+      currentSrc: src 
+    })
+    
+    // Reset states
     setHasEnded(false)
     setError(null)
     setRetryCount(0)
+    setIsPlaying(false)
+    setIsMuted(true) // Reset to muted for next song
+    setHasUnmuted(false) // Reset unmute flag
     clearLoadingTimeout()
     
-    if (song && !isValidYouTubeUrl(song.url)) {
-      setError('Invalid YouTube URL format')
+    if (!song || !song.url) {
+      console.log('❌ No song or URL provided')
+      setSrc(undefined)
       setIsLoading(false)
+      setPlayerReady(false)
       return
     }
     
-    if (song) {
+    if (!isValidYouTubeUrl(song.url)) {
+      console.log('❌ Invalid YouTube URL:', song.url)
+      setError('Invalid YouTube URL format')
+      setIsLoading(false)
+      setSrc(undefined)
+      return
+    }
+    
+    // Only update src if it's different
+    if (src !== song.url) {
+      console.log('✅ Setting new src:', song.url)
+      setSrc(song.url)
       setIsLoading(true)
       setPlayerReady(false)
       startLoadingTimeout()
-    } else {
-      setIsLoading(false)
-      setPlayerReady(false)
     }
-  }, [song, startLoadingTimeout, clearLoadingTimeout, isValidYouTubeUrl])
+  }, [song, src, startLoadingTimeout, clearLoadingTimeout, isValidYouTubeUrl])
 
+  // Separate useEffect to monitor src changes
   useEffect(() => {
-    setPlayerReady(false)
-    setSeeking(false)
-    setIsDragging(false)
-    setSeekTime(null)
-    setHasEnded(false)
-    
-    return () => {
-      clearLoadingTimeout()
+    console.log('📊 src state updated:', src)
+    if (src) {
+      console.log('🎬 ReactPlayer should now load:', src)
     }
-  }, [song, clearLoadingTimeout])
+  }, [src])
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       clearLoadingTimeout()
     }
   }, [clearLoadingTimeout])
 
-  // Auto play when ready
-  useEffect(() => {
-    if (playerReady && autoPlay && !hasEnded) {
-      console.log('🚀 Vinyl Player: Auto-playing because ready and autoPlay is true')
-      setIsPlaying(true)
-    }
-  }, [playerReady, autoPlay, hasEnded])
-
   // 기존 MusicPlayer 이벤트 핸들러들 복사
   const retryLoading = () => {
     if (!song || retryCount >= 3) return
     
-    console.log(`Retrying to load song (attempt ${retryCount + 1}/3):`, song.title)
+    console.log(`🔄 Retrying to load song (attempt ${retryCount + 1}/3):`, song.title)
     setRetryCount(prev => prev + 1)
     setError(null)
     setIsLoading(true)
     setPlayerReady(false)
+    // Reload the song URL
+    setTimeout(() => {
+      loadSong(song.url)
+    }, 100)
     startLoadingTimeout()
   }
 
   const handleReady = () => {
-    try {
-      console.log('✅ Vinyl Player ready - setting playerReady to true')
-      setPlayerReady(true)
-      setHasEnded(false)
-      setIsLoading(false)
-      setError(null)
-      clearLoadingTimeout()
-      
-      console.log('🎵 Vinyl Player ready - current states:', {
-        isPlaying,
-        autoPlay,
-        hasEnded,
-        songUrl: song?.url
-      })
-      
-      // Force autoPlay if enabled
-      if (autoPlay && !hasEnded) {
-        console.log('🚀 Force autoPlay after ready')
+    console.log('✅ Vinyl Player: onReady event - Player is ready!')
+    setPlayerReady(true)
+    setHasEnded(false)
+    setIsLoading(false)
+    setError(null)
+    clearLoadingTimeout()
+    
+    console.log('🎵 Player ready state:', {
+      src,
+      autoPlay,
+      hasEnded,
+      isPlaying
+    })
+    
+    // Auto-play if enabled - more robust timing
+    if (autoPlay && !hasEnded) {
+      console.log('🚀 Auto-playing on ready')
+      // Give the player more time to fully initialize
+      setTimeout(() => {
+        console.log('🎬 Setting isPlaying to true for autoplay')
         setIsPlaying(true)
-      }
-    } catch (error) {
-      console.warn('Error in handleReady:', error)
-      setError('Player initialization failed')
-      setIsLoading(false)
+      }, 300)
     }
   }
 
@@ -221,18 +249,29 @@ export function VinylPlayer({
     const player = playerRef.current
     if (!player) return
 
-    console.log('Duration set:', player.duration)
+    console.log('✅ Duration set:', player.duration, '- Player is ready!')
     setDuration(player.duration)
     
     if (player.duration > 0) {
+      // Player is ready when duration is set
+      setPlayerReady(true)
       setIsLoading(false)
       setError(null)
       clearLoadingTimeout()
+      
+      // Auto-play if enabled - only if not already playing
+      if (autoPlay && !hasEnded && !isPlaying) {
+        console.log('🚀 Auto-playing after duration set')
+        setTimeout(() => {
+          console.log('🎬 Setting isPlaying to true after duration set')
+          setIsPlaying(true)
+        }, 200)
+      }
     }
   }
 
   const handleStart = () => {
-    console.log('Playback started')
+    console.log('🎬 Vinyl Player: onStart event - Playback started!')
     setPlayerReady(true)
     setHasEnded(false)
     setIsLoading(false)
@@ -241,7 +280,7 @@ export function VinylPlayer({
   }
 
   const handlePlay = () => {
-    console.log('Vinyl Player: onPlay event')
+    console.log('🎵 YouTube Player: onPlay event triggered!')
     setIsLoading(false)
     setError(null)
     clearLoadingTimeout()
@@ -250,8 +289,22 @@ export function VinylPlayer({
     }
   }
 
+  // Separate event handler for when playback actually starts playing (not just buffering)
+  const handlePlaying = () => {
+    console.log('🎵 YouTube Player: onPlaying event - actively playing!')
+    
+    // Auto-unmute after playback is actively running (shorter delay)
+    if (isMuted && !hasUnmuted) {
+      console.log('🔊 Auto-unmuting after playback is actively running')
+      setTimeout(() => {
+        setIsMuted(false)
+        setHasUnmuted(true)
+      }, 500) // Shorter delay when actively playing
+    }
+  }
+
   const handlePause = () => {
-    console.log('Vinyl Player: onPause event')
+    console.log('⏸️ YouTube Player: onPause event triggered!')
     if (isPlaying) {
       setIsPlaying(false)
     }
@@ -260,6 +313,7 @@ export function VinylPlayer({
   const handleRateChange = () => {
     const player = playerRef.current
     if (!player) return
+    console.log('⚡ Playback rate changed')
   }
 
   const handleEnded = () => {
@@ -272,19 +326,21 @@ export function VinylPlayer({
   }
 
   const handleLoadStart = () => {
-    console.log('Loading started')
+    console.log('🎬 ReactPlayer: Loading started for URL:', src)
     setIsLoading(true)
     setError(null)
     startLoadingTimeout()
   }
 
   const handleError = (error: unknown) => {
-    console.error('YouTube Player Error:', error)
+    console.error('💥 YouTube Player Error:', error)
     clearLoadingTimeout()
     setIsLoading(false)
     
     let errorMessage = 'Playback failed'
     const errorCode = typeof error === 'object' && error !== null && 'code' in error ? (error as { code: number }).code : undefined
+    
+    console.log('🔍 Error code analysis:', { errorCode, src })
     
     if (errorCode === 2) {
       errorMessage = 'Invalid video ID'
@@ -299,7 +355,7 @@ export function VinylPlayer({
     setError(errorMessage)
     
     if (retryCount < 3 && errorCode !== 100 && errorCode !== 101 && errorCode !== 150) {
-      console.log('Attempting retry due to recoverable error')
+      console.log('🔄 Attempting retry due to recoverable error')
       setTimeout(retryLoading, 2000)
     }
   }
@@ -372,7 +428,13 @@ export function VinylPlayer({
       currentTime,
       songUrl: song?.url
     })
-    setIsPlaying(!isPlaying)
+    
+    // Ensure player is ready before toggling
+    if (playerReady && !isLoading && duration > 0) {
+      setIsPlaying(!isPlaying)
+    } else {
+      console.log('⚠️ Player not ready for toggle:', { playerReady, isLoading, duration })
+    }
   }
 
   const restart = () => {
@@ -392,47 +454,59 @@ export function VinylPlayer({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  // Log render state
+  console.log('🖼️ VinylPlayer render:', {
+    src,
+    playerReady,
+    isPlaying,
+    isLoading,
+    error,
+    song: song?.title
+  })
+
   return (
     <div className={cn('flex flex-col items-center space-y-6 p-6', className)}>
-      {/* Hidden React Player - 기존 MusicPlayer와 동일 */}
-      {song && (
-        <ReactPlayer
-          ref={setPlayerRef}
-          className="react-player"
-          src={song.url}
-          playing={(() => {
-            const shouldPlay = playerReady && isPlaying
-            console.log('🎮 ReactPlayer playing prop:', {
-              playerReady,
-              isPlaying,
-              shouldPlay,
-              songUrl: song?.url
-            })
-            return shouldPlay
-          })()}
-          volume={volume}
-          muted={volume === 0}
-          width="1px"
-          height="1px"
-          style={{ opacity: 0, position: 'absolute', top: '-9999px' }}
-          config={{
-            youtube: {
-              color: 'white'
-            }
-          }}
-          onLoadStart={handleLoadStart}
-          onReady={handleReady}
-          onStart={handleStart}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onRateChange={handleRateChange}
-          onEnded={handleEnded}
-          onError={handleError}
-          onTimeUpdate={handleTimeUpdate}
-          onProgress={handleProgress}
-          onDurationChange={handleDurationChange}
-        />
-      )}
+      {/* Hidden React Player - YouTube 전용 */}
+      <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+        {src && (
+          <ReactPlayer
+            ref={setPlayerRef}
+            className="react-player"
+            src={src}
+            playing={playerReady && isPlaying && !isLoading && duration > 0}
+            volume={volume}
+            muted={isMuted}
+            width="1px"
+            height="1px"
+            style={{ opacity: 0, position: 'absolute', top: '-9999px' }}
+            config={{
+              youtube: {
+                playerVars: {
+                  autoplay: 1,
+                  controls: 0,
+                  modestbranding: 1,
+                  playsinline: 1,
+                  rel: 0,
+                  showinfo: 0,
+                  mute: 1  // YouTube requires mute for autoplay
+                }
+              }
+            }}
+            onReady={handleReady}
+            onStart={handleStart}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onPlaying={handlePlaying}
+            onWaiting={() => console.log('⏳ onWaiting (buffering)')}
+            onEnded={handleEnded}
+            onError={handleError}
+            onTimeUpdate={handleTimeUpdate}
+            onProgress={handleProgress}
+            onDurationChange={handleDurationChange}
+            onRateChange={handleRateChange}
+          />
+        )}
+      </div>
 
       {/* Vinyl Record Display */}
       <div className={cn('relative', config.container)}>
@@ -612,10 +686,18 @@ export function VinylPlayer({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setVolume(volume > 0 ? 0 : 0.7)}
+              onClick={() => {
+                if (isMuted || volume === 0) {
+                  setIsMuted(false)
+                  setHasUnmuted(true)
+                  setVolume(volume === 0 ? 0.7 : volume)
+                } else {
+                  setVolume(0)
+                }
+              }}
               className="text-muted-foreground hover:text-foreground"
             >
-              {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              {(isMuted || volume === 0) ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </Button>
           </div>
 
@@ -623,10 +705,17 @@ export function VinylPlayer({
           <div className="flex items-center space-x-3">
             <VolumeX className="w-4 h-4 text-muted-foreground" />
             <Slider
-              value={[volume * 100]}
+              value={[isMuted ? 0 : volume * 100]}
               max={100}
               step={1}
-              onValueChange={handleVolumeChange}
+              onValueChange={(value) => {
+                const newVolume = value[0] / 100
+                setVolume(newVolume)
+                if (newVolume > 0 && isMuted) {
+                  setIsMuted(false)
+                  setHasUnmuted(true)
+                }
+              }}
               className="flex-1"
             />
             <Volume2 className="w-4 h-4 text-muted-foreground" />
