@@ -33,7 +33,7 @@ const MemoizedThumbnail = React.memo(({ song, size, showPlayButton = true }: {
 }) => (
   <div className={`${size.width} ${size.height} rounded-lg overflow-hidden relative flex-shrink-0 bg-muted group/thumb`}>
     <ImageWithFallback
-      src={song.thumbnail || "/placeholder.svg"}
+      src={song.image_data || song.thumbnail || "/placeholder.svg"}
       alt={song.title}
       fill
       sizes={size.width === "w-9" ? "36px" : "48px"}

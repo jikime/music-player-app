@@ -60,6 +60,7 @@ export async function GET(
       duration: song.duration,
       url: song.url,
       thumbnail: song.thumbnail,
+      image_data: song.image_data, // Add image_data field
       lyrics: song.lyrics,
       uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
       plays: song.plays,
@@ -95,7 +96,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { title, artist, album, duration, url, thumbnail, lyrics, plays, liked, shared } = body
+    const { title, artist, album, duration, url, thumbnail, image_data, lyrics, plays, liked, shared } = body
 
     const updateData: Partial<DatabaseSong> = {}
     if (title !== undefined) updateData.title = title
@@ -104,6 +105,7 @@ export async function PUT(
     if (duration !== undefined) updateData.duration = duration
     if (url !== undefined) updateData.url = url
     if (thumbnail !== undefined) updateData.thumbnail = thumbnail
+    if (image_data !== undefined) updateData.image_data = image_data // Add image_data update
     if (lyrics !== undefined) updateData.lyrics = lyrics
     if (plays !== undefined) updateData.plays = plays
     if (liked !== undefined) updateData.liked = liked
@@ -133,6 +135,7 @@ export async function PUT(
       duration: song.duration,
       url: song.url,
       thumbnail: song.thumbnail,
+      image_data: song.image_data, // Add image_data field
       lyrics: song.lyrics,
       uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
       plays: song.plays,

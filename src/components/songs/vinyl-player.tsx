@@ -78,6 +78,10 @@ export function VinylPlayer({
 
   // Track if we're currently seeking (drag in progress)
   const [isDragging, setIsDragging] = useState(false)
+  
+  // Tonearm interaction state
+  const [tonearmHovered, setTonearmHovered] = useState(false)
+  const [tonearmPressed, setTonearmPressed] = useState(false)
 
   const config = sizeConfig[size]
 
@@ -460,7 +464,7 @@ export function VinylPlayer({
   return (
     <div className={cn(
       'flex flex-col items-center space-y-6 p-8',
-      'border border-border/20 rounded-3xl shadow-xl',
+      'border border-border/40 rounded-3xl',
       'bg-gradient-to-b from-background/80 to-muted/20',
       'backdrop-blur-sm',
       className
@@ -540,7 +544,7 @@ export function VinylPlayer({
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full overflow-hidden shadow-inner border-4 border-gray-800">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={song.thumbnail || "/placeholder.svg"}
+                src={song.image_data || song.thumbnail || "/placeholder.svg"}
                 alt={song.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -560,24 +564,79 @@ export function VinylPlayer({
             <div className="absolute top-0 left-0 w-full h-full rounded-full bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
           </div>
 
-          {/* Tonearm */}
-          <div className="absolute top-8 right-8 origin-bottom-left">
-            <div 
+          {/* Interactive Tonearm */}
+          <div className="absolute top-8 right-4 origin-bottom-left">
+            <button
               className={cn(
-                "w-32 h-2 bg-gradient-to-r from-gray-700 via-gray-500 to-gray-600 rounded-full shadow-lg transform transition-transform duration-700 ease-in-out",
-                isPlaying ? "rotate-12" : "rotate-0"
+                "w-32 h-2 bg-gradient-to-r from-gray-700 via-gray-500 to-gray-600 rounded-full shadow-lg transform transition-all duration-700 ease-in-out",
+                "hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50",
+                "cursor-pointer relative group active:scale-95",
+                isPlaying ? "rotate-[15deg]" : "rotate-[5deg]",
+                tonearmPressed && "scale-95",
+                tonearmHovered && "shadow-2xl shadow-primary/20"
               )}
+              onMouseEnter={() => setTonearmHovered(true)}
+              onMouseLeave={() => {
+                setTonearmHovered(false)
+                setTonearmPressed(false)
+              }}
+              onMouseDown={() => setTonearmPressed(true)}
+              onMouseUp={() => setTonearmPressed(false)}
+              onClick={() => {
+                console.log('🎛️ Tonearm clicked - toggling play/pause')
+                if (playerReady && !isLoading && duration > 0) {
+                  setIsPlaying(!isPlaying)
+                } else {
+                  console.log('⚠️ Player not ready for tonearm control:', { playerReady, isLoading, duration })
+                }
+              }}
+              title={isPlaying ? "Click tonearm to pause" : "Click tonearm to play"}
             >
               {/* Tonearm Head */}
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-gray-600 rounded-full shadow-sm">
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full" />
+              <div className={cn(
+                "absolute right-0 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-gray-600 rounded-full shadow-sm transition-all duration-300",
+                tonearmHovered && "bg-gray-500 shadow-lg",
+                tonearmPressed && "bg-gray-400"
+              )}>
+                <div className={cn(
+                  "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full transition-all duration-300",
+                  tonearmHovered && "bg-gray-300",
+                  tonearmPressed && "bg-white"
+                )} />
+                {/* Needle */}
+                <div className={cn(
+                  "absolute bottom-0 right-1/2 transform translate-x-1/2 w-px h-2 bg-gray-300 transition-all duration-300",
+                  tonearmHovered && "bg-gray-200",
+                  tonearmPressed && "bg-white"
+                )} />
               </div>
               
               {/* Tonearm Base */}
-              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-700 rounded-full shadow-inner">
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-gray-800 rounded-full" />
+              <div className={cn(
+                "absolute left-0 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-700 rounded-full shadow-inner transition-all duration-300",
+                tonearmHovered && "bg-gray-600 shadow-lg",
+                tonearmPressed && "bg-gray-500"
+              )}>
+                <div className={cn(
+                  "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-gray-800 rounded-full transition-all duration-300",
+                  tonearmHovered && "bg-gray-700",
+                  tonearmPressed && "bg-gray-600"
+                )} />
               </div>
-            </div>
+              
+              {/* Enhanced Hover/Press indicators */}
+              <div className={cn(
+                "absolute -inset-2 rounded-full transition-all duration-300 pointer-events-none",
+                tonearmHovered && !tonearmPressed && "bg-primary/10 opacity-100",
+                tonearmPressed && "bg-primary/20 opacity-100 scale-110",
+                !tonearmHovered && "opacity-0"
+              )} />
+              
+              {/* Interaction ripple effect */}
+              {tonearmPressed && (
+                <div className="absolute -inset-4 rounded-full bg-primary/30 opacity-50 animate-ping pointer-events-none" />
+              )}
+            </button>
           </div>
         </div>
 

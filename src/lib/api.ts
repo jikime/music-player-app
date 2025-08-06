@@ -309,6 +309,15 @@ export const songsApi = {
 
   // Update song (skip cache, invalidate related caches)
   update: async (id: string, updates: Partial<Song>): Promise<Song> => {
+    // Debug: Log what we're sending to the API
+    console.log('🌐 API Client - Sending UPDATE request for song:', id)
+    console.log('📤 Update payload:', {
+      hasImageData: !!updates.image_data,
+      imageDataLength: updates.image_data?.length || 0,
+      updateFields: Object.keys(updates),
+      payloadSize: JSON.stringify(updates).length
+    })
+    
     const data = await enhancedFetch<SongResponse>(
       `${API_BASE_URL}/songs/${id}`,
       {

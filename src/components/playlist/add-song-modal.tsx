@@ -278,7 +278,7 @@ export function AddSongModal({ playlistId, open, onOpenChange, existingSongIds }
                       isMobile ? 'w-10 h-10' : 'w-12 h-12'
                     }`}>
                       <ImageWithFallback
-                        src={song.thumbnail || ''}
+                        src={song.image_data || song.thumbnail || ''}
                         alt={song.title}
                         width={isMobile ? 40 : 48}
                         height={isMobile ? 40 : 48}

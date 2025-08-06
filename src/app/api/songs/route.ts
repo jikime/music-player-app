@@ -26,6 +26,7 @@ function transformSong(song: DatabaseSong) {
     duration: song.duration,
     url: song.url,
     thumbnail: song.thumbnail,
+    image_data: song.image_data, // Add image_data field
     lyrics: song.lyrics,
     uploadedAt: song.uploaded_at ? new Date(song.uploaded_at) : new Date(),
     plays: song.plays,
@@ -151,7 +152,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, artist, album, duration, url, thumbnail, lyrics, plays, liked, shared } = body
+    const { title, artist, album, duration, url, thumbnail, image_data, lyrics, plays, liked, shared } = body
+
+    // Debug log for song creation
+    console.log('🔍 API creating song:', title?.trim())
 
     // Enhanced validation with early returns
     if (!title?.trim()) {
@@ -171,27 +175,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
     }
 
+    // Prepare data for database insertion
+    const insertData = {
+      title: title.trim(),
+      artist: artist.trim(),
+      album: album?.trim() || null,
+      duration: Math.max(0, duration || 0),
+      url: url.trim(),
+      thumbnail: thumbnail?.trim() || null,
+      image_data: image_data || null, // Don't trim base64 data
+      lyrics: lyrics?.trim() || null,
+      plays: Math.max(0, plays || 0),
+      liked: Boolean(liked),
+      shared: Boolean(shared),
+      user_id: currentUser.id
+    }
+
+    console.log('🗄️ Inserting song into database:', insertData.title)
+
     // Optimized database insertion
     const { data: song, error } = await supabase
       .from('songs')
-      .insert([{
-        title: title.trim(),
-        artist: artist.trim(),
-        album: album?.trim() || null,
-        duration: Math.max(0, duration || 0),
-        url: url.trim(),
-        thumbnail: thumbnail?.trim() || null,
-        lyrics: lyrics?.trim() || null,
-        plays: Math.max(0, plays || 0),
-        liked: Boolean(liked),
-        shared: Boolean(shared),
-        user_id: currentUser.id
-      }])
+      .insert([insertData])
       .select()
       .single()
 
     if (error) {
-      console.error('Error creating song:', error)
+      console.error('❌ Error creating song:', error)
       
       // Handle specific database errors
       if (error.code === '23505') {
@@ -200,6 +210,8 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({ error: 'Failed to create song' }, { status: 500 })
     }
+
+    console.log('✅ Song created:', song.title)
 
     // Clear relevant caches
     for (const key of responseCache.keys()) {
@@ -210,6 +222,8 @@ export async function POST(request: NextRequest) {
 
     // Transform and return the new song
     const transformedSong = transformSong(song)
+    
+    console.log('🔄 Returning created song:', transformedSong.title)
 
     return NextResponse.json(
       { song: transformedSong }, 
@@ -245,21 +259,41 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const updates = { ...body }
 
+    // Debug log for song update
+    console.log('🔍 API received UPDATE request for song:', songId)
+    console.log('📥 Raw request body:', {
+      hasImageData: !!body.image_data,
+      imageDataLength: body.image_data?.length || 0,
+      imageDataType: typeof body.image_data,
+      imageDataPreview: body.image_data ? body.image_data.substring(0, 50) + '...' : null,
+      allFields: Object.keys(body),
+      bodySize: JSON.stringify(body).length
+    })
+
     // Remove undefined/null values and trim strings
     Object.keys(updates).forEach(key => {
       if (updates[key] === undefined || updates[key] === null) {
+        console.log(`🗑️ Removing null/undefined field: ${key}`)
         delete updates[key]
-      } else if (typeof updates[key] === 'string') {
+      } else if (typeof updates[key] === 'string' && key !== 'image_data') {
+        // Don't trim image_data as it's base64
         updates[key] = updates[key].trim()
       }
+    })
+
+    console.log('🔄 Update fields after processing:', {
+      fields: Object.keys(updates).join(', '),
+      hasImageDataInUpdates: !!updates.image_data,
+      imageDataLengthInUpdates: updates.image_data?.length || 0
     })
 
     // Validate that user owns the song or has permission
     const { data: existingSong, error: fetchError } = await supabase
       .from('songs')
-      .select('user_id')
+      .select('user_id, image_data')
       .eq('id', songId)
       .single()
+      
 
     if (fetchError) {
       return NextResponse.json({ error: 'Song not found' }, { status: 404 })
@@ -268,6 +302,13 @@ export async function PUT(request: NextRequest) {
     if (existingSong.user_id !== currentUser.id) {
       return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
     }
+
+    console.log('🗄️ Before database update:', {
+      songId,
+      existingImageDataLength: existingSong.image_data?.length || 0,
+      newImageDataLength: updates.image_data?.length || 0,
+      willUpdateImageData: !!updates.image_data
+    })
 
     // Update the song
     const { data: updatedSong, error } = await supabase
@@ -278,9 +319,16 @@ export async function PUT(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error updating song:', error)
+      console.error('❌ Error updating song:', error)
       return NextResponse.json({ error: 'Failed to update song' }, { status: 500 })
     }
+
+    console.log('✅ Song updated successfully:', {
+      title: updatedSong.title,
+      finalImageDataLength: updatedSong.image_data?.length || 0,
+      hasImageDataInResult: !!updatedSong.image_data,
+      updatedFields: Object.keys(updates)
+    })
 
     // Clear caches
     for (const key of responseCache.keys()) {
@@ -289,7 +337,11 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ song: transformSong(updatedSong) })
+    const transformedSong = transformSong(updatedSong)
+    
+    console.log('🔄 Returning updated song:', transformedSong.title)
+
+    return NextResponse.json({ song: transformedSong })
 
   } catch (error) {
     console.error('Error in PUT /api/songs:', error)

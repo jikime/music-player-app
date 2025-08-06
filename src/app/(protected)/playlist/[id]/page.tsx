@@ -312,7 +312,7 @@ export default function PlaylistPage() {
                   {/* Thumbnail */}
                   <div className="w-9 h-9 md:w-12 md:h-12 rounded overflow-hidden flex-shrink-0 bg-muted group/thumb relative">
                     <ImageWithFallback
-                      src={song.thumbnail || ''}
+                      src={song.image_data || song.thumbnail || ''}
                       alt={song.title}
                       width={36}
                       height={36}

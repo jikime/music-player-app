@@ -32,7 +32,7 @@ import {
   Share2
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
-import { extractVideoId, fetchYouTubeDuration, getYouTubeVideoInfo, getThumbnailUrl } from "@/lib/youtube"
+import { extractVideoId, fetchYouTubeDuration, getYouTubeVideoInfo, getThumbnailUrl, getYouTubeThumbnailAsBase64 } from "@/lib/youtube"
 import { apiUtils } from "@/lib/api"
 import type { Song } from "@/types/music"
 
@@ -59,6 +59,8 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
   const [urlValid, setUrlValid] = useState<boolean | null>(null)
   const [isFetchingInfo, setIsFetchingInfo] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
+  const [thumbnailBase64, setThumbnailBase64] = useState<string | null>(null)
   const [alertDialog, setAlertDialog] = useState<{
     open: boolean
     title: string
@@ -91,6 +93,8 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
 
     setIsFetchingInfo(true)
     setFetchError(null) // Clear previous errors
+    setThumbnailPreview(null)
+    setThumbnailBase64(null)
     
     try {
       const videoInfo = await getYouTubeVideoInfo(videoId)
@@ -98,6 +102,29 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
         // Only auto-fill if fields are empty (check current values at time of fetch)
         setTitle(prevTitle => prevTitle.trim() ? prevTitle : videoInfo.title)
         setArtist(prevArtist => prevArtist.trim() ? prevArtist : videoInfo.author)
+        
+        // Fetch thumbnail as base64 for storage and preview
+        try {
+          const thumbnailUrl = getThumbnailUrl(videoId, 'max')
+          setThumbnailPreview(thumbnailUrl) // Set preview URL first
+          
+          console.log('🖼️ Fetching thumbnail as base64 for video:', videoId)
+          const base64Data = await getYouTubeThumbnailAsBase64(videoId)
+          if (base64Data) {
+            console.log('✅ Successfully converted thumbnail to base64:', {
+              dataLength: base64Data.length,
+              startsWithDataUrl: base64Data.startsWith('data:'),
+              preview: base64Data.substring(0, 50) + '...'
+            })
+            setThumbnailBase64(base64Data)
+          } else {
+            console.warn('❌ Failed to get thumbnail as base64, using URL preview')
+          }
+        } catch (thumbnailError) {
+          console.warn('❌ Failed to fetch thumbnail:', thumbnailError)
+          // Continue without thumbnail - it's not critical
+        }
+        
         setFetchError(null) // Clear error on success
       } else {
         // Video info is null - could be private, deleted, or unavailable
@@ -147,6 +174,24 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
       setAlbum(songToEdit.album || "")
       setShared(songToEdit.shared)
       setUrlValid(true) // Assume existing URL is valid
+      
+      // Set existing thumbnail and image_data if available
+      if (songToEdit.image_data) {
+        // Use base64 image data for both preview and storage
+        setThumbnailPreview(songToEdit.image_data)
+        setThumbnailBase64(songToEdit.image_data)
+        console.log('🖼️ Loaded existing image_data for edit:', {
+          hasImageData: true,
+          dataLength: songToEdit.image_data.length
+        })
+      } else if (songToEdit.thumbnail) {
+        // Fallback to thumbnail URL
+        setThumbnailPreview(songToEdit.thumbnail)
+        setThumbnailBase64(null)
+        console.log('🖼️ Using thumbnail URL for edit (no image_data available)')
+      } else {
+        console.log('🖼️ No image data available for edit')
+      }
     } else if (!open) {
       setUrl("")
       setTitle("")
@@ -155,6 +200,8 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
       setShared(false)
       setUrlValid(null)
       setFetchError(null)
+      setThumbnailPreview(null)
+      setThumbnailBase64(null)
       setIsLoading(false)
       closeAlert()
     }
@@ -183,13 +230,41 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
 
       if (editMode && songToEdit) {
         // Update existing song
-        const updates = {
+        const updates: Partial<Song> = {
           title: title.trim(),
           artist: artist.trim(),
           album: album.trim() || undefined,
           url: url.trim(),
           shared: shared
         }
+
+        // Always update thumbnail image for editing
+        console.log('🖼️ Updating thumbnail for song edit')
+        try {
+          const base64Data = thumbnailBase64 || await getYouTubeThumbnailAsBase64(videoId)
+          
+          if (base64Data) {
+            updates.image_data = base64Data
+            console.log('✅ Thumbnail updated for edit:', {
+              hasImageData: true,
+              dataLength: base64Data.length,
+              startsWithDataUrl: base64Data.startsWith('data:'),
+              preview: base64Data.substring(0, 50) + '...'
+            })
+          } else {
+            console.warn('❌ No thumbnail data available for edit')
+          }
+        } catch (thumbnailError) {
+          console.warn('❌ Error updating thumbnail:', thumbnailError)
+        }
+
+        // Debug log for update payload
+        console.log('🔍 Updates object being sent to API:', {
+          title: updates.title,
+          hasImageData: !!updates.image_data,
+          imageDataLength: updates.image_data?.length || 0,
+          allFields: Object.keys(updates)
+        })
 
         await updateSong(songToEdit.id, updates)
         
@@ -220,11 +295,15 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
           duration,
           url: url.trim(),
           thumbnail: getThumbnailUrl(videoId, 'max'),
+          image_data: thumbnailBase64 || undefined, // Store base64 image data or undefined
           lyrics: undefined,
           plays: 0,
           liked: false,
           shared: shared
         }
+
+        // Debug log for new song creation
+        console.log('🔍 Creating new song with thumbnail data')
 
         await addSong(songData)
         
@@ -244,6 +323,8 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
       setArtist("")
       setAlbum("")
       setShared(false)
+      setThumbnailPreview(null)
+      setThumbnailBase64(null)
       onOpenChange(false)
     } catch (error) {
       console.error(`Error ${editMode ? 'updating' : 'adding'} song:`, error)
@@ -351,6 +432,28 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
               className="bg-input border-border text-foreground placeholder-muted-foreground"
             />
           </div>
+
+          {/* Thumbnail Preview */}
+          {thumbnailPreview && (
+            <div className="space-y-2">
+              <Label className="text-foreground text-sm">
+                Album Art Preview
+              </Label>
+              <div className="flex justify-center">
+                <img 
+                  src={thumbnailBase64 || thumbnailPreview} 
+                  alt="Album art preview"
+                  className="w-32 h-24 object-cover rounded-lg border border-border"
+                  onError={() => {
+                    console.warn('Failed to load thumbnail preview')
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                이 이미지가 앨범 아트로 저장됩니다
+              </p>
+            </div>
+          )}
 
           {/* Share Option */}
           <div className="flex items-center space-x-2">

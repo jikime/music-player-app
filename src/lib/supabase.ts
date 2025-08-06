@@ -14,6 +14,7 @@ export interface DatabaseSong {
   duration: number
   url: string
   thumbnail?: string
+  image_data?: string // Base64 encoded image data
   lyrics?: string
   uploaded_at: string
   plays: number

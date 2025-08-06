@@ -205,7 +205,7 @@ export default function SharePage() {
           <div className="space-y-8">
             {/* Custom Share Title/Description */}
             {(sharedSong.title || sharedSong.description) && (
-              <div className="bg-muted/20 border border-border/50 rounded-lg p-6 shadow-sm backdrop-blur-sm">
+              <div className="bg-muted/20 border border-border/80 rounded-lg p-6 backdrop-blur-sm">
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
@@ -230,7 +230,7 @@ export default function SharePage() {
             )}
 
             {/* Song Details */}
-            <div className="bg-muted/20 border border-border/50 rounded-lg p-6 shadow-sm backdrop-blur-sm">
+            <div className="bg-muted/20 border border-border/80 rounded-lg p-6 backdrop-blur-sm">
               <div className="space-y-5">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
@@ -296,7 +296,7 @@ export default function SharePage() {
             </div>
 
             {/* Call to Action */}
-            <div className="bg-primary/8 border border-primary/30 rounded-lg p-6 shadow-sm backdrop-blur-sm text-center">
+            <div className="bg-primary/8 border border-primary/50 rounded-lg p-6 backdrop-blur-sm text-center">
               <div className="space-y-5">
                 <div>
                   <h4 className="font-bold text-foreground text-lg">

@@ -30,7 +30,7 @@ import { Plus, LogOut, User, Settings } from "lucide-react"
 import { AddLinkModal } from "@/components/songs/add-link-modal"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { ProfileModal } from "@/components/layout/profile-modal"
-import Link from "next/link"
+import Image from "next/image"
 
 export function AppHeader() {
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)
@@ -284,7 +284,6 @@ export function AppHeader() {
             )}
           </div>
         </div>
-
         {/* Desktop Layout */}
         <div className="hidden md:flex items-center gap-2 px-4 w-full">
           <div className="flex items-center gap-2">

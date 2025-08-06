@@ -6,6 +6,7 @@ export interface Song {
   duration: number
   url: string // YouTube URL
   thumbnail?: string
+  image_data?: string // Base64 encoded image data
   lyrics?: string
   uploadedAt: Date
   plays: number

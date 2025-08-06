@@ -514,7 +514,7 @@ export function MusicPlayer() {
           {currentSong ? (
             <>
               <ImageWithFallback
-                src={currentSong.thumbnail || "/placeholder.svg"}
+                src={currentSong.image_data || currentSong.thumbnail || "/placeholder.svg"}
                 alt={currentSong.title}
                 width={48}
                 height={48}
@@ -651,7 +651,7 @@ export function MusicPlayer() {
           {currentSong ? (
             <>
               <ImageWithFallback
-                src={currentSong.thumbnail || "/placeholder.svg"}
+                src={currentSong.image_data || currentSong.thumbnail || "/placeholder.svg"}
                 alt={currentSong.title}
                 width={60}
                 height={60}

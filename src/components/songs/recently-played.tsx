@@ -232,7 +232,7 @@ export function RecentlyPlayed({ songs: rawSongs, onPlaySong, isLoading = false 
           >
             <div className="w-full aspect-square bg-muted md:rounded-t-xl rounded-xl overflow-hidden relative group">
               <ImageWithFallback
-                src={song.thumbnail || "/placeholder.svg"}
+                src={song.image_data || song.thumbnail || "/placeholder.svg"}
                 alt={song.title}
                 fill
                 sizes="(max-width: 640px) 145px, (max-width: 768px) 176px, (max-width: 1024px) 208px, 224px"

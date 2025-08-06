@@ -44,7 +44,7 @@ export function NavBookmarks({ bookmarkedSongs, onPlaySong }: NavBookmarksProps)
             >
               <div className="flex items-center gap-3 w-full">
                 <ImageWithFallback
-                  src={song.thumbnail || "/placeholder.svg"}
+                  src={song.image_data || song.thumbnail || "/placeholder.svg"}
                   alt={song.title}
                   width={32}
                   height={32}

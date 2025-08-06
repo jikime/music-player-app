@@ -176,7 +176,7 @@ export default function TrendingPage() {
                     }}
                   >
                     <ImageWithFallback
-                      src={song.thumbnail || ''}
+                      src={song.image_data || song.thumbnail || ''}
                       alt={song.title}
                       width={48}
                       height={48}
@@ -292,7 +292,7 @@ export default function TrendingPage() {
                     }}
                   >
                     <ImageWithFallback
-                      src={song.thumbnail || ''}
+                      src={song.image_data || song.thumbnail || ''}
                       alt={song.title}
                       width={48}
                       height={48}

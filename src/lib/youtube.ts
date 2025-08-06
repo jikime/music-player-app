@@ -222,6 +222,96 @@ export const fetchYouTubeDuration = async (url: string): Promise<number> => {
   }
 }
 
+/**
+ * 이미지 URL을 base64로 변환합니다
+ */
+export const convertImageToBase64 = async (imageUrl: string): Promise<string> => {
+  console.log('🔄 Converting image to base64:', imageUrl)
+  try {
+    const response = await fetch(imageUrl, {
+      mode: 'cors',
+    })
+    
+    console.log('📥 Fetch response status:', response.status, response.statusText)
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+    }
+    
+    const blob = await response.blob()
+    console.log('📦 Image blob:', {
+      size: blob.size,
+      type: blob.type
+    })
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          console.log('✅ Successfully converted to base64:', {
+            dataLength: reader.result.length,
+            startsWithDataUrl: reader.result.startsWith('data:'),
+            mimeType: reader.result.substring(5, reader.result.indexOf(';'))
+          })
+          resolve(reader.result)
+        } else {
+          reject(new Error('Failed to convert image to base64'))
+        }
+      }
+      reader.onerror = (error) => {
+        console.error('❌ FileReader error:', error)
+        reject(new Error('FileReader error'))
+      }
+      reader.readAsDataURL(blob)
+    })
+  } catch (error) {
+    console.error('❌ Error converting image to base64:', error)
+    throw error
+  }
+}
+
+/**
+ * YouTube 썸네일을 base64로 변환합니다
+ * 여러 품질 옵션을 시도하여 가장 적합한 이미지를 가져옵니다
+ */
+export const getYouTubeThumbnailAsBase64 = async (videoId: string): Promise<string | null> => {
+  console.log('🖼️ Starting thumbnail conversion for video:', videoId)
+  const qualities = ['max', 'high', 'medium', 'default'] as const
+  
+  for (const quality of qualities) {
+    try {
+      const thumbnailUrl = getThumbnailUrl(videoId, quality)
+      console.log(`🔍 Trying quality "${quality}": ${thumbnailUrl}`)
+      
+      const base64Data = await convertImageToBase64(thumbnailUrl)
+      console.log(`✅ Successfully converted ${quality} quality to base64:`, {
+        dataLength: base64Data.length,
+        startsWithDataUrl: base64Data.startsWith('data:')
+      })
+      
+      // 기본 placeholder 이미지가 아닌 실제 썸네일인지 확인
+      // (YouTube는 썸네일이 없을 때 기본 이미지를 반환함)
+      const response = await fetch(thumbnailUrl, { method: 'HEAD' })
+      console.log(`📏 Content-Length for ${quality}:`, response.headers.get('content-length'))
+      
+      // Content-Length가 매우 작으면 기본 이미지일 가능성이 높음
+      const contentLength = response.headers.get('content-length')
+      if (contentLength && parseInt(contentLength) > 1000) {
+        console.log(`✅ Using ${quality} quality thumbnail (size: ${contentLength} bytes)`)
+        return base64Data
+      }
+      
+      console.warn(`⚠️ Thumbnail quality ${quality} seems to be a placeholder (size: ${contentLength}), trying next quality`)
+    } catch (error) {
+      console.warn(`❌ Failed to get thumbnail with quality ${quality}:`, error)
+      continue
+    }
+  }
+  
+  console.error('❌ Failed to get YouTube thumbnail for video:', videoId)
+  return null
+}
+
 // YouTube iframe API 타입 정의
 declare global {
   interface Window {

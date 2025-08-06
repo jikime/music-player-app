@@ -129,7 +129,7 @@ export function ShareModal({ song, isOpen, onClose }: ShareModalProps) {
                   <div className="w-12 h-12 rounded object-cover overflow-hidden bg-muted">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={song.thumbnail || "/placeholder.svg"}
+                      src={song.image_data || song.thumbnail || "/placeholder.svg"}
                       alt={song.title}
                       className="w-full h-full object-cover"
                       onError={(e) => {
