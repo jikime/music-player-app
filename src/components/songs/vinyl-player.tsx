@@ -722,7 +722,39 @@ export function VinylPlayer({
 
           {/* Volume Control */}
           <div className="flex items-center space-x-3">
-            <VolumeX className="w-4 h-4 text-muted-foreground" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                // Left mute button - same logic as main mute button
+                if (isMuted) {
+                  console.log('🔊 Left button: User clicked to unmute - Chrome 66+ compliance')
+                  setIsMuted(false)
+                  setHasUnmuted(true)
+                  setVolume(volume === 0 ? 0.7 : volume)
+                  
+                  // Also try to unmute via player ref
+                  if (playerRef.current && playerRef.current.muted !== undefined) {
+                    try {
+                      playerRef.current.muted = false
+                      console.log('🔊 Left button: Directly unmuted player via ref')
+                    } catch (e) {
+                      console.log('⚠️ Left button: Could not directly unmute player:', e)
+                    }
+                  }
+                } else if (volume === 0) {
+                  setVolume(0.7)
+                } else {
+                  // Mute
+                  setVolume(0)
+                }
+              }}
+              title={(isMuted || volume === 0) ? "Unmute" : "Mute"}
+            >
+              {(isMuted || volume === 0) ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </Button>
+            
             <Slider
               value={[isMuted ? 0 : volume * 100]}
               max={100}
@@ -750,7 +782,39 @@ export function VinylPlayer({
               className="flex-1"
               disabled={false}
             />
-            <Volume2 className="w-4 h-4 text-muted-foreground" />
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                // Right unmute button - same logic as main mute button
+                if (isMuted) {
+                  console.log('🔊 Right button: User clicked to unmute - Chrome 66+ compliance')
+                  setIsMuted(false)
+                  setHasUnmuted(true)
+                  setVolume(volume === 0 ? 0.7 : volume)
+                  
+                  // Also try to unmute via player ref
+                  if (playerRef.current && playerRef.current.muted !== undefined) {
+                    try {
+                      playerRef.current.muted = false
+                      console.log('🔊 Right button: Directly unmuted player via ref')
+                    } catch (e) {
+                      console.log('⚠️ Right button: Could not directly unmute player:', e)
+                    }
+                  }
+                } else if (volume === 0) {
+                  setVolume(0.7)
+                } else {
+                  // Mute
+                  setVolume(0)
+                }
+              }}
+              title={(isMuted || volume === 0) ? "Unmute" : "Mute"}
+            >
+              {(isMuted || volume === 0) ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </Button>
           </div>
 
           {/* Additional Actions */}
