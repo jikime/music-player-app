@@ -45,13 +45,20 @@ export function MusicPlayer() {
     toggleRepeat,
     playNext,
     // playPrevious, // unused
-    isBookmarked,
-    addBookmark,
-    removeBookmark
+    isLiked,
+    addLike,
+    removeLike
   } = useMusicStore()
 
   // Track if we're currently seeking (drag in progress)
   const [isDragging, setIsDragging] = useState(false)
+  
+  // Muted state management for autoplay compliance
+  const [isMuted, setIsMuted] = useState(true)
+  const [hasUnmuted, setHasUnmuted] = useState(false)
+  
+  // Auto-unmute timer after playback starts
+  const autoUnmuteTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // All useEffect hooks must be before the early return
   const {
@@ -89,6 +96,36 @@ export function MusicPlayer() {
   }, [])
 
   // setPlayerRef callback
+  const clearAutoUnmuteTimer = useCallback(() => {
+    if (autoUnmuteTimerRef.current) {
+      clearTimeout(autoUnmuteTimerRef.current)
+      autoUnmuteTimerRef.current = null
+    }
+  }, [])
+  
+  const startAutoUnmuteTimer = useCallback(() => {
+    if (!isMuted || hasUnmuted) return
+    
+    clearAutoUnmuteTimer()
+    console.log('⏰ Starting auto-unmute timer (2 seconds after playback)')
+    
+    autoUnmuteTimerRef.current = setTimeout(() => {
+      console.log('🔊 Auto-unmuting after 2 seconds of playback')
+      setIsMuted(false)
+      setHasUnmuted(true)
+      
+      // Also try to unmute via player ref
+      if (playerRef.current && playerRef.current.muted !== undefined) {
+        try {
+          playerRef.current.muted = false
+          console.log('🔊 Directly unmuted player via ref (auto-unmute)')
+        } catch (e) {
+          console.log('⚠️ Could not directly unmute player (auto-unmute):', e)
+        }
+      }
+    }, 2000) // 2초 후 자동 음소거 해제
+  }, [isMuted, hasUnmuted, clearAutoUnmuteTimer])
+
   const setPlayerRef = useCallback((player: HTMLVideoElement) => {
     if (!player) return
     playerRef.current = player
@@ -100,7 +137,10 @@ export function MusicPlayer() {
     setHasEnded(false)
     setError(null)
     setRetryCount(0)
+    setIsMuted(true) // Reset to muted for next song
+    setHasUnmuted(false) // Reset unmute flag
     clearLoadingTimeout()
+    clearAutoUnmuteTimer() // Clear auto-unmute timer
     
     // Validate YouTube URL when song changes
     if (currentSong && !isValidYouTubeUrl(currentSong.url)) {
@@ -118,7 +158,7 @@ export function MusicPlayer() {
       setIsLoading(false)
       setPlayerReady(false)
     }
-  }, [currentSong, startLoadingTimeout, clearLoadingTimeout, isValidYouTubeUrl])
+  }, [currentSong, startLoadingTimeout, clearLoadingTimeout, clearAutoUnmuteTimer, isValidYouTubeUrl])
 
   // Reset player ready state when song changes
   useEffect(() => {
@@ -138,8 +178,9 @@ export function MusicPlayer() {
   useEffect(() => {
     return () => {
       clearLoadingTimeout()
+      clearAutoUnmuteTimer()
     }
-  }, [clearLoadingTimeout])
+  }, [clearLoadingTimeout, clearAutoUnmuteTimer])
   
   // 프로필은 이제 모달이므로 pathname 체크 제거
 
@@ -239,6 +280,17 @@ export function MusicPlayer() {
     // Only update store state if it's different to prevent loops
     if (!isPlaying) {
       setIsPlaying(true)
+    }
+  }
+
+  // Separate event handler for when playback is actively running
+  const handlePlaying = () => {
+    console.log('🎵 Music Player: onPlaying event - actively playing!')
+    
+    // Start auto-unmute timer when playback is actively running
+    if (isMuted && !hasUnmuted) {
+      console.log('🚀 Playback actively running - starting auto-unmute timer')
+      startAutoUnmuteTimer()
     }
   }
 
@@ -388,12 +440,12 @@ export function MusicPlayer() {
     setVolume(value[0])
   }
 
-  const toggleBookmark = () => {
+  const toggleLike = () => {
     if (currentSong) {
-      if (isBookmarked(currentSong.id)) {
-        removeBookmark(currentSong.id)
+      if (isLiked(currentSong.id)) {
+        removeLike(currentSong.id)
       } else {
-        addBookmark(currentSong.id)
+        addLike(currentSong.id)
       }
     }
   }
@@ -407,30 +459,45 @@ export function MusicPlayer() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  // Hide music player on share pages
+  if (pathname.startsWith('/share/')) {
+    return null
+  }
+
   return (
     <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-background backdrop-blur-md z-50 safe-area-inset-bottom">
       {/* Hidden React Player */}
       {currentSong && (
         <ReactPlayer
           ref={setPlayerRef}
+          key={currentSong.url}
           className="react-player"
           src={currentSong.url}
-          playing={playerReady && isPlaying}
+          playing={playerReady && isPlaying && !isLoading}
           volume={volume}
-          muted={volume === 0}
+          muted={isMuted}
           width="1px"
           height="1px"
           style={{ opacity: 0, position: 'absolute', top: '-9999px' }}
           config={{
             youtube: {
-              color: 'white'
-            }
+              playerVars: {
+                autoplay: 1,
+                controls: 0,
+                modestbranding: 1,
+                playsinline: 1,
+                rel: 0,
+                showinfo: 0,
+                mute: isMuted ? 1 : 0
+              }
+            } as any // eslint-disable-line @typescript-eslint/no-explicit-any
           }}
           onLoadStart={handleLoadStart}
           onReady={handleReady}
           onStart={handleStart}
           onPlay={handlePlay}
           onPause={handlePause}
+          onPlaying={handlePlaying}
           onRateChange={handleRateChange}
           onEnded={handleEnded}
           onError={handleError}
@@ -447,7 +514,7 @@ export function MusicPlayer() {
           {currentSong ? (
             <>
               <ImageWithFallback
-                src={currentSong.thumbnail || "/placeholder.svg"}
+                src={currentSong.image_data || currentSong.thumbnail || "/placeholder.svg"}
                 alt={currentSong.title}
                 width={48}
                 height={48}
@@ -479,10 +546,10 @@ export function MusicPlayer() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className={`w-9 h-9 ${isBookmarked(currentSong.id) ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
-                  onClick={toggleBookmark}
+                  className={`w-9 h-9 ${isLiked(currentSong.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                  onClick={toggleLike}
                 >
-                  <Heart className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
+                  <Heart className={`w-4 h-4 ${isLiked(currentSong.id) ? 'fill-current' : ''}`} />
                 </Button>
                 <Button
                   variant="ghost"
@@ -584,7 +651,7 @@ export function MusicPlayer() {
           {currentSong ? (
             <>
               <ImageWithFallback
-                src={currentSong.thumbnail || "/placeholder.svg"}
+                src={currentSong.image_data || currentSong.thumbnail || "/placeholder.svg"}
                 alt={currentSong.title}
                 width={60}
                 height={60}
@@ -615,10 +682,10 @@ export function MusicPlayer() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className={`${isBookmarked(currentSong.id) ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
-                onClick={toggleBookmark}
+                className={`${isLiked(currentSong.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                onClick={toggleLike}
               >
-                <Heart className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 ${isLiked(currentSong.id) ? 'fill-current' : ''}`} />
               </Button>
             </>
           ) : (
@@ -717,15 +784,58 @@ export function MusicPlayer() {
             variant="ghost" 
             size="icon" 
             className="text-muted-foreground hover:text-foreground"
-            onClick={() => setVolume(volume > 0 ? 0 : 0.7)}
+            onClick={() => {
+              // User interaction to unmute (Chrome 66+ compliance)
+              if (isMuted) {
+                console.log('🔊 User clicked to unmute - Chrome 66+ compliance')
+                clearAutoUnmuteTimer() // Cancel auto-unmute timer on manual interaction
+                setIsMuted(false)
+                setHasUnmuted(true)
+                setVolume(volume === 0 ? 0.7 : volume)
+                
+                // Also try to unmute via player ref
+                if (playerRef.current && playerRef.current.muted !== undefined) {
+                  try {
+                    playerRef.current.muted = false
+                    console.log('🔊 Directly unmuted player via ref')
+                  } catch (e) {
+                    console.log('⚠️ Could not directly unmute player:', e)
+                  }
+                }
+              } else if (volume === 0) {
+                setVolume(0.7)
+              } else {
+                setVolume(0)
+              }
+            }}
           >
-            {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {(isMuted || volume === 0) ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </Button>
           <Slider 
-            value={[volume * 100]} 
+            value={[isMuted ? 0 : volume * 100]} 
             max={100} 
             step={1}
-            onValueChange={(value) => handleVolumeChange([value[0] / 100])}
+            onValueChange={(value) => {
+              const newVolume = value[0] / 100
+              console.log('🔊 User interacted with volume slider - Chrome 66+ compliance')
+              setVolume(newVolume)
+              // User interaction with slider unmutes (Chrome 66+ compliance)
+              if (newVolume > 0 && isMuted) {
+                clearAutoUnmuteTimer() // Cancel auto-unmute timer on manual interaction
+                setIsMuted(false)
+                setHasUnmuted(true)
+                
+                // Also try to unmute via player ref
+                if (playerRef.current && playerRef.current.muted !== undefined) {
+                  try {
+                    playerRef.current.muted = false
+                    console.log('🔊 Directly unmuted player via ref (slider)')
+                  } catch (e) {
+                    console.log('⚠️ Could not directly unmute player via slider:', e)
+                  }
+                }
+              }
+            }}
             className="w-24" 
           />
         </div>

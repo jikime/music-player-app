@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react"
+import React, { useState, useMemo, useCallback } from "react"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { Button } from "@/components/ui/button"
 import {
   Heart,
-  Plus,
   Clock,
   Music,
   Loader2,
@@ -14,7 +13,7 @@ import {
 } from "lucide-react"
 import { formatDuration, formatPlays } from "@/lib/music-utils"
 import { useMusicStore } from "@/lib/store"
-import { AddToPlaylistPopover } from "@/components/songs/add-to-playlist-popover"
+import { SongMoreMenu } from "@/components/songs/song-more-menu"
 import type { Song } from "@/types/music"
 
 interface AllSongsProps {
@@ -23,82 +22,276 @@ interface AllSongsProps {
   isLoading?: boolean
 }
 
-export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps) {
-  const [bookmarkingStates, setBookmarkingStates] = useState<Record<string, boolean>>({})
+// Memoized thumbnail component to prevent unnecessary re-renders
+const MemoizedThumbnail = React.memo(({ song, size, showPlayButton = true }: { 
+  song: Song; 
+  size: { width: string; height: string; iconSize: string }; 
+  showPlayButton?: boolean 
+}) => (
+  <div className={`${size.width} ${size.height} rounded-lg overflow-hidden relative flex-shrink-0 bg-muted group/thumb`}>
+    <ImageWithFallback
+      src={song.image_data || song.thumbnail || "/placeholder.svg"}
+      alt={song.title}
+      fill
+      sizes={size.width === "w-9" ? "36px" : "48px"}
+      className="object-cover transition-transform duration-300 group-hover/thumb:scale-110"
+    />
+    {showPlayButton && (
+      <>
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+        {/* Play Icon on Hover */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
+          <Play className={`${size.iconSize} text-white`} fill="currentColor" />
+        </div>
+      </>
+    )}
+  </div>
+))
+MemoizedThumbnail.displayName = "MemoizedThumbnail"
+
+// Memoized song info component
+const MemoizedSongInfo = React.memo(({ song, showAlbum = false, showStats = false }: { song: Song; showAlbum?: boolean; showStats?: boolean }) => (
+  <div className="flex-1 min-w-0">
+    <h3 className="font-medium text-foreground text-sm leading-tight line-clamp-1 md:text-base md:truncate">
+      {song.title}
+    </h3>
+    <div className="flex items-center justify-between">
+      <p className="text-xs text-muted-foreground line-clamp-1 md:text-sm md:truncate">
+        {song.artist}{showAlbum && song.album && ` • ${song.album}`}
+      </p>
+      {showStats && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0 ml-2">
+          <span>{formatDuration(song.duration)}</span>
+          <span>•</span>
+          <span>{formatPlays(song.plays)}</span>
+        </div>
+      )}
+    </div>
+  </div>
+))
+MemoizedSongInfo.displayName = "MemoizedSongInfo"
+
+// Memoized action buttons component
+const MemoizedActionButtons = React.memo(({ 
+  song, 
+  isLiked,
+  isLiking,
+  onToggleLike,
+  isMobile = false 
+}: { 
+  song: Song; 
+  isLiked: boolean;
+  isLiking: boolean;
+  onToggleLike: (songId: string, event: React.MouseEvent) => void;
+  isMobile?: boolean;
+}) => {
+  const buttonSize = isMobile ? "w-7 h-7" : "w-8 h-8"
+  const iconSize = isMobile ? "w-3 h-3" : "w-4 h-4"
+  
+  return (
+    <div className={`flex items-center ${isMobile ? 'gap-0.5' : 'gap-1'} flex-shrink-0`}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`${buttonSize} ${isLiked ? "text-red-500" : "text-muted-foreground"} hover:text-red-500`}
+        onClick={(e) => onToggleLike(song.id, e)}
+        disabled={isLiking}
+      >
+        {isLiking ? (
+          <Loader2 className={`${iconSize} animate-spin`} />
+        ) : (
+          <Heart className={`${iconSize} ${isLiked ? "fill-current" : ""}`} />
+        )}
+      </Button>
+      <SongMoreMenu
+        song={song}
+        size="icon"
+        className={`${buttonSize} ${
+          isMobile ? '' : 'opacity-0 group-hover:opacity-100'
+        }`}
+      />
+    </div>
+  )
+})
+MemoizedActionButtons.displayName = "MemoizedActionButtons"
+
+// Memoized mobile song row
+const MemoizedMobileSongRow = React.memo(({ 
+  song, 
+  index, 
+  currentPage, 
+  itemsPerPage, 
+  onPlaySong, 
+  isLiked,
+  isLiking,
+  onToggleLike
+}: {
+  song: Song;
+  index: number;
+  currentPage: number;
+  itemsPerPage: number;
+  onPlaySong: (song: Song) => void;
+  isLiked: boolean;
+  isLiking: boolean;
+  onToggleLike: (songId: string, event: React.MouseEvent) => void;
+}) => (
+  <div 
+    className="md:hidden p-2 hover:scale-105 transition-transform group cursor-pointer"
+    onClick={() => onPlaySong(song)}
+  >
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <span className="text-muted-foreground text-xs font-mono w-5 flex-shrink-0">
+          #{currentPage * itemsPerPage + index + 1}
+        </span>
+        <MemoizedThumbnail 
+          song={song} 
+          size={{ width: "w-9", height: "h-9", iconSize: "w-3 h-3" }} 
+        />
+        <MemoizedSongInfo song={song} showStats={true} />
+      </div>
+      <MemoizedActionButtons
+        song={song}
+        isLiked={isLiked}
+        isLiking={isLiking}
+        onToggleLike={onToggleLike}
+        isMobile={true}
+      />
+    </div>
+  </div>
+))
+MemoizedMobileSongRow.displayName = "MemoizedMobileSongRow"
+
+// Memoized desktop song row
+const MemoizedDesktopSongRow = React.memo(({ 
+  song, 
+  index, 
+  currentPage, 
+  itemsPerPage, 
+  onPlaySong, 
+  isLiked,
+  isLiking,
+  onToggleLike
+}: {
+  song: Song;
+  index: number;
+  currentPage: number;
+  itemsPerPage: number;
+  onPlaySong: (song: Song) => void;
+  isLiked: boolean;
+  isLiking: boolean;
+  onToggleLike: (songId: string, event: React.MouseEvent) => void;
+}) => (
+  <div 
+    className="hidden md:flex items-center gap-2 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
+    onClick={() => onPlaySong(song)}
+  >
+    <span className="text-muted-foreground w-8 text-sm">
+      #{currentPage * itemsPerPage + index + 1}
+    </span>
+    <MemoizedThumbnail 
+      song={song} 
+      size={{ width: "w-12", height: "h-12", iconSize: "w-4 h-4" }} 
+    />
+    <MemoizedSongInfo song={song} showAlbum={true} />
+    <div className="flex items-center gap-2">
+      <div className="hidden lg:flex items-center gap-1 text-muted-foreground w-16 justify-start">
+        <Music className="w-3 h-3" />
+        <span className="text-xs">{formatPlays(song.plays)}</span>
+      </div>
+      <div className="flex items-center gap-1 text-muted-foreground w-14 justify-start">
+        <Clock className="w-3 h-3" />
+        <span className="text-xs">{formatDuration(song.duration)}</span>
+      </div>
+      <MemoizedActionButtons
+        song={song}
+        isLiked={isLiked}
+        isLiking={isLiking}
+        onToggleLike={onToggleLike}
+        isMobile={false}
+      />
+    </div>
+  </div>
+))
+MemoizedDesktopSongRow.displayName = "MemoizedDesktopSongRow"
+
+export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: AllSongsProps) => {
+  const [likingStates, setLikingStates] = useState<Record<string, boolean>>({})
   const [currentPage, setCurrentPage] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   
   const ITEMS_PER_PAGE = 10 // All Songs는 더 많이 표시
   
   const {
-    isBookmarked,
-    addBookmark,
-    removeBookmark
+    isLiked,
+    addLike,
+    removeLike
   } = useMusicStore()
   
-  // Calculate pagination
-  const totalPages = Math.ceil(songs.length / ITEMS_PER_PAGE)
-  const canGoPrev = currentPage > 0
-  const canGoNext = currentPage < totalPages - 1
-  
-  // Get current page songs
-  const currentSongs = useMemo(() => {
+  // Memoized calculations
+  const paginationData = useMemo(() => {
+    const totalPages = Math.ceil(songs.length / ITEMS_PER_PAGE)
+    const canGoPrev = currentPage > 0
+    const canGoNext = currentPage < totalPages - 1
     const start = currentPage * ITEMS_PER_PAGE
-    return songs.slice(start, start + ITEMS_PER_PAGE)
-  }, [songs, currentPage])
+    const currentSongs = songs.slice(start, start + ITEMS_PER_PAGE)
+    
+    return { totalPages, canGoPrev, canGoNext, currentSongs }
+  }, [songs, currentPage, ITEMS_PER_PAGE])
   
-  const handlePageChange = async (newPage: number) => {
+  const handlePageChange = useCallback(async (newPage: number) => {
     if (newPage === currentPage || isAnimating) return
     
     setIsAnimating(true)
     await new Promise(resolve => setTimeout(resolve, 150))
     setCurrentPage(newPage)
     setIsAnimating(false)
-  }
+  }, [currentPage, isAnimating])
   
-  const handlePrevious = () => {
-    if (canGoPrev) {
+  const handlePrevious = useCallback(() => {
+    if (paginationData.canGoPrev) {
       handlePageChange(currentPage - 1)
     }
-  }
+  }, [paginationData.canGoPrev, currentPage, handlePageChange])
   
-  const handleNext = () => {
-    if (canGoNext) {
+  const handleNext = useCallback(() => {
+    if (paginationData.canGoNext) {
       handlePageChange(currentPage + 1)
     }
-  }
+  }, [paginationData.canGoNext, currentPage, handlePageChange])
 
-  const handleToggleBookmark = async (songId: string, event: React.MouseEvent) => {
+  const handleToggleLike = useCallback(async (songId: string, event: React.MouseEvent) => {
     event.stopPropagation()
     
-    if (bookmarkingStates[songId]) return
+    if (likingStates[songId]) return
     
-    setBookmarkingStates(prev => ({ ...prev, [songId]: true }))
+    setLikingStates(prev => ({ ...prev, [songId]: true }))
     
     try {
-      if (isBookmarked(songId)) {
-        await removeBookmark(songId)
-        console.log('북마크에서 제거되었습니다.')
+      if (isLiked(songId)) {
+        await removeLike(songId)
+        console.log('좋아요에서 제거되었습니다.')
       } else {
-        await addBookmark(songId)
-        console.log('북마크에 추가되었습니다.')
+        await addLike(songId)
+        console.log('좋아요에 추가되었습니다.')
       }
     } catch (error) {
-      console.error('Failed to toggle bookmark:', error)
+      console.error('Failed to toggle like:', error)
       
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
       
-      if (errorMessage.includes('already bookmarked')) {
-        console.warn('이미 북마크된 노래입니다.')
+      if (errorMessage.includes('already liked')) {
+        console.warn('이미 좋아요한 노래입니다.')
       } else {
-        console.warn(`북마크 처리 중 오류: ${errorMessage}`)
+        console.warn(`좋아요 처리 중 오류: ${errorMessage}`)
       }
     } finally {
-      setBookmarkingStates(prev => ({ ...prev, [songId]: false }))
+      setLikingStates(prev => ({ ...prev, [songId]: false }))
     }
-  }
+  }, [likingStates, isLiked, addLike, removeLike])
 
-  const skeletonRows = (
+  const skeletonRows = useMemo(() => (
     <div className="space-y-2">
       {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
         <div key={index} className="flex items-center gap-4 p-3 rounded-lg">
@@ -118,7 +311,7 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
         </div>
       ))}
     </div>
-  )
+  ), [ITEMS_PER_PAGE])
 
   return (
     <div className="py-4 md:py-6">
@@ -140,15 +333,15 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
         }
       >
         <div className="flex items-center justify-between mb-4 px-1 md:px-6">
-          <h2 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider">ALL SONGS</h2>
-          {totalPages > 1 && (
+          <h2 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider">전체 음악</h2>
+          {paginationData.totalPages > 1 && (
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-50"
                 onClick={handlePrevious}
-                disabled={!canGoPrev || isAnimating}
+                disabled={!paginationData.canGoPrev || isAnimating}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -157,7 +350,7 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-50"
                 onClick={handleNext}
-                disabled={!canGoNext || isAnimating}
+                disabled={!paginationData.canGoNext || isAnimating}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -169,139 +362,40 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
             isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
           }`}
         >
-          {currentSongs.map((song, index) => (
-            <div key={song.id}>
-              {/* Mobile Layout: Clean Style */}
-              <div 
-                className="md:hidden p-2 hover:scale-105 transition-transform group cursor-pointer"
-                onClick={() => onPlaySong(song)}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="text-muted-foreground text-xs font-mono w-5 flex-shrink-0">
-                      #{currentPage * ITEMS_PER_PAGE + index + 1}
-                    </span>
-                    <div className="w-9 h-9 rounded-lg overflow-hidden relative flex-shrink-0 bg-muted group/thumb">
-                      <ImageWithFallback
-                        src={song.thumbnail || "/placeholder.svg"}
-                        alt={song.title}
-                        fill
-                        sizes="36px"
-                        className="object-cover transition-transform duration-300 group-hover/thumb:scale-110"
-                      />
-                      {/* Hover Overlay */}
-                      <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
-                      {/* Play Icon on Hover */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
-                        <Play className="w-3 h-3 text-white" fill="currentColor" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-foreground text-sm leading-tight line-clamp-1">{song.title}</h3>
-                      <p className="text-xs text-muted-foreground line-clamp-1">{song.artist}</p>
-                      <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                        <span className="flex-shrink-0">{formatDuration(song.duration)}</span>
-                        <span className="flex-shrink-0">•</span>
-                        <span className="flex-shrink-0">{formatPlays(song.plays)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`w-7 h-7 ${isBookmarked(song.id) ? "text-primary" : "text-muted-foreground"} hover:text-primary`}
-                      onClick={(e) => handleToggleBookmark(song.id, e)}
-                      disabled={bookmarkingStates[song.id]}
-                    >
-                      {bookmarkingStates[song.id] ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Heart className={`w-3 h-3 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
-                      )}
-                    </Button>
-                    <AddToPlaylistPopover song={song}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-7 h-7 text-muted-foreground hover:text-primary"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </AddToPlaylistPopover>
-                  </div>
-                </div>
+          {paginationData.currentSongs.map((song, index) => {
+            const isLikedSong = isLiked(song.id)
+            const isLikingSong = likingStates[song.id] || false
+            
+            return (
+              <div key={song.id}>
+                <MemoizedMobileSongRow
+                  song={song}
+                  index={index}
+                  currentPage={currentPage}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPlaySong={onPlaySong}
+                  isLiked={isLikedSong}
+                  isLiking={isLikingSong}
+                  onToggleLike={handleToggleLike}
+                />
+                <MemoizedDesktopSongRow
+                  song={song}
+                  index={index}
+                  currentPage={currentPage}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPlaySong={onPlaySong}
+                  isLiked={isLikedSong}
+                  isLiking={isLikingSong}
+                  onToggleLike={handleToggleLike}
+                />
               </div>
-
-              {/* Desktop Layout: Table Row Style */}
-              <div 
-                className="hidden md:flex items-center gap-4 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
-                onClick={() => onPlaySong(song)}
-              >
-                <span className="text-muted-foreground w-8 text-sm">#{currentPage * ITEMS_PER_PAGE + index + 1}</span>
-                <div className="w-12 h-12 rounded overflow-hidden relative bg-muted group/thumb">
-                  <ImageWithFallback
-                    src={song.thumbnail || "/placeholder.svg"}
-                    alt={song.title}
-                    fill
-                    sizes="48px"
-                    className="object-cover transition-transform duration-300 group-hover/thumb:scale-110"
-                  />
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300" />
-                  {/* Play Icon on Hover */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300">
-                    <Play className="w-4 h-4 text-white" fill="currentColor" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-foreground truncate">{song.title}</h3>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {song.artist}{song.album && ` • ${song.album}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="hidden lg:flex items-center gap-1 text-muted-foreground w-20 justify-start">
-                    <Music className="w-4 h-4" />
-                    <span className="text-sm">{formatPlays(song.plays)}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-muted-foreground w-16 justify-start">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm">{formatDuration(song.duration)}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`w-8 h-8 ${isBookmarked(song.id) ? "text-primary" : "text-muted-foreground"} hover:text-primary`}
-                    onClick={(e) => handleToggleBookmark(song.id, e)}
-                    disabled={bookmarkingStates[song.id]}
-                  >
-                    {bookmarkingStates[song.id] ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? "fill-current" : ""}`} />
-                    )}
-                  </Button>
-                  <AddToPlaylistPopover song={song}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-8 h-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </AddToPlaylistPopover>
-                </div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         
         {/* Page indicator */}
-        {totalPages > 1 && (
+        {paginationData.totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-6 px-1 md:px-6">
-            {Array.from({ length: totalPages }).map((_, index) => (
+            {Array.from({ length: paginationData.totalPages }).map((_, index) => (
               <button
                 key={index}
                 className={`w-2 h-2 rounded-full transition-all duration-200 ${
@@ -318,4 +412,6 @@ export function AllSongs({ songs, onPlaySong, isLoading = false }: AllSongsProps
       </LoadingContent>
     </div>
   )
-}
+})
+
+AllSongs.displayName = "AllSongs"

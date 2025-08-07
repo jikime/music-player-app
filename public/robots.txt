@@ -1,0 +1,41 @@
+# robots.txt for VIBE Music
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /signin
+Disallow: /signup
+Disallow: /error
+Disallow: /_next/
+Disallow: /static/
+
+# Sitemaps
+Sitemap: https://vibemusic.app/sitemap.xml
+
+# RSS Feed
+Sitemap: https://vibemusic.app/rss.xml
+
+# Crawl-delay for responsible crawling
+Crawl-delay: 1
+
+# Specific bot rules
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /

@@ -8,31 +8,15 @@ import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { AddSongModal } from "@/components/playlist/add-song-modal"
 import { CreatePlaylistModal } from "@/components/playlist/create-playlist-modal"
 import { PlaylistCover } from "@/components/playlist/playlist-cover"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { PlaylistMoreMenu } from "@/components/playlist/playlist-more-menu"
+import { PlaylistSongMoreMenu } from "@/components/playlist/playlist-song-more-menu"
 import {
   Play,
   Pause,
   Shuffle,
-  MoreHorizontal,
   Music,
   Download,
-  Share2,
-  Edit,
-  Trash2,
-  Plus,
-  X,
-  Check,
-  Loader2
+  Plus
 } from "lucide-react"
 import { useMusicStore } from "@/lib/store"
 import { formatDuration } from "@/lib/music-utils"
@@ -59,7 +43,6 @@ export default function PlaylistPage() {
   const [addSongModalOpen, setAddSongModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [deletingSongId, setDeletingSongId] = useState<string | null>(null)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   
   // Find the playlist
   const playlist = playlists.find(p => p.id === playlistId)
@@ -122,14 +105,9 @@ export default function PlaylistPage() {
   }
 
 
-  const handleDeleteClick = () => {
-    setShowDeleteDialog(true)
-  }
-
-  const handleDeleteConfirm = async () => {
+  const handleDeletePlaylist = async () => {
     try {
       await deletePlaylist(playlistId)
-      setShowDeleteDialog(false)
       // Navigate back to home
       window.history.back()
     } catch (error) {
@@ -138,16 +116,10 @@ export default function PlaylistPage() {
     }
   }
 
-  const handleDeleteCancel = () => {
-    setShowDeleteDialog(false)
-  }
-
-  const handleRemoveSong = async (songId: string, e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent triggering play
-    
+  const handleRemoveSong = async (song: Song) => {
     try {
-      setDeletingSongId(songId)
-      await removeSongFromPlaylist(playlistId, songId)
+      setDeletingSongId(song.id)
+      await removeSongFromPlaylist(playlistId, song.id)
     } catch (error) {
       console.error("Failed to remove song from playlist:", error)
       alert("Failed to remove song. Please try again.")
@@ -207,39 +179,15 @@ export default function PlaylistPage() {
                   )}
                 </div>
 
-                {/* Mobile Control Buttons - Right in horizontal layout */}
-                <div className="flex md:hidden items-center justify-start gap-1">                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                {/* Mobile More Menu */}
+                <div className="flex md:hidden items-center justify-start">
+                  <PlaylistMoreMenu
+                    playlistName={playlist!.name}
+                    onAddSong={() => setAddSongModalOpen(true)}
+                    onEdit={() => setEditModalOpen(true)}
+                    onDelete={handleDeletePlaylist}
                     className="w-6 h-6"
-                    onClick={() => setAddSongModalOpen(true)}
-                  >
-                    <Plus className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-6 h-6"
-                    onClick={() => setEditModalOpen(true)}
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  {/* <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-6 h-6"
-                  >
-                    <Share2 className="w-3 h-3" />
-                  </Button> */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-6 h-6"
-                    onClick={handleDeleteClick}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                  />
                 </div>
                 
                 {/* Description - Hidden on mobile, shown on desktop */}
@@ -258,39 +206,15 @@ export default function PlaylistPage() {
               </p>
             </div>
 
-            {/* Desktop Control Buttons Row */}
-            <div className="hidden md:flex items-center justify-start gap-3 mb-6 px-1">
-              <Button
-                variant="ghost"
-                size="icon"
+            {/* Desktop More Menu */}
+            <div className="hidden md:flex items-center justify-start mb-6 px-1">
+              <PlaylistMoreMenu
+                playlistName={playlist!.name}
+                onAddSong={() => setAddSongModalOpen(true)}
+                onEdit={() => setEditModalOpen(true)}
+                onDelete={handleDeletePlaylist}
                 className="w-8 h-8"
-                onClick={() => setAddSongModalOpen(true)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-8 h-8"
-                onClick={() => setEditModalOpen(true)}
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
-              {/* <Button
-                variant="ghost"
-                size="icon"
-                className="w-8 h-8"
-              >
-                <Share2 className="w-4 h-4" />
-              </Button> */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-8 h-8"
-                onClick={handleDeleteClick}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              />
             </div>
 
           </div>
@@ -312,7 +236,7 @@ export default function PlaylistPage() {
                   {/* Thumbnail */}
                   <div className="w-9 h-9 md:w-12 md:h-12 rounded overflow-hidden flex-shrink-0 bg-muted group/thumb relative">
                     <ImageWithFallback
-                      src={song.thumbnail || ''}
+                      src={song.image_data || song.thumbnail || ''}
                       alt={song.title}
                       width={36}
                       height={36}
@@ -339,20 +263,15 @@ export default function PlaylistPage() {
                     {song.duration ? formatDuration(song.duration) : "--:--"}
                   </div>
 
-                  {/* Delete Button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                    onClick={(e) => handleRemoveSong(song.id, e)}
-                    disabled={deletingSongId === song.id}
-                  >
-                    {deletingSongId === song.id ? (
-                      <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin" />
-                    ) : (
-                      <X className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    )}
-                  </Button>
+                  {/* More Menu */}
+                  <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <PlaylistSongMoreMenu
+                      song={song}
+                      onRemoveFromPlaylist={handleRemoveSong}
+                      isRemoving={deletingSongId === song.id}
+                      className="w-8 h-8"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -394,30 +313,6 @@ export default function PlaylistPage() {
         } : undefined}
       />
 
-      {/* Delete Playlist Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>플레이리스트 삭제</AlertDialogTitle>
-            <AlertDialogDescription>
-              &quot;{playlist?.name}&quot; 플레이리스트를 정말 삭제하시겠습니까?
-              <br />
-              이 작업은 되돌릴 수 없습니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDeleteCancel}>
-              취소
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              삭제
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

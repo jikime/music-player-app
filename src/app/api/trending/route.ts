@@ -25,6 +25,30 @@ export async function POST(request: NextRequest) {
     
     console.log('Raw trending data from Supabase:', trendingData?.length || 0, 'songs')
     
+    // Debug: Log first song to see what fields we get
+    if (trendingData && trendingData.length > 0) {
+      console.log('Sample trending song data:', JSON.stringify(trendingData[0], null, 2))
+    }
+    
+    // If image_data is missing, fetch it separately from songs table
+    const songIds = trendingData.map((song: { song_id: string }) => song.song_id)
+    const { data: songsWithImageData, error: songsError } = await supabase
+      .from('songs')
+      .select('id, image_data')
+      .in('id', songIds)
+    
+    if (songsError) {
+      console.error('Error fetching songs image_data:', songsError)
+    }
+    
+    // Create a map for quick lookup
+    const imageDataMap = new Map()
+    if (songsWithImageData) {
+      songsWithImageData.forEach((song: { id: string; image_data: string }) => {
+        imageDataMap.set(song.id, song.image_data)
+      })
+    }
+    
     // Transform to match TrendingSong interface
     const trendingSongs = (trendingData || []).map((song: {
       song_id: string
@@ -34,6 +58,7 @@ export async function POST(request: NextRequest) {
       duration: number
       url: string
       thumbnail: string | null
+      image_data: string | null
       plays: number
       liked: boolean
       shared: boolean
@@ -50,6 +75,7 @@ export async function POST(request: NextRequest) {
       duration: song.duration,
       url: song.url,
       thumbnail: song.thumbnail || '',
+      image_data: imageDataMap.get(song.song_id) || song.image_data || null,
       uploadedAt: new Date(), // We could get this from the database if needed
       plays: song.plays,
       liked: song.liked,
@@ -60,6 +86,19 @@ export async function POST(request: NextRequest) {
       previousRanking: song.previous_ranking,
       rankingChange: song.ranking_change
     }))
+    
+    // Debug: Log first transformed song to verify image_data
+    if (trendingSongs.length > 0) {
+      const firstSong = trendingSongs[0]
+      console.log('Sample transformed song:', {
+        id: firstSong.id,
+        title: firstSong.title,
+        thumbnail: firstSong.thumbnail,
+        image_data_exists: !!firstSong.image_data,
+        image_data_length: firstSong.image_data ? firstSong.image_data.length : 0,
+        image_data_preview: firstSong.image_data ? firstSong.image_data.substring(0, 50) : 'N/A'
+      })
+    }
     
     return NextResponse.json({ 
       success: true, 

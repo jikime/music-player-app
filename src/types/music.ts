@@ -6,6 +6,7 @@ export interface Song {
   duration: number
   url: string // YouTube URL
   thumbnail?: string
+  image_data?: string // Base64 encoded image data
   lyrics?: string
   uploadedAt: Date
   plays: number
@@ -28,6 +29,14 @@ export interface Bookmark {
   id: string
   songId: string
   createdAt: Date
+  song?: Song // Full song data when fetched with details
+}
+
+export interface Like {
+  id: string
+  songId: string
+  createdAt: Date
+  song?: Song // Full song data when fetched with details
 }
 
 export interface UploadedFile {
@@ -91,4 +100,18 @@ export interface TrendingStats {
   trendingSongsCount: number
   activeListeners: number
   periodGrowthPercent: number
+}
+
+export interface SharedSong {
+  id: string
+  songId: string
+  userId: string
+  shareId: string
+  title?: string
+  description?: string
+  isPublic: boolean
+  expiresAt?: Date
+  viewCount: number
+  createdAt: Date
+  updatedAt: Date
 }

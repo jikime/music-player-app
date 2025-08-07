@@ -6,6 +6,7 @@ import { useMusicStore } from "@/lib/store"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
+import { SongMoreMenu } from "@/components/songs/song-more-menu"
 import { Button } from "@/components/ui/button"
 import {
   Play,
@@ -14,7 +15,6 @@ import {
   TrendingDown,
   Clock,
   Heart,
-  Plus,
   Minus,
   Headphones
 } from "lucide-react"
@@ -29,9 +29,9 @@ export default function TrendingPage() {
     playerState,
     playSong,
     setIsPlaying,
-    isBookmarked,
-    addBookmark,
-    removeBookmark,
+    isLiked,
+    addLike,
+    removeLike,
     initializeData
   } = useMusicStore()
 
@@ -54,6 +54,21 @@ export default function TrendingPage() {
         
         // Fetch trending songs only
         const songsData = await trendingApi.getTrendingSongs(selectedPeriod)
+        
+        // Debug: Log first song image data
+        // if (songsData && songsData.length > 0) {
+        //   const song = songsData[0]
+        //   console.log('Frontend - First trending song image data:', {
+        //     title: song.title,
+        //     image_data_exists: !!song.image_data,
+        //     image_data_length: song.image_data ? song.image_data.length : 0,
+        //     image_data_starts_with: song.image_data ? song.image_data.substring(0, 20) : 'N/A',
+        //     thumbnail: song.thumbnail || 'NO',
+        //     finalSrc: song.image_data || song.thumbnail || '/placeholder.svg',
+        //     is_base64: song.image_data ? song.image_data.startsWith('data:image/') : false
+        //   })
+        // }
+        
         setTrendingSongs(songsData || [])
       } catch (err) {
         console.error('Failed to fetch trending data:', err)
@@ -79,11 +94,11 @@ export default function TrendingPage() {
     }
   }
 
-  const toggleBookmark = (song: TrendingSong) => {
-    if (isBookmarked(song.id)) {
-      removeBookmark(song.id)
+  const toggleLike = (song: TrendingSong) => {
+    if (isLiked(song.id)) {
+      removeLike(song.id)
     } else {
-      addBookmark(song.id)
+      addLike(song.id)
     }
   }
 
@@ -105,14 +120,14 @@ export default function TrendingPage() {
   }
 
   return (
-    <div className="min-h-screen pb-32 md:pb-28 p-4 md:p-6">
+    <main className="min-h-screen pb-32 md:pb-28 p-4 md:p-6" role="main">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <header className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">Trending</h1>
-              <p className="text-muted-foreground">Trending songs this week</p>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">트렌딩 차트</h1>
+              <p className="text-muted-foreground">실시간 인기 음악 순위</p>
             </div>
             
             {/* Period Selector */}
@@ -134,7 +149,7 @@ export default function TrendingPage() {
               ))}
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Trending Songs List */}
         {trendingSongs.length === 0 ? (
@@ -175,7 +190,7 @@ export default function TrendingPage() {
                     }}
                   >
                     <ImageWithFallback
-                      src={song.thumbnail || ''}
+                      src={song.image_data || song.thumbnail || '/placeholder.svg'}
                       alt={song.title}
                       width={48}
                       height={48}
@@ -236,24 +251,29 @@ export default function TrendingPage() {
                       </div>
 
                       {/* Mobile Actions */}
-                      {session && (
-                        <div 
-                          className="flex items-start flex-shrink-0 pt-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                      <div 
+                        className="flex items-start flex-shrink-0 pt-1 gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {session && (
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="w-8 h-8 text-muted-foreground hover:text-foreground"
+                            className={`w-8 h-8 ${isLiked(song.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
                             onClick={(e) => {
                               e.stopPropagation()
-                              toggleBookmark(song)
+                              toggleLike(song)
                             }}
                           >
-                            <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
+                            <Heart className={`w-4 h-4 ${isLiked(song.id) ? 'fill-current' : ''}`} />
                           </Button>
-                        </div>
-                      )}
+                        )}
+                        <SongMoreMenu
+                          song={song}
+                          size="icon"
+                          className="w-8 h-8"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -281,7 +301,7 @@ export default function TrendingPage() {
                     }}
                   >
                     <ImageWithFallback
-                      src={song.thumbnail || ''}
+                      src={song.image_data || song.thumbnail || '/placeholder.svg'}
                       alt={song.title}
                       width={48}
                       height={48}
@@ -338,24 +358,29 @@ export default function TrendingPage() {
                   </div>
 
                   {/* Actions */}
-                  {session && (
-                    <div 
-                      className="flex items-center gap-1 flex-shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                  <div 
+                    className="flex items-center gap-1 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {session && (
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="w-8 h-8 text-muted-foreground hover:text-foreground"
+                        className={`w-8 h-8 ${isLiked(song.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          toggleBookmark(song)
+                          toggleLike(song)
                         }}
                       >
-                        <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
+                        <Heart className={`w-4 h-4 ${isLiked(song.id) ? 'fill-current' : ''}`} />
                       </Button>
-                    </div>
-                  )}
+                    )}
+                    <SongMoreMenu
+                      song={song}
+                      size="icon"
+                      className="w-8 h-8"
+                    />
+                  </div>
                 </div>
               </div>
               </div>
@@ -364,6 +389,6 @@ export default function TrendingPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }

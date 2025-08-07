@@ -170,3 +170,29 @@ CREATE TRIGGER update_playlists_updated_at BEFORE UPDATE ON playlists
 
 CREATE TRIGGER update_todos_updated_at BEFORE UPDATE ON todos
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Shared songs table for music sharing feature
+CREATE TABLE shared_songs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    song_id UUID NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    share_id VARCHAR(12) NOT NULL UNIQUE, -- Short shareable ID
+    title TEXT, -- Custom title for sharing (optional)
+    description TEXT, -- Custom description (optional)
+    is_public BOOLEAN DEFAULT true,
+    expires_at TIMESTAMP WITH TIME ZONE, -- Optional expiry
+    view_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+-- Indexes for better performance on shared_songs
+CREATE INDEX idx_shared_songs_share_id ON shared_songs(share_id);
+CREATE INDEX idx_shared_songs_user_id ON shared_songs(user_id);
+CREATE INDEX idx_shared_songs_song_id ON shared_songs(song_id);
+CREATE INDEX idx_shared_songs_created_at ON shared_songs(created_at DESC);
+CREATE INDEX idx_shared_songs_public ON shared_songs(is_public) WHERE is_public = true;
+
+-- Update trigger for shared_songs
+CREATE TRIGGER update_shared_songs_updated_at BEFORE UPDATE ON shared_songs
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

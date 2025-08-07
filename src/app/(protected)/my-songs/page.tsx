@@ -5,23 +5,11 @@ import { Button } from "@/components/ui/button"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { AddLinkModal } from "@/components/songs/add-link-modal"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { MySongMoreMenu } from "@/components/songs/my-song-more-menu"
 import {
   Play,
   Pause,
   Plus,
-  Edit,
-  Trash2,
   Music,
   Search
 } from "lucide-react"
@@ -46,7 +34,6 @@ export default function MySongsPage() {
   const [deletingSongId, setDeletingSongId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingSong, setEditingSong] = useState<Song | null>(null)
-  const [songToDelete, setSongToDelete] = useState<Song | null>(null)
 
   const { currentSong, isPlaying } = playerState
 
@@ -83,27 +70,16 @@ export default function MySongsPage() {
     }
   }
 
-  const handleDeleteClick = (song: Song) => {
-    setSongToDelete(song)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!songToDelete) return
-    
+  const handleDelete = async (song: Song) => {
     try {
-      setDeletingSongId(songToDelete.id)
-      await deleteSong(songToDelete.id)
-      setSongToDelete(null)
+      setDeletingSongId(song.id)
+      await deleteSong(song.id)
     } catch (error) {
       console.error("Failed to delete song:", error)
       alert("노래 삭제에 실패했습니다. 다시 시도해주세요.")
     } finally {
       setDeletingSongId(null)
     }
-  }
-
-  const handleDeleteCancel = () => {
-    setSongToDelete(null)
   }
 
   const handleAddSong = () => {
@@ -155,24 +131,24 @@ export default function MySongsPage() {
         {filteredSongs.length > 0 ? (
           <div className="space-y-1">
             {/* Header Row - Desktop Only */}
-            <div className="hidden md:grid md:grid-cols-[3rem_1fr_1fr_6rem_8rem] gap-4 items-center p-4 text-sm text-muted-foreground border-b">
+            <div className="hidden md:grid md:grid-cols-[3rem_1fr_1fr_6rem_3rem] gap-4 items-center p-4 text-sm text-muted-foreground border-b">
               <div></div>
               <div>제목</div>
               <div>아티스트</div>
               <div>재생시간</div>
-              <div>작업</div>
+              <div></div>
             </div>
 
             {filteredSongs.map((song) => (
               <div
                 key={song.id}
-                className="flex md:grid md:grid-cols-[3rem_1fr_1fr_6rem_8rem] gap-2 md:gap-4 items-center p-3 md:p-4 rounded-lg hover:bg-muted/30 transition-colors group cursor-pointer"
+                className="flex md:grid md:grid-cols-[3rem_1fr_1fr_6rem_3rem] gap-2 md:gap-4 items-center p-3 md:p-4 rounded-lg hover:bg-muted/30 transition-colors group cursor-pointer"
                 onClick={() => handlePlaySong(song)}
               >
                 {/* Play Button / Thumbnail */}
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded overflow-hidden flex-shrink-0 bg-muted group/thumb relative">
                   <ImageWithFallback
-                    src={song.thumbnail || ''}
+                    src={song.image_data || song.thumbnail || ''}
                     alt={song.title}
                     width={48}
                     height={48}
@@ -212,59 +188,18 @@ export default function MySongsPage() {
                   {song.duration ? formatDuration(song.duration) : "--:--"}
                 </div>
 
-                {/* Actions */}
+                {/* More Menu */}
                 <div 
-                  className="flex items-center gap-2 flex-shrink-0"
+                  className="flex items-center justify-center flex-shrink-0"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleEditSong(song)
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog open={songToDelete?.id === song.id} onOpenChange={(open) => !open && handleDeleteCancel()}>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-8 h-8 text-muted-foreground hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteClick(song)
-                        }}
-                        disabled={deletingSongId === song.id}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>노래 삭제</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          &quot;{songToDelete?.title}&quot;을(를) 정말 삭제하시겠습니까?
-                          <br />
-                          이 작업은 되돌릴 수 없습니다.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel onClick={handleDeleteCancel}>
-                          취소
-                        </AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={handleDeleteConfirm}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          삭제
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <MySongMoreMenu
+                    song={song}
+                    onEdit={handleEditSong}
+                    onDelete={handleDelete}
+                    isDeleting={deletingSongId === song.id}
+                    className="w-8 h-8"
+                  />
                 </div>
               </div>
             ))}
