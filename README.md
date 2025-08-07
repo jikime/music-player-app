@@ -1,29 +1,41 @@
 # VIBE Music Player App
 
-Modern music streaming application built with Next.js 15, TypeScript, and Supabase. Features user authentication, playlist management, song bookmarking, and real-time music playback with a beautiful dark theme interface.
+Modern music streaming application built with Next.js 15, TypeScript, and Supabase. Features user authentication, playlist management, song sharing, bookmarking, and real-time music playback with comprehensive SEO optimization and responsive design.
 
 ## 🚀 Features
 
-- **🎵 Music Streaming**: Play songs with full player controls (play/pause, skip, volume, progress)
-- **👤 User Authentication**: Email/password and Google OAuth login with NextAuth.js
-- **📝 Playlist Management**: Create, edit, and manage personal playlists
-- **🔖 Song Bookmarking**: Save favorite songs for quick access
-- **📊 Trending System**: View trending songs with real-time statistics
-- **📱 Responsive Design**: Mobile-first design with dark/light theme support
-- **🔐 Route Protection**: Middleware-based authentication and authorization
-- **🌐 Real-time Updates**: Live data synchronization with Supabase
+### Core Music Features
+- **🎵 Music Streaming**: Advanced vinyl-style player with full controls (play/pause, skip, volume, progress)
+- **📝 Playlist Management**: Create, edit, and manage personal playlists with descriptions and cover images
+- **❤️ Likes & Bookmarks**: Dual system - heart/like songs and bookmark favorites with unified More menu
+- **📊 Trending System**: Real-time trending charts with daily/weekly/monthly periods
+- **🔗 Song Sharing**: Advanced sharing system with customizable links, expiration dates, and privacy controls
+- **🕐 Play History**: Automatic tracking of listening history for Recently Played feature
+
+### User Experience
+- **👤 User Authentication**: Seamless email/password and Google OAuth with NextAuth.js
+- **📱 Responsive Design**: Mobile-first approach with optimized layouts for all devices
+- **🎨 Modern UI**: Consistent More menu patterns, dark/light theme, and intuitive navigation
+- **🧭 Smart Navigation**: Dynamic breadcrumbs with contextual page titles
+- **🔔 Real-time Updates**: Live synchronization across all devices
+
+### Technical Excellence
+- **🔐 Enterprise Security**: Comprehensive route protection and data isolation
+- **🚀 SEO Optimized**: Full Open Graph, Twitter Cards, and metadata for all pages
+- **⚡ Performance**: Optimized loading with React Query caching and efficient state management
+- **♿ Accessibility**: WCAG compliant components with keyboard navigation support
 
 ## 🛠 Tech Stack
 
 ### Frontend
-- **Next.js 15.4.2** - React framework with App Router
-- **React 19.1.0** - UI library
-- **TypeScript** - Type safety
-- **Tailwind CSS 4** - Styling with custom theme variables
-- **shadcn/ui** - Component library based on Radix UI
-- **Zustand** - State management
-- **React Query** - Server state management
-- **NextAuth.js** - Authentication
+- **Next.js 15.4.2** - React framework with App Router and server components
+- **React 19.1.0** - Latest UI library with concurrent features
+- **TypeScript** - Full type safety with strict mode
+- **Tailwind CSS 4** - Modern styling with oklch color space and custom theme variables
+- **shadcn/ui** - Premium component library based on Radix UI primitives
+- **Zustand** - Lightweight state management for music player
+- **React Query** - Advanced server state management with caching
+- **NextAuth.js** - Enterprise-grade authentication
 
 ### Backend & Database
 - **Supabase** - Backend as a Service (PostgreSQL database)
@@ -32,12 +44,13 @@ Modern music streaming application built with Next.js 15, TypeScript, and Supaba
 - **bcrypt** - Password hashing
 
 ### Additional Libraries
-- **React Player** - Audio/video playback
-- **Wavesurfer.js** - Audio waveform visualization
-- **Lucide React** - Icon library
-- **React Hook Form** - Form handling
-- **Zod** - Schema validation
-- **Sonner** - Toast notifications
+- **React Player** - Advanced audio/video playback
+- **Wavesurfer.js** - Interactive audio waveform visualization  
+- **Lucide React** - Modern icon library with 1000+ icons
+- **React Hook Form** - Performant form handling with validation
+- **Zod** - TypeScript-first schema validation
+- **Sonner** - Beautiful toast notifications
+- **VinylPlayer** - Custom vinyl-style music player component
 
 ## 📋 Prerequisites
 
@@ -96,7 +109,8 @@ CREATE TABLE users (
   provider text NOT NULL DEFAULT 'credentials' 
     CHECK (provider IN ('credentials', 'google')),
   created_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL
+  updated_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL,
+  bio text
 );
 
 -- Create songs table
@@ -114,7 +128,9 @@ CREATE TABLE songs (
   liked boolean DEFAULT false,
   created_at timestamptz DEFAULT timezone('utc'::text, now()),
   updated_at timestamptz DEFAULT timezone('utc'::text, now()),
-  user_id bigint REFERENCES users(id) ON DELETE CASCADE
+  user_id bigint REFERENCES users(id) ON DELETE CASCADE,
+  shared boolean DEFAULT false NOT NULL,
+  image_data text
 );
 
 -- Create playlists table
@@ -165,11 +181,48 @@ CREATE TABLE trending_rankings (
   created_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Create shared_songs table for sharing functionality
+CREATE TABLE shared_songs (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  song_id uuid REFERENCES songs(id) ON DELETE CASCADE NOT NULL,
+  user_id bigint REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  share_id varchar UNIQUE NOT NULL,
+  title text,
+  description text,
+  is_public boolean DEFAULT true,
+  expires_at timestamptz,
+  view_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Create likes table for user song likes
+CREATE TABLE likes (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id bigint REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  song_id uuid REFERENCES songs(id) ON DELETE CASCADE NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Create play_history table for tracking user listening history
+CREATE TABLE play_history (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id bigint REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  song_id uuid REFERENCES songs(id) ON DELETE CASCADE NOT NULL,
+  played_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc'::text, now())
+);
+
 -- Create indexes for performance
 CREATE INDEX idx_songs_user_id ON songs(user_id);
 CREATE INDEX idx_playlists_user_id ON playlists(user_id);
 CREATE INDEX idx_bookmarks_user_id ON bookmarks(user_id);
 CREATE UNIQUE INDEX idx_bookmarks_user_song ON bookmarks(user_id, song_id);
+CREATE INDEX idx_likes_user_id ON likes(user_id);
+CREATE UNIQUE INDEX idx_likes_user_song ON likes(user_id, song_id);
+CREATE INDEX idx_play_history_user_id ON play_history(user_id);
+CREATE INDEX idx_play_history_played_at ON play_history(played_at);
+CREATE INDEX idx_shared_songs_share_id ON shared_songs(share_id);
 ```
 
 5. **Run the development server**
@@ -204,13 +257,16 @@ src/
 ```
 
 ### Database Schema
-- **users**: User accounts and authentication
-- **songs**: Music tracks with metadata
-- **playlists**: User-created playlists
-- **playlist_songs**: Many-to-many relationship
-- **bookmarks**: User's saved songs
-- **trending_snapshots**: Trending periods
-- **trending_rankings**: Song rankings per period
+- **users**: User accounts and authentication (with bio field)
+- **songs**: Music tracks with metadata (with shared flag and image_data)
+- **playlists**: User-created playlists with descriptions and cover images
+- **playlist_songs**: Many-to-many relationship for playlist-song associations
+- **bookmarks**: User's saved/bookmarked songs
+- **likes**: User likes/hearts on songs (separate from bookmarks)
+- **play_history**: Tracking of user's listening history
+- **shared_songs**: Shareable song links with custom titles, descriptions, and expiration
+- **trending_snapshots**: Trending calculation periods (daily/weekly/monthly)
+- **trending_rankings**: Song rankings per trending period
 
 ### Authentication Flow
 1. User visits protected route
@@ -255,10 +311,20 @@ npm run lint
 ### Protected Routes
 - `/` - Main dashboard (requires authentication)
 - `/trending` - Trending songs
+- `/my-songs` - User's uploaded songs
+- `/recently-played` - Recently played tracks
 - `/playlist/*` - Playlist management
 - `/api/songs` - Song management APIs
 - `/api/playlists` - Playlist APIs
 - `/api/bookmarks` - Bookmark APIs
+- `/api/likes` - Like/heart APIs
+- `/api/play-history` - Play history APIs
+- `/api/shares` - Song sharing APIs
+
+### Public Routes
+- `/signin` - Authentication page
+- `/signup` - User registration
+- `/share/[shareId]` - Public shared song pages
 
 ## 📊 Supabase Configuration
 
@@ -286,11 +352,13 @@ The application uses user_id based data isolation instead of RLS for simplicity.
 - **Responsive**: Mobile-first design approach
 
 ### Components
-- **Music Player**: Full-featured audio player with waveform
-- **Breadcrumb Navigation**: Dynamic route-based navigation
-- **Sidebar**: Collapsible navigation with user playlists
-- **Modals**: Song addition and playlist creation
-- **Toast Notifications**: Success/error feedback
+- **VinylPlayer**: Custom vinyl-style music player with waveform visualization
+- **Unified More Menu**: Consistent dropdown menus for song actions (bookmark, share, playlist add)
+- **ShareModal**: Advanced sharing with custom titles, descriptions, and expiration dates
+- **Dynamic Breadcrumb Navigation**: Context-aware navigation with page titles
+- **Responsive Sidebar**: Collapsible navigation with user playlists
+- **Mobile-First Design**: Optimized layouts for all screen sizes
+- **Toast Notifications**: Beautiful notifications with Sonner
 
 ## 🔧 API Endpoints
 
@@ -313,9 +381,24 @@ The application uses user_id based data isolation instead of RLS for simplicity.
 - `POST /api/bookmarks` - Add bookmark (authenticated)
 - `DELETE /api/bookmarks` - Remove bookmark (authenticated)
 
+### Likes
+- `GET /api/likes` - Get user likes (authenticated)
+- `POST /api/likes` - Like a song (authenticated)
+- `DELETE /api/likes` - Unlike a song (authenticated)
+
+### Play History
+- `GET /api/play-history` - Get user's recently played songs (authenticated)
+- `POST /api/play-history` - Record song play (authenticated)
+
 ### Trending
 - `GET /api/trending` - Get trending songs
 - `GET /api/trending/stats` - Get trending statistics
+
+### Shares
+- `POST /api/shares` - Create shareable link (authenticated)
+- `GET /api/shares/[shareId]` - Get shared song data (public)
+- `GET /api/shares` - Get user's shared songs (authenticated)
+- `DELETE /api/shares/[shareId]` - Delete shared song (owner only)
 
 ## 📱 Development
 
@@ -327,9 +410,10 @@ The application uses user_id based data isolation instead of RLS for simplicity.
 5. Update middleware for route protection if needed
 
 ### State Management
-- **Zustand Store**: Global music player state
-- **React Query**: Server state and caching
-- **React Hook Form**: Form state management
+- **Zustand Store**: Global music player state, songs, playlists, bookmarks
+- **React Query**: Server state and caching with automatic invalidation
+- **React Hook Form**: Form state management with Zod validation
+- **Custom Hooks**: useShare for sharing functionality, useIsMobile for responsive design
 
 ## 🚀 Deployment
 
@@ -345,6 +429,12 @@ The app can be deployed on any platform that supports Next.js:
 - Digital Ocean
 - AWS Amplify
 
+### Environment Setup for Production
+- Set all required environment variables
+- Configure Supabase with production database
+- Set up Google OAuth credentials for production domain
+- Configure domain for NEXTAUTH_URL
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -357,6 +447,28 @@ The app can be deployed on any platform that supports Next.js:
 
 This project is licensed under the MIT License.
 
+## ✨ Recent Updates
+
+### Version 2.0 Features
+- **🔗 Advanced Song Sharing**: Create customizable share links with titles, descriptions, and expiration dates
+- **📱 Unified More Menu System**: Consistent dropdown menus across all pages (songs, playlists, bookmarks)
+- **🎯 SEO Optimization**: Complete Open Graph and Twitter Cards support for all pages
+- **📋 Enhanced Navigation**: Dynamic breadcrumbs with contextual page titles
+- **🎨 Improved UI/UX**: Better responsive design with mobile-first approach
+- **⚡ Performance Optimizations**: React Query caching and efficient state management
+- **🔐 Enhanced Security**: Comprehensive route protection and data validation
+
+### Technical Improvements
+- Upgraded to Next.js 15.4.2 with React 19
+- Implemented Tailwind CSS 4 with oklch color space
+- Added comprehensive TypeScript strict mode
+- Enhanced mobile responsiveness with useIsMobile hook
+- Improved error handling and user feedback
+
 ## 🆘 Support
 
 For support, please open an issue on GitHub or contact the development team.
+
+---
+
+**VIBE Music** - Experience music like never before 🎵
