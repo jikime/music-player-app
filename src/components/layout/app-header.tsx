@@ -102,7 +102,8 @@ export function AppHeader() {
     '/signup': { title: 'Sign Up', icon: '✍️' },
     '/error': { title: 'Error', icon: '⚠️' },
     // 동적 라우트 패턴
-    '/playlist/[id]': { title: 'Playlist', parent: '/playlist', icon: '🎼' }
+    '/playlist/[id]': { title: 'Playlist', parent: '/playlist', icon: '🎼' },
+    '/share/[shareId]': { title: 'Shared', icon: '🔗' }
   }
 
   // 경로에 따른 breadcrumb 생성 (개선된 버전)
@@ -175,6 +176,18 @@ export function AppHeader() {
             isCurrent: true,
             icon: currentPlaylist ? '🎼' : playlistDetailRoute?.icon
           })
+        } else if (pathname.startsWith('/share/') && segments.length === 2) {
+          // /share/[shareId] 패턴
+          const shareRoute = routeLabels['/share/[shareId]']
+          
+          if (shareRoute) {
+            breadcrumbs.push({
+              label: shareRoute.title,
+              href: pathname,
+              isCurrent: true,
+              icon: shareRoute.icon
+            })
+          }
         } else {
           // 알 수 없는 라우트의 경우 기본 처리
           const lastSegment = segments[segments.length - 1]
