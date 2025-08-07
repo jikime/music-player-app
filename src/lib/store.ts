@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
-import { Song, Playlist, Bookmark, PlayerState } from '@/types/music'
-import { songsApi, playlistsApi, bookmarksApi, recentlyPlayedApi } from './api'
+import { Song, Playlist, Bookmark, Like, PlayerState } from '@/types/music'
+import { songsApi, playlistsApi, bookmarksApi, likesApi, recentlyPlayedApi } from './api'
 import { getSession } from 'next-auth/react'
 import type { Session } from 'next-auth'
 
@@ -53,6 +53,7 @@ interface MusicStore {
     songs: boolean
     playlists: boolean
     bookmarks: boolean
+    likes: boolean
     recentlyPlayed: boolean
   }
   setLoading: (key: keyof MusicStore['loadingStates'] | 'general', loading: boolean) => void
@@ -86,6 +87,13 @@ interface MusicStore {
   addBookmark: (songId: string) => Promise<void>
   removeBookmark: (songId: string) => Promise<void>
   isBookmarked: (songId: string) => boolean
+  
+  // Likes - optimized methods
+  likes: Like[]
+  getLikes: () => Promise<void>
+  addLike: (songId: string) => Promise<void>
+  removeLike: (songId: string) => Promise<void>
+  isLiked: (songId: string) => boolean
   
   // Recently Played - optimized methods
   recentlyPlayed: Song[]
@@ -123,6 +131,7 @@ export const useMusicStore = create<MusicStore>()(
       songs: false,
       playlists: false,
       bookmarks: false,
+      likes: false,
       recentlyPlayed: false
     },
     setLoading: (key, loading) => {
@@ -150,6 +159,7 @@ export const useMusicStore = create<MusicStore>()(
             songs, 
             playlists: [],
             bookmarks: [],
+            likes: [],
             recentlyPlayed: [],
             isLoading: false 
           })
@@ -162,15 +172,17 @@ export const useMusicStore = create<MusicStore>()(
           getCachedRequest('songs-all', () => songsApi.getAll()),
           getCachedRequest(`playlists-${userId}`, () => playlistsApi.getAll()),
           getCachedRequest(`bookmarks-${userId}`, () => bookmarksApi.getAll()),
+          getCachedRequest(`likes-${userId}`, () => likesApi.getAll()),
           getCachedRequest(`recently-played-${userId}`, () => recentlyPlayedApi.getRecentlyPlayed(), 60000) // 1min cache
         ]
         
-        const [songsResult, playlistsResult, bookmarksResult, recentlyPlayedResult] = await Promise.all(loadTasks)
+        const [songsResult, playlistsResult, bookmarksResult, likesResult, recentlyPlayedResult] = await Promise.all(loadTasks)
         
         set({ 
           songs: songsResult as Song[], 
           playlists: playlistsResult as Playlist[], 
           bookmarks: bookmarksResult as Bookmark[],
+          likes: likesResult as Like[],
           recentlyPlayed: recentlyPlayedResult as Song[],
           isLoading: false 
         })
@@ -277,6 +289,7 @@ export const useMusicStore = create<MusicStore>()(
           songs: state.songs.filter((song) => song.id !== id),
           mySongs: state.mySongs.filter((song) => song.id !== id),
           bookmarks: state.bookmarks.filter((bookmark) => bookmark.songId !== id),
+          likes: state.likes.filter((like) => like.songId !== id),
           recentlyPlayed: state.recentlyPlayed.filter((song) => song.id !== id)
         }))
         
@@ -286,6 +299,7 @@ export const useMusicStore = create<MusicStore>()(
           requestCache.delete('songs-all')
           requestCache.delete(`my-songs-${session.user.id}`)
           requestCache.delete(`bookmarks-${session.user.id}`)
+          requestCache.delete(`likes-${session.user.id}`)
           requestCache.delete(`recently-played-${session.user.id}`)
         }
       } catch (error) {
@@ -610,6 +624,99 @@ export const useMusicStore = create<MusicStore>()(
     },
     
     isBookmarked: (songId) => get().bookmarks.some((bookmark) => bookmark.songId === songId),
+    
+    // Optimized likes methods
+    likes: [],
+    getLikes: async () => {
+      try {
+        const session = await getCachedSession()
+        if (!session) {
+          console.log('No session found, skipping likes loading')
+          return
+        }
+        
+        set((state) => ({ loadingStates: { ...state.loadingStates, likes: true } }))
+        const likes = await getCachedRequest(`likes-${session.user.id}`, () => likesApi.getAll())
+        set((state) => ({ 
+          likes,
+          loadingStates: { ...state.loadingStates, likes: false }
+        }))
+      } catch (error) {
+        console.error('Failed to fetch likes:', error)
+        set((state) => ({ loadingStates: { ...state.loadingStates, likes: false } }))
+      }
+    },
+    
+    addLike: async (songId) => {
+      try {
+        const session = await getCachedSession()
+        if (!session) {
+          throw new Error('Authentication required')
+        }
+        
+        // Optimistic update
+        const optimisticLike = {
+          id: `temp-${Date.now()}`,
+          songId,
+          userId: session.user.id,
+          createdAt: new Date()
+        }
+        
+        set((state) => ({
+          likes: [...state.likes, optimisticLike]
+        }))
+        
+        const newLike = await likesApi.create(songId)
+        
+        // Replace optimistic like with real one
+        set((state) => ({
+          likes: state.likes.map(l => 
+            l.id === optimisticLike.id ? newLike : l
+          )
+        }))
+        
+        // Invalidate cache
+        requestCache.delete(`likes-${session.user.id}`)
+      } catch (error) {
+        console.error('Failed to add like:', error)
+        
+        // Remove optimistic update
+        set((state) => ({
+          likes: state.likes.filter(l => !l.id.startsWith('temp-'))
+        }))
+        throw error
+      }
+    },
+    
+    removeLike: async (songId) => {
+      try {
+        const session = await getCachedSession()
+        if (!session) {
+          throw new Error('Authentication required')
+        }
+        
+        // Store original for potential revert
+        const originalLikes = get().likes
+        
+        // Optimistic update
+        set((state) => ({
+          likes: state.likes.filter((like) => like.songId !== songId)
+        }))
+        
+        await likesApi.delete(songId)
+        
+        // Invalidate cache
+        requestCache.delete(`likes-${session.user.id}`)
+      } catch (error) {
+        console.error('Failed to remove like:', error)
+        
+        // Revert optimistic update
+        set({ likes: get().likes })
+        throw error
+      }
+    },
+    
+    isLiked: (songId) => get().likes.some((like) => like.songId === songId),
     
     // Optimized recently played methods
     recentlyPlayed: [],

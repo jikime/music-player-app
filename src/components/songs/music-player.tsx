@@ -7,7 +7,7 @@ import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import {
-  Bookmark,
+  Heart,
   Download,
   Play,
   Pause,
@@ -45,9 +45,9 @@ export function MusicPlayer() {
     toggleRepeat,
     playNext,
     // playPrevious, // unused
-    isBookmarked,
-    addBookmark,
-    removeBookmark
+    isLiked,
+    addLike,
+    removeLike
   } = useMusicStore()
 
   // Track if we're currently seeking (drag in progress)
@@ -440,12 +440,12 @@ export function MusicPlayer() {
     setVolume(value[0])
   }
 
-  const toggleBookmark = () => {
+  const toggleLike = () => {
     if (currentSong) {
-      if (isBookmarked(currentSong.id)) {
-        removeBookmark(currentSong.id)
+      if (isLiked(currentSong.id)) {
+        removeLike(currentSong.id)
       } else {
-        addBookmark(currentSong.id)
+        addLike(currentSong.id)
       }
     }
   }
@@ -546,10 +546,10 @@ export function MusicPlayer() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className={`w-9 h-9 ${isBookmarked(currentSong.id) ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
-                  onClick={toggleBookmark}
+                  className={`w-9 h-9 ${isLiked(currentSong.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                  onClick={toggleLike}
                 >
-                  <Bookmark className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
+                  <Heart className={`w-4 h-4 ${isLiked(currentSong.id) ? 'fill-current' : ''}`} />
                 </Button>
                 <Button
                   variant="ghost"
@@ -682,10 +682,10 @@ export function MusicPlayer() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className={`${isBookmarked(currentSong.id) ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
-                onClick={toggleBookmark}
+                className={`${isLiked(currentSong.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                onClick={toggleLike}
               >
-                <Bookmark className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 ${isLiked(currentSong.id) ? 'fill-current' : ''}`} />
               </Button>
             </>
           ) : (

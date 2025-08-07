@@ -14,7 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
   Clock,
-  Bookmark,
+  Heart,
   Minus,
   Headphones
 } from "lucide-react"
@@ -29,9 +29,9 @@ export default function TrendingPage() {
     playerState,
     playSong,
     setIsPlaying,
-    isBookmarked,
-    addBookmark,
-    removeBookmark,
+    isLiked,
+    addLike,
+    removeLike,
     initializeData
   } = useMusicStore()
 
@@ -94,11 +94,11 @@ export default function TrendingPage() {
     }
   }
 
-  const toggleBookmark = (song: TrendingSong) => {
-    if (isBookmarked(song.id)) {
-      removeBookmark(song.id)
+  const toggleLike = (song: TrendingSong) => {
+    if (isLiked(song.id)) {
+      removeLike(song.id)
     } else {
-      addBookmark(song.id)
+      addLike(song.id)
     }
   }
 
@@ -259,13 +259,13 @@ export default function TrendingPage() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className={`w-8 h-8 ${isBookmarked(song.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                            className={`w-8 h-8 ${isLiked(song.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
                             onClick={(e) => {
                               e.stopPropagation()
-                              toggleBookmark(song)
+                              toggleLike(song)
                             }}
                           >
-                            <Bookmark className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current' : ''}`} />
+                            <Heart className={`w-4 h-4 ${isLiked(song.id) ? 'fill-current' : ''}`} />
                           </Button>
                         )}
                         <SongMoreMenu
@@ -366,13 +366,13 @@ export default function TrendingPage() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className={`w-8 h-8 ${isBookmarked(song.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                        className={`w-8 h-8 ${isLiked(song.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          toggleBookmark(song)
+                          toggleLike(song)
                         }}
                       >
-                        <Bookmark className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current' : ''}`} />
+                        <Heart className={`w-4 h-4 ${isLiked(song.id) ? 'fill-current' : ''}`} />
                       </Button>
                     )}
                     <SongMoreMenu

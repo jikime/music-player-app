@@ -1,4 +1,4 @@
-import { Song, Playlist, Bookmark, SharedSong } from '@/types/music'
+import { Song, Playlist, Bookmark, Like, SharedSong } from '@/types/music'
 
 const API_BASE_URL = '/api'
 
@@ -231,6 +231,14 @@ interface BookmarksResponse {
 
 interface BookmarkResponse {
   bookmark: Bookmark
+}
+
+interface LikesResponse {
+  likes: Like[]
+}
+
+interface LikeResponse {
+  like: Like
 }
 
 interface SharedSongResponse {
@@ -559,6 +567,48 @@ export const bookmarksApi = {
   }
 }
 
+// Optimized Likes API
+export const likesApi = {
+  // Get all likes with caching
+  getAll: async (): Promise<Like[]> => {
+    const data = await enhancedFetch<LikesResponse>(
+      `${API_BASE_URL}/likes`,
+      {},
+      { key: 'likes-all', ttl: 1 * 60 * 1000 } // 1 min cache
+    )
+    return data.likes
+  },
+
+  // Create like (skip cache, invalidate related caches)
+  create: async (songId: string): Promise<Like> => {
+    const data = await enhancedFetch<LikeResponse>(
+      `${API_BASE_URL}/likes`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ songId }),
+      },
+      { skipCache: true }
+    )
+    
+    // Invalidate likes cache
+    cache.delete('likes-all')
+    
+    return data.like
+  },
+
+  // Delete like (skip cache, invalidate related caches)
+  delete: async (songId: string): Promise<void> => {
+    await enhancedFetch<void>(
+      `${API_BASE_URL}/likes?songId=${songId}`,
+      { method: 'DELETE' },
+      { skipCache: true }
+    )
+    
+    // Invalidate likes cache
+    cache.delete('likes-all')
+  }
+}
+
 // Utility functions
 export const apiUtils = {
   // Clear all caches
@@ -595,6 +645,7 @@ export const apiUtils = {
         songsApi.getAllSongs(),
         playlistsApi.getAll(),
         bookmarksApi.getAll(),
+        likesApi.getAll(),
         recentlyPlayedApi.getRecentlyPlayed()
       ])
     } catch (error) {

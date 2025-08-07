@@ -12,9 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
 import {
   Sheet,
@@ -23,19 +20,13 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { ShareModal } from './share-modal'
 import { AddToPlaylistPopover } from './add-to-playlist-popover'
 import {
   MoreHorizontal,
   Plus,
   Share2,
-  Copy,
-  MessageCircle,
-  Twitter,
-  Facebook,
-  ExternalLink,
-  Music,
-  X
+  Bookmark,
+  BookmarkMinus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -45,105 +36,47 @@ interface SongMoreMenuProps {
   size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
-type ShareOption = {
-  id: 'native' | 'copy' | 'kakao' | 'twitter' | 'facebook';
-  label: string;
-  icon: React.FC<{ className?: string }>;
-  description: string;
-  color?: string;
-}
-
-const shareOptions: ShareOption[] = [
-  {
-    id: 'native',
-    label: '기본 공유',
-    icon: Share2,
-    description: '시스템 공유 메뉴 사용',
-  },
-  {
-    id: 'copy',
-    label: '링크 복사',
-    icon: Copy,
-    description: '클립보드에 복사',
-  },
-  // {
-  //   id: 'kakao',
-  //   label: '카카오톡',
-  //   icon: MessageCircle,
-  //   description: '카카오톡으로 공유',
-  //   color: 'text-yellow-600',
-  // },
-  {
-    id: 'twitter',
-    label: '트위터',
-    icon: Twitter,
-    description: 'X(트위터)로 공유',
-    color: 'text-blue-400',
-  },
-  {
-    id: 'facebook',
-    label: '페이스북',
-    icon: Facebook,
-    description: '페이스북으로 공유',
-    color: 'text-blue-600',
-  },
-]
 
 export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuProps) {
   const isMobile = useIsMobile()
-  const { playlists } = useMusicStore()
   const { 
-    isSharing, 
-    canUseNativeShare, 
+    playlists, 
+    isBookmarked, 
+    addBookmark, 
+    removeBookmark 
+  } = useMusicStore()
+  const { 
     quickShare, 
-    copyToClipboard, 
-    createShareLink,
-    shareNative,
-    shareToPlatform 
+    canUseNativeShare
   } = useShare()
   
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false)
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
-  const [sharedUrl, setSharedUrl] = useState<string | null>(null)
-
-  // Mobile sheet handlers
-  const handleMobileShare = async (platform: typeof shareOptions[number]['id']) => {
-    if (platform === 'native') {
-      await quickShare(song)
-      setIsMobileSheetOpen(false)
-      return
-    }
-
-    if (platform === 'copy') {
-      const url = sharedUrl || await createShareLink(song)
-      if (url) {
-        setSharedUrl(url)
-        await copyToClipboard(url)
-        setIsMobileSheetOpen(false)
-      }
-      return
-    }
-
-    // For social platforms
-    const url = sharedUrl || await createShareLink(song)
-    if (url) {
-      setSharedUrl(url)
-      if (platform === 'kakao' || platform === 'twitter' || platform === 'facebook') {
-        shareToPlatform(url, platform, song)
-        setIsMobileSheetOpen(false)
-      }
-    }
-  }
-
-  // Desktop handlers
-  const handleQuickShare = async () => {
-    await quickShare(song)
-  }
-
-  const handleAdvancedShare = (e: React.MouseEvent) => {
+  
+  // Bookmark handlers
+  const handleToggleBookmark = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsShareModalOpen(true)
+    
+    try {
+      if (isBookmarked(song.id)) {
+        await removeBookmark(song.id)
+      } else {
+        await addBookmark(song.id)
+      }
+      
+      // Close mobile sheet if open
+      if (isMobile) {
+        setIsMobileSheetOpen(false)
+      }
+    } catch (error) {
+      console.error('Failed to toggle bookmark:', error)
+    }
+  }
+
+  // Share handler
+  const handleShare = async () => {
+    await quickShare(song)
+    setIsMobileSheetOpen(false)
   }
 
   if (isMobile) {
@@ -212,49 +145,62 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
                 </Button>
               </AddToPlaylistPopover>
 
-              <div className="border-t pt-2">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider px-4 pb-2">공유하기</p>
-                {shareOptions.map((option) => {
-                  // Hide native share option if not available
-                  if (option.id === 'native' && !canUseNativeShare) {
-                    return null
-                  }
+              {/* Bookmark Toggle */}
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-auto p-4 text-left"
+                onClick={handleToggleBookmark}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full bg-muted flex items-center justify-center",
+                    isBookmarked(song.id) && "bg-yellow-500/10 text-yellow-500"
+                  )}>
+                    {isBookmarked(song.id) ? (
+                      <BookmarkMinus className="w-5 h-5" />
+                    ) : (
+                      <Bookmark className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">
+                      {isBookmarked(song.id) ? '북마크에서 제거' : '북마크에 추가'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {isBookmarked(song.id) ? '저장한 음악에서 제거' : '나중에 들을 수 있도록 저장'}
+                    </p>
+                  </div>
+                </div>
+              </Button>
 
-                  const Icon = option.icon
-                  const isDisabled = isSharing
-                  
-                  return (
+              {/* Share */}
+              {canUseNativeShare && (
+                <>
+                  <div className="border-t pt-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider px-4 pb-2">공유하기</p>
                     <Button
-                      key={option.id}
                       variant="ghost"
-                      className={cn(
-                        "w-full justify-start h-auto p-4 text-left",
-                        isDisabled && "opacity-50 cursor-not-allowed"
-                      )}
+                      className="w-full justify-start h-auto p-4 text-left"
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (!isDisabled) handleMobileShare(option.id)
+                        handleShare()
                       }}
-                      disabled={isDisabled}
                     >
                       <div className="flex items-center gap-3 w-full">
-                        <div className={cn(
-                          "w-10 h-10 rounded-full bg-muted flex items-center justify-center",
-                          option.color && `bg-opacity-10 ${option.color}`
-                        )}>
-                          <Icon className={cn("w-5 h-5", option.color)} />
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <Share2 className="w-5 h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{option.label}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {option.description}
+                          <p className="font-medium text-sm">공유하기</p>
+                          <p className="text-xs text-muted-foreground">
+                            시스템 공유 메뉴 사용
                           </p>
                         </div>
                       </div>
                     </Button>
-                  )
-                })}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
           </SheetContent>
         </Sheet>
@@ -262,27 +208,60 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
     )
   }
 
-  // Temporary simple button to avoid Radix UI infinite loop
+  // Desktop DropdownMenu
   return (
     <>
-      <Button
-        variant="ghost"
-        size={size}
-        className={cn(
-          "text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity",
-          className
-        )}
-        onClick={handleAdvancedShare}
-      >
-        <MoreHorizontal className="w-4 h-4" />
-      </Button>
-
-      {/* Advanced Share Modal */}
-      <ShareModal
-        song={song}
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size={size}
+            className={cn(
+              "text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity",
+              className
+            )}
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>음악 옵션</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          {/* Add to Playlist */}
+          <AddToPlaylistPopover song={song}>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <Plus className="w-4 h-4 mr-3" />
+              플레이리스트에 추가
+            </DropdownMenuItem>
+          </AddToPlaylistPopover>
+          
+          {/* Bookmark Toggle */}
+          <DropdownMenuItem onClick={handleToggleBookmark}>
+            {isBookmarked(song.id) ? (
+              <>
+                <BookmarkMinus className="w-4 h-4 mr-3" />
+                북마크에서 제거
+              </>
+            ) : (
+              <>
+                <Bookmark className="w-4 h-4 mr-3" />
+                북마크에 추가
+              </>
+            )}
+          </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
+          
+          {/* Share */}
+          {canUseNativeShare && (
+            <DropdownMenuItem onClick={handleShare}>
+              <Share2 className="w-4 h-4 mr-3" />
+              공유하기
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   )
 }

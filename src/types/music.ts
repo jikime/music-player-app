@@ -32,6 +32,13 @@ export interface Bookmark {
   song?: Song // Full song data when fetched with details
 }
 
+export interface Like {
+  id: string
+  songId: string
+  createdAt: Date
+  song?: Song // Full song data when fetched with details
+}
+
 export interface UploadedFile {
   type: 'audio' | 'image' | 'lyrics'
   file: File

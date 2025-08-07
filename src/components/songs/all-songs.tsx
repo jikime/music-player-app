@@ -3,7 +3,7 @@ import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { Button } from "@/components/ui/button"
 import {
-  Bookmark,
+  Heart,
   Clock,
   Music,
   Loader2,
@@ -75,15 +75,15 @@ MemoizedSongInfo.displayName = "MemoizedSongInfo"
 // Memoized action buttons component
 const MemoizedActionButtons = React.memo(({ 
   song, 
-  isBookmarked, 
-  isBookmarking, 
-  onToggleBookmark,
+  isLiked,
+  isLiking,
+  onToggleLike,
   isMobile = false 
 }: { 
   song: Song; 
-  isBookmarked: boolean; 
-  isBookmarking: boolean; 
-  onToggleBookmark: (songId: string, event: React.MouseEvent) => void;
+  isLiked: boolean;
+  isLiking: boolean;
+  onToggleLike: (songId: string, event: React.MouseEvent) => void;
   isMobile?: boolean;
 }) => {
   const buttonSize = isMobile ? "w-7 h-7" : "w-8 h-8"
@@ -94,14 +94,14 @@ const MemoizedActionButtons = React.memo(({
       <Button
         variant="ghost"
         size="icon"
-        className={`${buttonSize} ${isBookmarked ? "text-red-500" : "text-muted-foreground"} hover:text-red-500`}
-        onClick={(e) => onToggleBookmark(song.id, e)}
-        disabled={isBookmarking}
+        className={`${buttonSize} ${isLiked ? "text-red-500" : "text-muted-foreground"} hover:text-red-500`}
+        onClick={(e) => onToggleLike(song.id, e)}
+        disabled={isLiking}
       >
-        {isBookmarking ? (
+        {isLiking ? (
           <Loader2 className={`${iconSize} animate-spin`} />
         ) : (
-          <Bookmark className={`${iconSize} ${isBookmarked ? "fill-current" : ""}`} />
+          <Heart className={`${iconSize} ${isLiked ? "fill-current" : ""}`} />
         )}
       </Button>
       <SongMoreMenu
@@ -123,18 +123,18 @@ const MemoizedMobileSongRow = React.memo(({
   currentPage, 
   itemsPerPage, 
   onPlaySong, 
-  isBookmarked, 
-  isBookmarking, 
-  onToggleBookmark
+  isLiked,
+  isLiking,
+  onToggleLike
 }: {
   song: Song;
   index: number;
   currentPage: number;
   itemsPerPage: number;
   onPlaySong: (song: Song) => void;
-  isBookmarked: boolean;
-  isBookmarking: boolean;
-  onToggleBookmark: (songId: string, event: React.MouseEvent) => void;
+  isLiked: boolean;
+  isLiking: boolean;
+  onToggleLike: (songId: string, event: React.MouseEvent) => void;
 }) => (
   <div 
     className="md:hidden p-2 hover:scale-105 transition-transform group cursor-pointer"
@@ -153,9 +153,9 @@ const MemoizedMobileSongRow = React.memo(({
       </div>
       <MemoizedActionButtons
         song={song}
-        isBookmarked={isBookmarked}
-        isBookmarking={isBookmarking}
-        onToggleBookmark={onToggleBookmark}
+        isLiked={isLiked}
+        isLiking={isLiking}
+        onToggleLike={onToggleLike}
         isMobile={true}
       />
     </div>
@@ -170,18 +170,18 @@ const MemoizedDesktopSongRow = React.memo(({
   currentPage, 
   itemsPerPage, 
   onPlaySong, 
-  isBookmarked, 
-  isBookmarking, 
-  onToggleBookmark
+  isLiked,
+  isLiking,
+  onToggleLike
 }: {
   song: Song;
   index: number;
   currentPage: number;
   itemsPerPage: number;
   onPlaySong: (song: Song) => void;
-  isBookmarked: boolean;
-  isBookmarking: boolean;
-  onToggleBookmark: (songId: string, event: React.MouseEvent) => void;
+  isLiked: boolean;
+  isLiking: boolean;
+  onToggleLike: (songId: string, event: React.MouseEvent) => void;
 }) => (
   <div 
     className="hidden md:flex items-center gap-2 p-3 rounded-lg hover:bg-card/30 group cursor-pointer"
@@ -206,9 +206,9 @@ const MemoizedDesktopSongRow = React.memo(({
       </div>
       <MemoizedActionButtons
         song={song}
-        isBookmarked={isBookmarked}
-        isBookmarking={isBookmarking}
-        onToggleBookmark={onToggleBookmark}
+        isLiked={isLiked}
+        isLiking={isLiking}
+        onToggleLike={onToggleLike}
         isMobile={false}
       />
     </div>
@@ -217,16 +217,16 @@ const MemoizedDesktopSongRow = React.memo(({
 MemoizedDesktopSongRow.displayName = "MemoizedDesktopSongRow"
 
 export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: AllSongsProps) => {
-  const [bookmarkingStates, setBookmarkingStates] = useState<Record<string, boolean>>({})
+  const [likingStates, setLikingStates] = useState<Record<string, boolean>>({})
   const [currentPage, setCurrentPage] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   
   const ITEMS_PER_PAGE = 10 // All Songs는 더 많이 표시
   
   const {
-    isBookmarked,
-    addBookmark,
-    removeBookmark
+    isLiked,
+    addLike,
+    removeLike
   } = useMusicStore()
   
   // Memoized calculations
@@ -261,35 +261,35 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
     }
   }, [paginationData.canGoNext, currentPage, handlePageChange])
 
-  const handleToggleBookmark = useCallback(async (songId: string, event: React.MouseEvent) => {
+  const handleToggleLike = useCallback(async (songId: string, event: React.MouseEvent) => {
     event.stopPropagation()
     
-    if (bookmarkingStates[songId]) return
+    if (likingStates[songId]) return
     
-    setBookmarkingStates(prev => ({ ...prev, [songId]: true }))
+    setLikingStates(prev => ({ ...prev, [songId]: true }))
     
     try {
-      if (isBookmarked(songId)) {
-        await removeBookmark(songId)
-        console.log('북마크에서 제거되었습니다.')
+      if (isLiked(songId)) {
+        await removeLike(songId)
+        console.log('좋아요에서 제거되었습니다.')
       } else {
-        await addBookmark(songId)
-        console.log('북마크에 추가되었습니다.')
+        await addLike(songId)
+        console.log('좋아요에 추가되었습니다.')
       }
     } catch (error) {
-      console.error('Failed to toggle bookmark:', error)
+      console.error('Failed to toggle like:', error)
       
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
       
-      if (errorMessage.includes('already bookmarked')) {
-        console.warn('이미 북마크된 노래입니다.')
+      if (errorMessage.includes('already liked')) {
+        console.warn('이미 좋아요한 노래입니다.')
       } else {
-        console.warn(`북마크 처리 중 오류: ${errorMessage}`)
+        console.warn(`좋아요 처리 중 오류: ${errorMessage}`)
       }
     } finally {
-      setBookmarkingStates(prev => ({ ...prev, [songId]: false }))
+      setLikingStates(prev => ({ ...prev, [songId]: false }))
     }
-  }, [bookmarkingStates, isBookmarked, addBookmark, removeBookmark])
+  }, [likingStates, isLiked, addLike, removeLike])
 
   const skeletonRows = useMemo(() => (
     <div className="space-y-2">
@@ -363,8 +363,8 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
           }`}
         >
           {paginationData.currentSongs.map((song, index) => {
-            const isBookmarkedSong = isBookmarked(song.id)
-            const isBookmarkingSong = bookmarkingStates[song.id] || false
+            const isLikedSong = isLiked(song.id)
+            const isLikingSong = likingStates[song.id] || false
             
             return (
               <div key={song.id}>
@@ -374,9 +374,9 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
                   currentPage={currentPage}
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPlaySong={onPlaySong}
-                  isBookmarked={isBookmarkedSong}
-                  isBookmarking={isBookmarkingSong}
-                  onToggleBookmark={handleToggleBookmark}
+                  isLiked={isLikedSong}
+                  isLiking={isLikingSong}
+                  onToggleLike={handleToggleLike}
                 />
                 <MemoizedDesktopSongRow
                   song={song}
@@ -384,9 +384,9 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
                   currentPage={currentPage}
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPlaySong={onPlaySong}
-                  isBookmarked={isBookmarkedSong}
-                  isBookmarking={isBookmarkingSong}
-                  onToggleBookmark={handleToggleBookmark}
+                  isLiked={isLikedSong}
+                  isLiking={isLikingSong}
+                  onToggleLike={handleToggleLike}
                 />
               </div>
             )
