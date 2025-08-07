@@ -8,12 +8,12 @@ export const metadata: Metadata = {
     title: 'VIBE Music - 트렌딩 차트',
     description: '실시간 인기 음악 차트. 일간, 주간, 월간 트렌딩 차트를 확인하고 최신 인기곡을 들어보세요.',
     type: 'music.playlist',
-    url: 'https://vibemusic.app/trending',
+    url: 'https://music.cookai.dev/trending',
     images: [
       {
-        url: '/og-trending.png',
-        width: 1200,
-        height: 630,
+        url: '/images/vibe_music.png',
+        width: 400,
+        height: 400,
         alt: 'VIBE Music 트렌딩 차트',
       },
     ],
@@ -24,6 +24,6 @@ export const metadata: Metadata = {
     description: '실시간 인기 음악 차트를 확인하세요',
   },
   alternates: {
-    canonical: 'https://vibemusic.app/trending',
+    canonical: 'https://music.cookai.dev/trending',
   },
 }

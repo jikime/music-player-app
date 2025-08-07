@@ -7,10 +7,10 @@ export const homeMetadata: Metadata = {
     title: 'VIBE Music - 홈',
     description: '최신 음악과 인기 플레이리스트를 발견하세요. VIBE Music에서 무료로 음악을 스트리밍하세요.',
     type: 'website',
-    url: 'https://vibemusic.app',
+    url: 'https://music.cookai.dev',
   },
   alternates: {
-    canonical: 'https://vibemusic.app',
+    canonical: 'https://music.cookai.dev',
   },
 }
 
@@ -21,9 +21,9 @@ export const trendingMetadata: Metadata = {
     title: 'VIBE Music - 트렌딩 차트',
     description: '실시간 인기 음악 차트. 일간, 주간, 월간 트렌딩 차트를 확인하고 최신 인기곡을 들어보세요.',
     type: 'music.playlist',
-    url: 'https://vibemusic.app/trending',
+    url: 'https://music.cookai.dev/trending',
   },
   alternates: {
-    canonical: 'https://vibemusic.app/trending',
+    canonical: 'https://music.cookai.dev/trending',
   },
 }

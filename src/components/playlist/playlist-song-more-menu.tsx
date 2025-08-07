@@ -20,27 +20,35 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { AddToPlaylistPopover } from './add-to-playlist-popover'
+import { AddToPlaylistPopover } from '@/components/songs/add-to-playlist-popover'
 import {
   MoreHorizontal,
   Plus,
   Share2,
   Bookmark,
-  BookmarkMinus
+  BookmarkMinus,
+  X,
+  Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface SongMoreMenuProps {
+interface PlaylistSongMoreMenuProps {
   song: Song
   className?: string
   size?: 'default' | 'sm' | 'lg' | 'icon'
+  onRemoveFromPlaylist: (song: Song) => void
+  isRemoving?: boolean
 }
 
-
-export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuProps) {
+export function PlaylistSongMoreMenu({ 
+  song, 
+  className, 
+  size = 'icon',
+  onRemoveFromPlaylist,
+  isRemoving = false
+}: PlaylistSongMoreMenuProps) {
   const isMobile = useIsMobile()
   const { 
-    playlists, 
     isBookmarked, 
     addBookmark, 
     removeBookmark 
@@ -79,6 +87,14 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
     setIsMobileSheetOpen(false)
   }
 
+  // Remove from playlist handler
+  const handleRemoveFromPlaylist = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onRemoveFromPlaylist(song)
+    setIsMobileSheetOpen(false)
+  }
+
   if (isMobile) {
     return (
       <>
@@ -90,8 +106,13 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
             e.stopPropagation()
             setIsMobileSheetOpen(true)
           }}
+          disabled={isRemoving}
         >
-          <MoreHorizontal className="w-4 h-4" />
+          {isRemoving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <MoreHorizontal className="w-4 h-4" />
+          )}
         </Button>
 
         {/* Mobile Bottom Sheet */}
@@ -124,7 +145,31 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
             </SheetHeader>
 
             <div className="space-y-2 pb-4">
-              {/* Add to Playlist */}
+              {/* Remove from Playlist */}
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-auto p-4 text-left"
+                onClick={handleRemoveFromPlaylist}
+                disabled={isRemoving}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    {isRemoving ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-red-500">플레이리스트에서 제거</p>
+                    <p className="text-xs text-muted-foreground">
+                      이 플레이리스트에서 곡을 제거합니다
+                    </p>
+                  </div>
+                </div>
+              </Button>
+
+              {/* Add to Another Playlist */}
               <AddToPlaylistPopover song={song}>
                 <Button
                   variant="ghost"
@@ -136,7 +181,7 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
                       <Plus className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">플레이리스트에 추가</p>
+                      <p className="font-medium text-sm">다른 플레이리스트에 추가</p>
                       <p className="text-xs text-muted-foreground">
                         내 플레이리스트에 이 곡 추가
                       </p>
@@ -212,22 +257,39 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
             variant="ghost"
             size={size}
             className={cn(
-              "text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity",
+              "text-muted-foreground hover:text-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity",
               className
             )}
+            disabled={isRemoving}
           >
-            <MoreHorizontal className="w-4 h-4" />
+            {isRemoving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <MoreHorizontal className="w-4 h-4" />
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>음악 옵션</DropdownMenuLabel>
           <DropdownMenuSeparator />
           
-          {/* Add to Playlist */}
+          {/* Remove from Playlist */}
+          <DropdownMenuItem 
+            onClick={handleRemoveFromPlaylist}
+            disabled={isRemoving}
+            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+          >
+            <X className="w-4 h-4 mr-3" />
+            플레이리스트에서 제거
+          </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
+          
+          {/* Add to Another Playlist */}
           <AddToPlaylistPopover song={song}>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <Plus className="w-4 h-4 mr-3" />
-              플레이리스트에 추가
+              다른 플레이리스트에 추가
             </DropdownMenuItem>
           </AddToPlaylistPopover>
           

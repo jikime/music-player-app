@@ -19,6 +19,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { AddToPlaylistPopover } from './add-to-playlist-popover'
 import {
@@ -26,21 +36,31 @@ import {
   Plus,
   Share2,
   Bookmark,
-  BookmarkMinus
+  BookmarkMinus,
+  Edit,
+  Trash2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface SongMoreMenuProps {
+interface MySongMoreMenuProps {
   song: Song
   className?: string
   size?: 'default' | 'sm' | 'lg' | 'icon'
+  onEdit: (song: Song) => void
+  onDelete: (song: Song) => void
+  isDeleting?: boolean
 }
 
-
-export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuProps) {
+export function MySongMoreMenu({ 
+  song, 
+  className, 
+  size = 'icon',
+  onEdit,
+  onDelete,
+  isDeleting = false
+}: MySongMoreMenuProps) {
   const isMobile = useIsMobile()
   const { 
-    playlists, 
     isBookmarked, 
     addBookmark, 
     removeBookmark 
@@ -51,6 +71,7 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
   } = useShare()
   
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   
   // Bookmark handlers
   const handleToggleBookmark = async (e: React.MouseEvent) => {
@@ -77,6 +98,31 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
   const handleShare = async () => {
     await quickShare(song)
     setIsMobileSheetOpen(false)
+  }
+
+  // Edit handler
+  const handleEdit = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onEdit(song)
+    setIsMobileSheetOpen(false)
+  }
+
+  // Delete handlers
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setShowDeleteDialog(true)
+    setIsMobileSheetOpen(false)
+  }
+
+  const handleDeleteConfirm = () => {
+    onDelete(song)
+    setShowDeleteDialog(false)
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false)
   }
 
   if (isMobile) {
@@ -124,6 +170,45 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
             </SheetHeader>
 
             <div className="space-y-2 pb-4">
+              {/* Edit */}
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-auto p-4 text-left"
+                onClick={handleEdit}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <Edit className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">수정하기</p>
+                    <p className="text-xs text-muted-foreground">
+                      노래 정보를 수정합니다
+                    </p>
+                  </div>
+                </div>
+              </Button>
+
+              {/* Delete */}
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-auto p-4 text-left"
+                onClick={handleDeleteClick}
+                disabled={isDeleting}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <Trash2 className="w-5 h-5 text-red-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-red-500">삭제하기</p>
+                    <p className="text-xs text-muted-foreground">
+                      노래를 영구적으로 삭제합니다
+                    </p>
+                  </div>
+                </div>
+              </Button>
+
               {/* Add to Playlist */}
               <AddToPlaylistPopover song={song}>
                 <Button
@@ -199,6 +284,31 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
             </div>
           </SheetContent>
         </Sheet>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>노래 삭제</AlertDialogTitle>
+              <AlertDialogDescription>
+                &quot;{song.title}&quot;을(를) 정말 삭제하시겠습니까?
+                <br />
+                이 작업은 되돌릴 수 없습니다.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleDeleteCancel}>
+                취소
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteConfirm}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                삭제
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </>
     )
   }
@@ -221,6 +331,24 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>음악 옵션</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          {/* Edit */}
+          <DropdownMenuItem onClick={handleEdit}>
+            <Edit className="w-4 h-4 mr-3" />
+            수정하기
+          </DropdownMenuItem>
+          
+          {/* Delete */}
+          <DropdownMenuItem 
+            onClick={handleDeleteClick}
+            disabled={isDeleting}
+            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4 mr-3" />
+            삭제하기
+          </DropdownMenuItem>
+          
           <DropdownMenuSeparator />
           
           {/* Add to Playlist */}
@@ -255,6 +383,31 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>노래 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{song.title}&quot;을(를) 정말 삭제하시겠습니까?
+              <br />
+              이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDeleteCancel}>
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
