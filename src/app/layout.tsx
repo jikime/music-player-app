@@ -58,9 +58,9 @@ export const metadata: Metadata = {
     siteName: 'VIBE Music',
     images: [
       {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
+        url: '/images/vibe_music.png',
+        width: 1422,
+        height: 1120,
         alt: 'VIBE Music - 무료 음악 스트리밍',
       },
     ],
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'VIBE Music - 무료 음악 스트리밍 서비스',
     description: '무료 온라인 음악 스트리밍 서비스. 최신 음악, 플레이리스트, 트렌딩 차트를 즐기세요.',
-    images: ['/og-image.png'],
+    images: ['/images/vibe_music.png'],
     creator: '@vibemusic',
   },
   robots: {

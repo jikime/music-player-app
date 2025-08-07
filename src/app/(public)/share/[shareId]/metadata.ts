@@ -12,8 +12,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: '/images/vibe_music.png',
-        width: 400,
-        height: 400,
+        width: 1422,
+        height: 1120,
         alt: 'VIBE Music 음악 공유',
       },
     ],
