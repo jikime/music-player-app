@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
     
     // If image_data is missing, fetch it separately from songs table
-    const songIds = trendingData.map((song: any) => song.song_id)
+    const songIds = trendingData.map((song: { song_id: string }) => song.song_id)
     const { data: songsWithImageData, error: songsError } = await supabase
       .from('songs')
       .select('id, image_data')
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Create a map for quick lookup
     const imageDataMap = new Map()
     if (songsWithImageData) {
-      songsWithImageData.forEach((song: any) => {
+      songsWithImageData.forEach((song: { id: string; image_data: string }) => {
         imageDataMap.set(song.id, song.image_data)
       })
     }

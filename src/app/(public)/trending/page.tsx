@@ -14,7 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
   Clock,
-  Heart,
+  Bookmark,
   Minus,
   Headphones
 } from "lucide-react"
@@ -265,7 +265,7 @@ export default function TrendingPage() {
                               toggleBookmark(song)
                             }}
                           >
-                            <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current' : ''}`} />
+                            <Bookmark className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current' : ''}`} />
                           </Button>
                         )}
                         <SongMoreMenu
@@ -372,7 +372,7 @@ export default function TrendingPage() {
                           toggleBookmark(song)
                         }}
                       >
-                        <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current' : ''}`} />
+                        <Bookmark className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current' : ''}`} />
                       </Button>
                     )}
                     <SongMoreMenu

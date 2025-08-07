@@ -146,9 +146,11 @@ export function useShare() {
     switch (platform) {
       case 'kakao':
         // KakaoTalk share (requires Kakao SDK)
-        if (typeof window !== 'undefined' && (window as any).Kakao && (window as any).Kakao.isInitialized()) {
+        if (typeof window !== 'undefined' && (window as Window & { Kakao?: { isInitialized(): boolean; Share: { sendDefault(options: unknown): void } } }).Kakao?.isInitialized()) {
           try {
-            (window as any).Kakao.Share.sendDefault({
+            const kakao = (window as Window & { Kakao?: { Share: { sendDefault(options: unknown): void } } }).Kakao
+            if (kakao) {
+              kakao.Share.sendDefault({
               objectType: 'music',
               content: {
                 title: song.title,
@@ -169,6 +171,7 @@ export function useShare() {
                 },
               ],
             })
+            }
           } catch (error) {
             console.error('Kakao share error:', error)
             toast.error('카카오톡 공유에 실패했습니다')

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -440,9 +441,11 @@ export function AddLinkModal({ open, onOpenChange, editMode = false, songToEdit 
                 Album Art Preview
               </Label>
               <div className="flex justify-center">
-                <img 
+                <Image 
                   src={thumbnailBase64 || thumbnailPreview} 
                   alt="Album art preview"
+                  width={128}
+                  height={96}
                   className="w-32 h-24 object-cover rounded-lg border border-border"
                   onError={() => {
                     console.warn('Failed to load thumbnail preview')

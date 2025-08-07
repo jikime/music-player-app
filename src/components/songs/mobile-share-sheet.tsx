@@ -31,7 +31,15 @@ interface MobileShareSheetProps {
   onClose: () => void
 }
 
-const shareOptions = [
+type ShareOption = {
+  id: 'native' | 'copy' | 'kakao' | 'twitter' | 'facebook'
+  label: string
+  icon: React.FC<{ className?: string }>
+  description: string
+  color?: string
+}
+
+const shareOptions: ShareOption[] = [
   {
     id: 'native',
     label: '기본 공유',

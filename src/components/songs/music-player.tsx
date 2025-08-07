@@ -7,7 +7,7 @@ import ReactPlayer from "react-player"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import {
-  Heart,
+  Bookmark,
   Download,
   Play,
   Pause,
@@ -549,7 +549,7 @@ export function MusicPlayer() {
                   className={`w-9 h-9 ${isBookmarked(currentSong.id) ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
                   onClick={toggleBookmark}
                 >
-                  <Heart className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
+                  <Bookmark className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
                 </Button>
                 <Button
                   variant="ghost"
@@ -685,7 +685,7 @@ export function MusicPlayer() {
                 className={`${isBookmarked(currentSong.id) ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
                 onClick={toggleBookmark}
               >
-                <Heart className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
+                <Bookmark className={`w-4 h-4 ${isBookmarked(currentSong.id) ? 'fill-current' : ''}`} />
               </Button>
             </>
           ) : (

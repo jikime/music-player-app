@@ -11,13 +11,15 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-  Heart,
+  Bookmark,
   Share2,
   ExternalLink,
   RotateCcw
 } from 'lucide-react'
 import { Song } from '@/types/music'
 import { cn } from '@/lib/utils'
+import { useMusicStore } from '@/lib/store'
+import Image from 'next/image'
 
 interface VinylPlayerProps {
   song: Song
@@ -54,6 +56,7 @@ export function VinylPlayer({
 }: VinylPlayerProps) {
   // 기존 MusicPlayer와 동일한 상태 관리
   const playerRef = useRef<HTMLVideoElement | null>(null)
+  const { isBookmarked, addBookmark, removeBookmark } = useMusicStore()
   const [playerReady, setPlayerReady] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false) // Start with false, set after ready
   const [seeking, setSeeking] = useState(false)
@@ -74,6 +77,19 @@ export function VinylPlayer({
   
   // Muted state - start muted for autoplay, then unmute
   const [isMuted, setIsMuted] = useState(true)
+  
+  // 북마크 토글 함수
+  const handleBookmarkToggle = async () => {
+    try {
+      if (isBookmarked(song.id)) {
+        await removeBookmark(song.id)
+      } else {
+        await addBookmark(song.id)
+      }
+    } catch (error) {
+      console.error('Failed to toggle bookmark:', error)
+    }
+  }
   const [hasUnmuted, setHasUnmuted] = useState(false)
 
   // Track if we're currently seeking (drag in progress)
@@ -485,15 +501,7 @@ export function VinylPlayer({
             style={{ opacity: 0, position: 'absolute', top: '-9999px' }}
             config={{
               youtube: {
-                playerVars: {
-                  autoplay: 1,
-                  controls: 0,
-                  modestbranding: 1,
-                  playsinline: 1,
-                  rel: 0,
-                  showinfo: 0,
-                  mute: isMuted ? 1 : 0  // Dynamic mute based on state
-                }
+                disablekb: 1
               }
             }}
             onReady={handleReady}
@@ -542,11 +550,12 @@ export function VinylPlayer({
           >
             {/* Album Art Center */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full overflow-hidden shadow-inner border-4 border-gray-800">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={song.image_data || song.thumbnail || "/placeholder.svg"}
                 alt={song.title}
                 className="w-full h-full object-cover"
+                width={128}
+                height={128}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
                   target.src = "/placeholder.svg"
@@ -650,10 +659,10 @@ export function VinylPlayer({
 
       {/* Song Info */}
       <div className="text-center space-y-2 max-w-md">
-        <h2 className="text-2xl font-bold text-foreground truncate">{song.title}</h2>
-        <p className="text-lg text-muted-foreground truncate">{song.artist}</p>
+        <h2 className="text-2xl font-bold text-foreground text-center break-words leading-tight">{song.title}</h2>
+        <p className="text-lg text-muted-foreground text-center break-words">{song.artist}</p>
         {song.album && (
-          <p className="text-sm text-muted-foreground/70 truncate">{song.album}</p>
+          <p className="text-sm text-muted-foreground/70 text-center break-words">{song.album}</p>
         )}
         
         {/* Muted Status Indicator */}
@@ -884,13 +893,17 @@ export function VinylPlayer({
 
           {/* Additional Actions */}
           <div className="flex items-center justify-center space-x-2">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              <Heart className="w-4 h-4 mr-2" />
-              Like
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={cn(
+                "text-muted-foreground hover:text-foreground",
+                isBookmarked(song.id) && "text-primary"
+              )}
+              onClick={handleBookmarkToggle}
+            >
+              <Bookmark className={cn("w-4 h-4 mr-2", isBookmarked(song.id) && "fill-current")} />
+              북마크
             </Button>
             {song.url && (
               <Button 

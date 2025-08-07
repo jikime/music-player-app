@@ -3,7 +3,7 @@ import { ImageWithFallback } from "@/components/songs/image-with-fallback"
 import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { Button } from "@/components/ui/button"
 import {
-  Heart,
+  Bookmark,
   Clock,
   Music,
   Loader2,
@@ -101,7 +101,7 @@ const MemoizedActionButtons = React.memo(({
         {isBookmarking ? (
           <Loader2 className={`${iconSize} animate-spin`} />
         ) : (
-          <Heart className={`${iconSize} ${isBookmarked ? "fill-current" : ""}`} />
+          <Bookmark className={`${iconSize} ${isBookmarked ? "fill-current" : ""}`} />
         )}
       </Button>
       <SongMoreMenu

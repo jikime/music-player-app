@@ -48,7 +48,7 @@ interface SongMoreMenuProps {
 type ShareOption = {
   id: 'native' | 'copy' | 'kakao' | 'twitter' | 'facebook';
   label: string;
-  icon: React.FC<any>;
+  icon: React.FC<{ className?: string }>;
   description: string;
   color?: string;
 }
@@ -233,7 +233,7 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
                       )}
                       onClick={(e) => {
                         e.stopPropagation()
-                        !isDisabled && handleMobileShare(option.id)
+                        if (!isDisabled) handleMobileShare(option.id)
                       }}
                       disabled={isDisabled}
                     >
