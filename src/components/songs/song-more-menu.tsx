@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Song } from '@/types/music'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { useShare } from '@/hooks/use-share'
+import { ShareModal } from './share-modal'
 import { useMusicStore } from '@/lib/store'
 import {
   DropdownMenu,
@@ -45,12 +45,8 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
     addBookmark, 
     removeBookmark 
   } = useMusicStore()
-  const { 
-    quickShare, 
-    canUseNativeShare
-  } = useShare()
-  
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   
   // Bookmark handlers
   const handleToggleBookmark = async (e: React.MouseEvent) => {
@@ -74,8 +70,8 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
   }
 
   // Share handler
-  const handleShare = async () => {
-    await quickShare(song)
+  const handleShare = () => {
+    setIsShareModalOpen(true)
     setIsMobileSheetOpen(false)
   }
 
@@ -174,28 +170,26 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
               </Button>
 
               {/* Share */}
-              {canUseNativeShare && (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-auto p-4 text-left"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleShare()
-                  }}
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                      <Share2 className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">공유하기</p>
-                      <p className="text-xs text-muted-foreground">
-                        시스템 공유 메뉴 사용
-                      </p>
-                    </div>
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-auto p-4 text-left"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleShare()
+                }}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <Share2 className="w-5 h-5" />
                   </div>
-                </Button>
-              )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">공유하기</p>
+                    <p className="text-xs text-muted-foreground">
+                      공유 링크 생성
+                    </p>
+                  </div>
+                </div>
+              </Button>
             </div>
           </SheetContent>
         </Sheet>
@@ -247,14 +241,19 @@ export function SongMoreMenu({ song, className, size = 'icon' }: SongMoreMenuPro
           </DropdownMenuItem>
           
           {/* Share */}
-          {canUseNativeShare && (
-            <DropdownMenuItem onClick={handleShare}>
-              <Share2 className="w-4 h-4 mr-3" />
-              공유하기
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem onClick={handleShare}>
+            <Share2 className="w-4 h-4 mr-3" />
+            공유하기
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Share Modal */}
+      <ShareModal
+        song={song}
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+      />
     </>
   )
 }
