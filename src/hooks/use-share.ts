@@ -115,6 +115,8 @@ export function useShare() {
 
   // Quick share - creates link and immediately shares
   const quickShare = useCallback(async (song: Song) => {
+    if (isSharing) return // Prevent multiple calls
+    
     try {
       setIsSharing(true)
       
@@ -134,7 +136,7 @@ export function useShare() {
     } finally {
       setIsSharing(false)
     }
-  }, [createShareLink, shareNative])
+  }, [createShareLink, shareNative, isSharing])
 
   // Share to specific platform
   const shareToPlatform = useCallback((url: string, platform: 'kakao' | 'twitter' | 'facebook' | 'whatsapp', song: Song) => {

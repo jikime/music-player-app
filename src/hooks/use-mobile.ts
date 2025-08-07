@@ -29,10 +29,11 @@ export function useIsMobile() {
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${BREAKPOINTS.tablet - 1}px)`)
     const onChange = () => {
-      setIsMobile(window.innerWidth < BREAKPOINTS.tablet)
+      const newIsMobile = window.innerWidth < BREAKPOINTS.tablet
+      setIsMobile(prev => prev !== newIsMobile ? newIsMobile : prev)
     }
     mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < BREAKPOINTS.tablet)
+    onChange() // 초기값 설정
     return () => mql.removeEventListener("change", onChange)
   }, [])
 
@@ -68,7 +69,7 @@ export function useResponsive(): ResponsiveState {
   React.useEffect(() => {
     const updateState = () => {
       const width = window.innerWidth
-      setState({
+      const newState = {
         isMobile: width < BREAKPOINTS.mobile,
         isTablet: width >= BREAKPOINTS.mobile && width < BREAKPOINTS.laptop,
         isLaptop: width >= BREAKPOINTS.laptop && width < BREAKPOINTS.desktop,
@@ -76,6 +77,13 @@ export function useResponsive(): ResponsiveState {
         isWide: width >= BREAKPOINTS.wide,
         deviceType: getDeviceType(width),
         width
+      }
+      setState(prev => {
+        // 상태가 실제로 변경된 경우에만 업데이트
+        if (prev.width !== newState.width || prev.deviceType !== newState.deviceType) {
+          return newState
+        }
+        return prev
       })
     }
 
@@ -112,10 +120,11 @@ export function useBreakpoint(breakpoint: keyof typeof BREAKPOINTS) {
   React.useEffect(() => {
     const mql = window.matchMedia(`(min-width: ${BREAKPOINTS[breakpoint]}px)`)
     const onChange = () => {
-      setMatches(window.innerWidth >= BREAKPOINTS[breakpoint])
+      const newMatches = window.innerWidth >= BREAKPOINTS[breakpoint]
+      setMatches(prev => prev !== newMatches ? newMatches : prev)
     }
     mql.addEventListener("change", onChange)
-    setMatches(window.innerWidth >= BREAKPOINTS[breakpoint])
+    onChange() // 초기값 설정
     return () => mql.removeEventListener("change", onChange)
   }, [breakpoint])
 

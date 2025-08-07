@@ -29,6 +29,7 @@ export interface Bookmark {
   id: string
   songId: string
   createdAt: Date
+  song?: Song // Full song data when fetched with details
 }
 
 export interface UploadedFile {

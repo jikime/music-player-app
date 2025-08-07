@@ -6,8 +6,7 @@ import { useMusicStore } from "@/lib/store"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ImageWithFallback } from "@/components/songs/image-with-fallback"
-import { AddToPlaylistPopover } from "@/components/songs/add-to-playlist-popover"
-import { QuickShareButton } from "@/components/songs/quick-share-button"
+import { SongMoreMenu } from "@/components/songs/song-more-menu"
 import { Button } from "@/components/ui/button"
 import {
   Play,
@@ -16,7 +15,6 @@ import {
   TrendingDown,
   Clock,
   Heart,
-  Plus,
   Minus,
   Headphones
 } from "lucide-react"
@@ -56,6 +54,21 @@ export default function TrendingPage() {
         
         // Fetch trending songs only
         const songsData = await trendingApi.getTrendingSongs(selectedPeriod)
+        
+        // Debug: Log first song image data
+        // if (songsData && songsData.length > 0) {
+        //   const song = songsData[0]
+        //   console.log('Frontend - First trending song image data:', {
+        //     title: song.title,
+        //     image_data_exists: !!song.image_data,
+        //     image_data_length: song.image_data ? song.image_data.length : 0,
+        //     image_data_starts_with: song.image_data ? song.image_data.substring(0, 20) : 'N/A',
+        //     thumbnail: song.thumbnail || 'NO',
+        //     finalSrc: song.image_data || song.thumbnail || '/placeholder.svg',
+        //     is_base64: song.image_data ? song.image_data.startsWith('data:image/') : false
+        //   })
+        // }
+        
         setTrendingSongs(songsData || [])
       } catch (err) {
         console.error('Failed to fetch trending data:', err)
@@ -177,7 +190,7 @@ export default function TrendingPage() {
                     }}
                   >
                     <ImageWithFallback
-                      src={song.image_data || song.thumbnail || ''}
+                      src={song.image_data || song.thumbnail || '/placeholder.svg'}
                       alt={song.title}
                       width={48}
                       height={48}
@@ -243,34 +256,21 @@ export default function TrendingPage() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         {session && (
-                          <>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleBookmark(song)
-                              }}
-                            >
-                              <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
-                            </Button>
-                            <AddToPlaylistPopover song={song}>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
-                            </AddToPlaylistPopover>
-                          </>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={`w-8 h-8 ${isBookmarked(song.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleBookmark(song)
+                            }}
+                          >
+                            <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current' : ''}`} />
+                          </Button>
                         )}
-                        <QuickShareButton
+                        <SongMoreMenu
                           song={song}
                           size="icon"
-                          variant="ghost"
                           className="w-8 h-8"
                         />
                       </div>
@@ -301,7 +301,7 @@ export default function TrendingPage() {
                     }}
                   >
                     <ImageWithFallback
-                      src={song.image_data || song.thumbnail || ''}
+                      src={song.image_data || song.thumbnail || '/placeholder.svg'}
                       alt={song.title}
                       width={48}
                       height={48}
@@ -363,34 +363,21 @@ export default function TrendingPage() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     {session && (
-                      <>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleBookmark(song)
-                          }}
-                        >
-                          <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current text-red-500' : ''}`} />
-                        </Button>
-                        <AddToPlaylistPopover song={song}>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </AddToPlaylistPopover>
-                      </>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className={`w-8 h-8 ${isBookmarked(song.id) ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleBookmark(song)
+                        }}
+                      >
+                        <Heart className={`w-4 h-4 ${isBookmarked(song.id) ? 'fill-current' : ''}`} />
+                      </Button>
                     )}
-                    <QuickShareButton
+                    <SongMoreMenu
                       song={song}
                       size="icon"
-                      variant="ghost"
                       className="w-8 h-8"
                     />
                   </div>

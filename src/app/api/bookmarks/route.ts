@@ -31,10 +31,25 @@ export async function GET() {
     console.log('Bookmarks fetched from DB:', bookmarks?.length || 0)
 
     // Database 형식을 클라이언트 형식으로 변환
-    const transformedBookmarks = bookmarks.map((bookmark: { id: string; song_id: string; created_at: string }) => ({
+    const transformedBookmarks = bookmarks.map((bookmark: any) => ({
       id: bookmark.id,
       songId: bookmark.song_id,
-      createdAt: bookmark.created_at ? new Date(bookmark.created_at) : new Date()
+      createdAt: bookmark.created_at ? new Date(bookmark.created_at) : new Date(),
+      song: {
+        id: bookmark.songs.id,
+        title: bookmark.songs.title,
+        artist: bookmark.songs.artist,
+        album: bookmark.songs.album,
+        duration: bookmark.songs.duration,
+        url: bookmark.songs.url,
+        thumbnail: bookmark.songs.thumbnail,
+        image_data: bookmark.songs.image_data,
+        lyrics: bookmark.songs.lyrics,
+        uploadedAt: bookmark.songs.uploaded_at ? new Date(bookmark.songs.uploaded_at) : new Date(),
+        plays: bookmark.songs.plays,
+        liked: bookmark.songs.liked,
+        shared: bookmark.songs.shared
+      }
     }))
 
     console.log('Transformed bookmarks:', transformedBookmarks.length)

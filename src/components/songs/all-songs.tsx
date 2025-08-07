@@ -4,7 +4,6 @@ import { LoadingContent, Skeleton } from "@/components/ui/loading-bar"
 import { Button } from "@/components/ui/button"
 import {
   Heart,
-  Plus,
   Clock,
   Music,
   Loader2,
@@ -14,9 +13,7 @@ import {
 } from "lucide-react"
 import { formatDuration, formatPlays } from "@/lib/music-utils"
 import { useMusicStore } from "@/lib/store"
-import { AddToPlaylistPopover } from "@/components/songs/add-to-playlist-popover"
-import { ShareModal } from "@/components/songs/share-modal"
-import { QuickShareButton } from "@/components/songs/quick-share-button"
+import { SongMoreMenu } from "@/components/songs/song-more-menu"
 import type { Song } from "@/types/music"
 
 interface AllSongsProps {
@@ -93,11 +90,11 @@ const MemoizedActionButtons = React.memo(({
   const iconSize = isMobile ? "w-3 h-3" : "w-4 h-4"
   
   return (
-    <div className={`flex items-center ${isMobile ? 'gap-0.5' : 'gap-0'} flex-shrink-0`}>
+    <div className={`flex items-center ${isMobile ? 'gap-0.5' : 'gap-1'} flex-shrink-0`}>
       <Button
         variant="ghost"
         size="icon"
-        className={`${buttonSize} ${isBookmarked ? "text-primary" : "text-muted-foreground"} hover:text-primary`}
+        className={`${buttonSize} ${isBookmarked ? "text-red-500" : "text-muted-foreground"} hover:text-red-500`}
         onClick={(e) => onToggleBookmark(song.id, e)}
         disabled={isBookmarking}
       >
@@ -107,21 +104,8 @@ const MemoizedActionButtons = React.memo(({
           <Heart className={`${iconSize} ${isBookmarked ? "fill-current" : ""}`} />
         )}
       </Button>
-      <AddToPlaylistPopover song={song}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`${buttonSize} text-muted-foreground hover:text-primary ${
-            isMobile ? '' : 'opacity-0 group-hover:opacity-100'
-          }`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Plus className={iconSize} />
-        </Button>
-      </AddToPlaylistPopover>
-      <QuickShareButton
+      <SongMoreMenu
         song={song}
-        variant="ghost"
         size="icon"
         className={`${buttonSize} ${
           isMobile ? '' : 'opacity-0 group-hover:opacity-100'
@@ -236,8 +220,6 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
   const [bookmarkingStates, setBookmarkingStates] = useState<Record<string, boolean>>({})
   const [currentPage, setCurrentPage] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
-  const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [selectedSong, setSelectedSong] = useState<Song | null>(null)
   
   const ITEMS_PER_PAGE = 10 // All Songs는 더 많이 표시
   
@@ -428,18 +410,6 @@ export const AllSongs = React.memo(({ songs, onPlaySong, isLoading = false }: Al
         )}
       </div>
       </LoadingContent>
-      
-      {/* Share Modal */}
-      {selectedSong && (
-        <ShareModal
-          song={selectedSong}
-          isOpen={shareModalOpen}
-          onClose={() => {
-            setShareModalOpen(false)
-            setSelectedSong(null)
-          }}
-        />
-      )}
     </div>
   )
 })

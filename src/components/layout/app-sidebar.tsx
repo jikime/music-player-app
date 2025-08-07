@@ -62,7 +62,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     if (!bookmarks || bookmarks.length === 0) return []
     
     return bookmarks
-      .map(bookmark => getSong(bookmark.songId))
+      .map(bookmark => bookmark.song || getSong(bookmark.songId))
       .filter(Boolean)
       .slice(0, 6) // Show more bookmarks in sidebar
   }, [bookmarks, getSong])
